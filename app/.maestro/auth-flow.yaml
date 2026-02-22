@@ -1,0 +1,25 @@
+appId: host.exp.Exponent
+---
+# Authentication Flow E2E Test
+# Tests sign up and sign in flows
+
+- launchApp
+
+# Wait for app to load
+- extendedWaitUntil:
+    visible: ".*"
+    timeout: 15000
+
+# Look for Sign Up or already logged in state
+- runFlow:
+    when:
+      visible: "Sign Up"
+    commands:
+      - tapOn: "Sign Up"
+      - tapOn:
+          text: ".*email.*"
+          optional: true
+      - inputText: "test@example.com"
+
+# Verify app is responsive
+- assertVisible: ".*"

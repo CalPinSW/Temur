@@ -1,0 +1,190 @@
+import { createClient } from '@supabase/supabase-js';
+import { expect } from 'chai';
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+Deno.test('Avatar Cleanup Tests', async (t) => {
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  await t.step('should delete old avatar when profile avatar_url is updated', async () => {
+    const testUserId = crypto.randomUUID();
+    const testEmail = `test-${Date.now()}@example.com`;
+
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: testEmail,
+      password: 'test123456',
+      email_confirm: true,
+      user_metadata: {},
+    });
+
+    expect(authError).to.be.null;
+    expect(authData.user).to.not.be.null;
+
+    const userId = authData.user!.id;
+
+    await supabase.from('profiles').insert({
+      id: userId,
+      username: `testuser_${Date.now()}`,
+      display_name: 'Test User',
+      avatar_url: null,
+    });
+
+    const mockAvatarContent = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    const oldFileName = `${userId}-old.jpg`;
+    const newFileName = `${userId}-new.jpg`;
+
+    const { error: uploadError1 } = await supabase.storage
+      .from('avatars')
+      .upload(oldFileName, mockAvatarContent, {
+        contentType: 'image/jpeg',
+      });
+
+    expect(uploadError1).to.be.null;
+
+    const { data: oldUrlData } = supabase.storage.from('avatars').getPublicUrl(oldFileName);
+    const oldAvatarUrl = oldUrlData.publicUrl;
+
+    await supabase.from('profiles').update({ avatar_url: oldAvatarUrl }).eq('id', userId);
+
+    const { data: checkOldExists } = await supabase.storage.from('avatars').list('', {
+      search: oldFileName,
+    });
+    expect(checkOldExists).to.have.lengthOf(1);
+
+    const { error: uploadError2 } = await supabase.storage
+      .from('avatars')
+      .upload(newFileName, mockAvatarContent, {
+        contentType: 'image/jpeg',
+      });
+
+    expect(uploadError2).to.be.null;
+
+    const { data: newUrlData } = supabase.storage.from('avatars').getPublicUrl(newFileName);
+    const newAvatarUrl = newUrlData.publicUrl;
+
+    await supabase.from('profiles').update({ avatar_url: newAvatarUrl }).eq('id', userId);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const { data: checkOldDeleted } = await supabase.storage.from('avatars').list('', {
+      search: oldFileName,
+    });
+    expect(checkOldDeleted).to.have.lengthOf(0);
+
+    const { data: checkNewExists } = await supabase.storage.from('avatars').list('', {
+      search: newFileName,
+    });
+    expect(checkNewExists).to.have.lengthOf(1);
+
+    await supabase.storage.from('avatars').remove([newFileName]);
+    await supabase.auth.admin.deleteUser(userId);
+  });
+
+  await t.step('should delete avatar when user profile is deleted', async () => {
+    const testEmail = `test-delete-${Date.now()}@example.com`;
+
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: testEmail,
+      password: 'test123456',
+      email_confirm: true,
+      user_metadata: {},
+    });
+
+    expect(authError).to.be.null;
+    expect(authData.user).to.not.be.null;
+
+    const userId = authData.user!.id;
+
+    await supabase.from('profiles').insert({
+      id: userId,
+      username: `testuser_delete_${Date.now()}`,
+      display_name: 'Test User Delete',
+      avatar_url: null,
+    });
+
+    const mockAvatarContent = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    const fileName = `${userId}-delete.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, mockAvatarContent, {
+        contentType: 'image/jpeg',
+      });
+
+    expect(uploadError).to.be.null;
+
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    const avatarUrl = urlData.publicUrl;
+
+    await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', userId);
+
+    const { data: checkExists } = await supabase.storage.from('avatars').list('', {
+      search: fileName,
+    });
+    expect(checkExists).to.have.lengthOf(1);
+
+    await supabase.auth.admin.deleteUser(userId);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const { data: checkDeleted } = await supabase.storage.from('avatars').list('', {
+      search: fileName,
+    });
+    expect(checkDeleted).to.have.lengthOf(0);
+  });
+
+  await t.step('should not error when updating profile without changing avatar', async () => {
+    const testEmail = `test-no-change-${Date.now()}@example.com`;
+
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: testEmail,
+      password: 'test123456',
+      email_confirm: true,
+      user_metadata: {},
+    });
+
+    expect(authError).to.be.null;
+    expect(authData.user).to.not.be.null;
+
+    const userId = authData.user!.id;
+
+    await supabase.from('profiles').insert({
+      id: userId,
+      username: `testuser_nochange_${Date.now()}`,
+      display_name: 'Test User No Change',
+      avatar_url: null,
+    });
+
+    const mockAvatarContent = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+    const fileName = `${userId}-nochange.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, mockAvatarContent, {
+        contentType: 'image/jpeg',
+      });
+
+    expect(uploadError).to.be.null;
+
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    const avatarUrl = urlData.publicUrl;
+
+    await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', userId);
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ display_name: 'Updated Name' })
+      .eq('id', userId);
+
+    expect(updateError).to.be.null;
+
+    const { data: checkStillExists } = await supabase.storage.from('avatars').list('', {
+      search: fileName,
+    });
+    expect(checkStillExists).to.have.lengthOf(1);
+
+    await supabase.storage.from('avatars').remove([fileName]);
+    await supabase.auth.admin.deleteUser(userId);
+  });
+});

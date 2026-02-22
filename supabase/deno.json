@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": [
+      "deno.window"
+    ],
+    "strict": true
+  },
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "chai": "npm:chai@^5.1.0"
+  },
+  "tasks": {
+    "test": "deno test --allow-net --allow-env --allow-read --env tests/"
+  }
+}
