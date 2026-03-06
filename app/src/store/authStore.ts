@@ -49,29 +49,48 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   initialize: async () => {
     try {
       set({ isLoading: true });
+      // Add timeout to prevent hanging on Android
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => {
+        setTimeout(() => {
+          console.warn('[AuthStore] getSession timed out after 10s');
+          resolve({ data: { session: null } });
+        }, 10000);
+      });
 
       const {
         data: { session },
-      } = await supabase.auth.getSession();
+      } = await Promise.race([sessionPromise, timeoutPromise]);
 
       if (session?.user) {
         set({ user: session.user, session });
-        await get().fetchProfile(session.user.id);
+        // Fetch profile with timeout
+        try {
+          await get().fetchProfile(session.user.id);
+        } catch (profileError) {
+          console.error('[AuthStore] Profile fetch failed during init:', profileError);
+          // Continue initialization even if profile fetch fails
+        }
       }
 
       supabase.auth.onAuthStateChange(async (event, session) => {
         set({ user: session?.user ?? null, session });
 
-        // Only fetch profile for email/password sign-ins (INITIAL_SESSION)
-        // OAuth sign-ins handle profile fetch explicitly after setSession completes
-        if (event === 'INITIAL_SESSION' && session?.user) {
-          await get().fetchProfile(session.user.id);
+        // Fetch profile on sign in and initial session
+        // OAuth sign-ins also handle profile fetch explicitly after setSession completes
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+          try {
+            await get().fetchProfile(session.user.id);
+          } catch (profileError) {
+            console.error('[AuthStore] Profile fetch failed on auth change:', profileError);
+          }
         } else if (event === 'SIGNED_OUT' && !session) {
           set({ profile: null });
         }
       });
+
     } catch (error) {
-      console.error('Error initializing auth:', error);
+      console.error('[AuthStore] Error initializing auth:', error);
     } finally {
       set({ isLoading: false, isInitialized: true });
     }
@@ -199,7 +218,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         'fetchProfile'
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile fetch error:', error);
+        throw error;
+      }
 
       set({ profile: data as Profile });
     } catch (error) {

@@ -3,13 +3,13 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import {
-  ExampleButton,
-  ExampleTextBox,
-  ExampleInput,
-  ExampleToggle,
-  ExampleCard,
-  ExampleBadge,
-  ExampleDivider,
+  ThemedButton,
+  ThemedTextBox,
+  ThemedInput,
+  ThemedToggle,
+  ThemedCard,
+  ThemedBadge,
+  ThemedDivider,
 } from '@/components/themed';
 
 interface HomeScreenProps {
@@ -30,10 +30,10 @@ export function HomeScreen({ screen, onSelectTab1, onSelectTab2 }: HomeScreenPro
       showsVerticalScrollIndicator={false}
     >
       {/* Theme Mode Selector */}
-      <ExampleCard title="Theme Settings" variant="outlined">
+      <ThemedCard title="Theme Settings" variant="outlined">
         <View style={styles.themeModeContainer}>
           {(['light', 'dark', 'system'] as const).map((mode) => (
-            <ExampleButton
+            <ThemedButton
               key={mode}
               title={mode.charAt(0).toUpperCase() + mode.slice(1)}
               variant={themeMode === mode ? 'primary' : 'secondary'}
@@ -43,137 +43,137 @@ export function HomeScreen({ screen, onSelectTab1, onSelectTab2 }: HomeScreenPro
             />
           ))}
         </View>
-        <ExampleTextBox variant="caption" color="secondary" align="center">
+        <ThemedTextBox variant="caption" color="secondary" align="center">
           Current theme: {theme}
-        </ExampleTextBox>
-      </ExampleCard>
+        </ThemedTextBox>
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
-      {/* Typography Examples */}
-      <ExampleCard title="Typography" variant="elevated">
+      {/* Typography Themeds */}
+      <ThemedCard title="Typography" variant="elevated">
         <View style={styles.typographyContainer}>
-          <ExampleTextBox variant="heading" weight="bold">
+          <ThemedTextBox variant="heading" weight="bold">
             Heading Text
-          </ExampleTextBox>
-          <ExampleTextBox variant="subheading" weight="semibold">
+          </ThemedTextBox>
+          <ThemedTextBox variant="subheading" weight="semibold">
             Subheading Text
-          </ExampleTextBox>
-          <ExampleTextBox variant="body">
+          </ThemedTextBox>
+          <ThemedTextBox variant="body">
             Body text for regular content and descriptions.
-          </ExampleTextBox>
-          <ExampleTextBox variant="caption" color="secondary">
+          </ThemedTextBox>
+          <ThemedTextBox variant="caption" color="secondary">
             Caption text for secondary information
-          </ExampleTextBox>
-          <ExampleTextBox variant="body" color="error">
+          </ThemedTextBox>
+          <ThemedTextBox variant="body" color="error">
             Error colored text
-          </ExampleTextBox>
-          <ExampleTextBox variant="body" color="success">
+          </ThemedTextBox>
+          <ThemedTextBox variant="body" color="success">
             Success colored text
-          </ExampleTextBox>
+          </ThemedTextBox>
         </View>
-      </ExampleCard>
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
-      {/* Button Examples */}
-      <ExampleCard title="Buttons" variant="elevated">
+      {/* Button Themeds */}
+      <ThemedCard title="Buttons" variant="elevated">
         <View style={styles.buttonRow}>
-          <ExampleButton title="Primary" variant="primary" />
-          <ExampleButton title="Secondary" variant="secondary" />
+          <ThemedButton title="Primary" variant="primary" />
+          <ThemedButton title="Secondary" variant="secondary" />
         </View>
         <View style={styles.buttonRow}>
-          <ExampleButton title="Outline" variant="outline" />
-          <ExampleButton title="Ghost" variant="ghost" />
+          <ThemedButton title="Outline" variant="outline" />
+          <ThemedButton title="Ghost" variant="ghost" />
         </View>
-        <ExampleDivider label="Sizes" />
+        <ThemedDivider label="Sizes" />
         <View style={styles.buttonRow}>
-          <ExampleButton title="Small" size="small" />
-          <ExampleButton title="Medium" size="medium" />
-          <ExampleButton title="Large" size="large" />
+          <ThemedButton title="Small" size="small" />
+          <ThemedButton title="Medium" size="medium" />
+          <ThemedButton title="Large" size="large" />
         </View>
-        <ExampleDivider label="States" />
+        <ThemedDivider label="States" />
         <View style={styles.buttonRow}>
-          <ExampleButton title="Disabled" disabled />
-          <ExampleButton title="Loading" loading />
+          <ThemedButton title="Disabled" disabled />
+          <ThemedButton title="Loading" loading />
         </View>
-      </ExampleCard>
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
-      {/* Input Examples */}
-      <ExampleCard title="Inputs" variant="elevated">
-        <ExampleInput
+      {/* Input Themeds */}
+      <ThemedCard title="Inputs" variant="elevated">
+        <ThemedInput
           label="Default Input"
           placeholder="Enter text..."
           value={inputValue}
           onChangeText={setInputValue}
         />
         <View style={styles.inputSpacer} />
-        <ExampleInput
+        <ThemedInput
           label="With Hint"
           placeholder="Enter email..."
           hint="We'll never share your email"
         />
         <View style={styles.inputSpacer} />
-        <ExampleInput
+        <ThemedInput
           label="With Error"
           placeholder="Enter password..."
           error="Password must be at least 8 characters"
         />
         <View style={styles.inputSpacer} />
-        <ExampleInput label="Disabled" placeholder="Cannot edit..." disabled />
-      </ExampleCard>
+        <ThemedInput label="Disabled" placeholder="Cannot edit..." disabled />
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
-      {/* Toggle Examples */}
-      <ExampleCard title="Toggles" variant="elevated">
-        <ExampleToggle
+      {/* Toggle Themeds */}
+      <ThemedCard title="Toggles" variant="elevated">
+        <ThemedToggle
           label="Enable notifications"
           value={toggleValue}
           onValueChange={setToggleValue}
         />
         <View style={styles.toggleSpacer} />
-        <ExampleToggle label="Disabled toggle" value={true} onValueChange={() => {}} disabled />
-      </ExampleCard>
+        <ThemedToggle label="Disabled toggle" value={true} onValueChange={() => { }} disabled />
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
-      {/* Badge Examples */}
-      <ExampleCard title="Badges" variant="elevated">
+      {/* Badge Themeds */}
+      <ThemedCard title="Badges" variant="elevated">
         <View style={styles.badgeContainer}>
-          <ExampleBadge text="Default" variant="default" />
-          <ExampleBadge text="Success" variant="success" />
-          <ExampleBadge text="Error" variant="error" />
-          <ExampleBadge text="Warning" variant="warning" />
-          <ExampleBadge text="Info" variant="info" />
+          <ThemedBadge text="Default" variant="default" />
+          <ThemedBadge text="Success" variant="success" />
+          <ThemedBadge text="Error" variant="error" />
+          <ThemedBadge text="Warning" variant="warning" />
+          <ThemedBadge text="Info" variant="info" />
         </View>
-      </ExampleCard>
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
       {/* Card Variants */}
-      <ExampleCard title="Card Variants" variant="filled">
+      <ThemedCard title="Card Variants" variant="filled">
         <View style={styles.cardVariantsContainer}>
-          <ExampleCard variant="elevated" padding="small">
-            <ExampleTextBox variant="caption">Elevated Card</ExampleTextBox>
-          </ExampleCard>
+          <ThemedCard variant="elevated" padding="small">
+            <ThemedTextBox variant="caption">Elevated Card</ThemedTextBox>
+          </ThemedCard>
           <View style={styles.cardSpacer} />
-          <ExampleCard variant="outlined" padding="small">
-            <ExampleTextBox variant="caption">Outlined Card</ExampleTextBox>
-          </ExampleCard>
+          <ThemedCard variant="outlined" padding="small">
+            <ThemedTextBox variant="caption">Outlined Card</ThemedTextBox>
+          </ThemedCard>
           <View style={styles.cardSpacer} />
-          <ExampleCard variant="filled" padding="small">
-            <ExampleTextBox variant="caption">Filled Card</ExampleTextBox>
-          </ExampleCard>
+          <ThemedCard variant="filled" padding="small">
+            <ThemedTextBox variant="caption">Filled Card</ThemedTextBox>
+          </ThemedCard>
         </View>
-      </ExampleCard>
+      </ThemedCard>
 
       <View style={styles.spacer} />
 
       {/* Color Palette */}
-      <ExampleCard title="Color Palette" variant="outlined">
+      <ThemedCard title="Color Palette" variant="outlined">
         <View style={styles.colorGrid}>
           <ColorSwatch color={colors.primary} label="Primary" />
           <ColorSwatch color={colors.background} label="Background" />
@@ -184,7 +184,7 @@ export function HomeScreen({ screen, onSelectTab1, onSelectTab2 }: HomeScreenPro
           <ColorSwatch color={colors.border} label="Border" />
           <ColorSwatch color={colors.input} label="Input" />
         </View>
-      </ExampleCard>
+      </ThemedCard>
 
       <View style={styles.bottomPadding} />
     </ScrollView>
@@ -196,13 +196,13 @@ export function HomeScreen({ screen, onSelectTab1, onSelectTab2 }: HomeScreenPro
       edges={['top']}
     >
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <ExampleButton
+        <ThemedButton
           title="Components"
           variant={screen === 'tab1' ? 'primary' : 'secondary'}
           size="small"
           onPress={onSelectTab1}
         />
-        <ExampleButton
+        <ThemedButton
           title="About"
           variant={screen === 'tab2' ? 'primary' : 'secondary'}
           size="small"
@@ -213,13 +213,13 @@ export function HomeScreen({ screen, onSelectTab1, onSelectTab2 }: HomeScreenPro
         renderThemeShowcase()
       ) : (
         <View style={[styles.centeredContent, { backgroundColor: colors.background }]}>
-          <ExampleTextBox variant="heading" weight="bold" align="center">
+          <ThemedTextBox variant="heading" weight="bold" align="center">
             Theme Demo
-          </ExampleTextBox>
+          </ThemedTextBox>
           <View style={styles.aboutSpacer} />
-          <ExampleTextBox variant="body" color="secondary" align="center">
+          <ThemedTextBox variant="body" color="secondary" align="center">
             This template demonstrates a custom theming system with light and dark mode support.
-          </ExampleTextBox>
+          </ThemedTextBox>
         </View>
       )}
     </SafeAreaView>
@@ -231,9 +231,9 @@ function ColorSwatch({ color, label }: { color: string; label: string }) {
   return (
     <View style={styles.swatchContainer}>
       <View style={[styles.swatch, { backgroundColor: color, borderColor: colors.border }]} />
-      <ExampleTextBox variant="caption" color="secondary">
+      <ThemedTextBox variant="caption" color="secondary">
         {label}
-      </ExampleTextBox>
+      </ThemedTextBox>
     </View>
   );
 }

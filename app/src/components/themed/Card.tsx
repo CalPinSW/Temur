@@ -36,9 +36,11 @@ export function ThemedCard({
         backgroundColor: colors.card,
         shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 1,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
       },
       outlined: {
         backgroundColor: colors.card,
