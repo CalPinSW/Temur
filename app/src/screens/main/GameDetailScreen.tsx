@@ -6,7 +6,12 @@ import { ThemedTextBox, ThemedCard, ThemedButton } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGameDetails } from '@/hooks/useGameDetails';
 import { useGameActions } from '@/hooks/useGameActions';
-import { getGameCapacity, getActivePlayers, getWaitlistPlayers, getVisiblePlayers } from '@/utils/gameUtils';
+import {
+  getGameCapacity,
+  getActivePlayers,
+  getWaitlistPlayers,
+  getVisiblePlayers,
+} from '@/utils/gameUtils';
 import {
   GameHeader,
   GameStats,
@@ -22,18 +27,28 @@ interface GameDetailScreenProps {
   onNavigateToTeamAssignment?: (gameId: string) => void;
 }
 
-export function GameDetailScreen({ gameId, onGoBack, onNavigateToTeamAssignment }: GameDetailScreenProps) {
+export function GameDetailScreen({
+  gameId,
+  onGoBack,
+  onNavigateToTeamAssignment,
+}: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
   const [isPlayersExpanded, setIsPlayersExpanded] = useState(false);
 
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
-  const { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw } = useGameActions(gameId, user?.id);
+  const { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw } = useGameActions(
+    gameId,
+    user?.id
+  );
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -43,7 +58,10 @@ export function GameDetailScreen({ gameId, onGoBack, onNavigateToTeamAssignment 
 
   if (!game) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
         <View style={styles.errorContainer}>
           <ThemedTextBox variant="body" color="secondary">
             Game not found
@@ -62,23 +80,17 @@ export function GameDetailScreen({ gameId, onGoBack, onNavigateToTeamAssignment 
   const waitlistPlayers = getWaitlistPlayers(game.player_games, capacity);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <View style={[styles.headerBar, { borderBottomColor: colors.border }]}>
-        <ThemedButton
-          title="← Back"
-          variant="ghost"
-          onPress={onGoBack}
-          style={styles.backButton}
-        />
+        <ThemedButton title="← Back" variant="ghost" onPress={onGoBack} style={styles.backButton} />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <ThemedCard variant="elevated">
-          <GameHeader
-            kickoffDate={game.kickoff_date}
-            isPast={isPast}
-            isVisible={isVisible}
-          />
+          <GameHeader kickoffDate={game.kickoff_date} isPast={isPast} isVisible={isVisible} />
 
           <GameStats
             activePlayersCount={activePlayers.length}
@@ -116,7 +128,14 @@ export function GameDetailScreen({ gameId, onGoBack, onNavigateToTeamAssignment 
               />
             ) : (
               <PlayersList
-                players={getVisiblePlayers(game.player_games, capacity, isPlayersExpanded, user?.id, undefined, false)}
+                players={getVisiblePlayers(
+                  game.player_games,
+                  capacity,
+                  isPlayersExpanded,
+                  user?.id,
+                  undefined,
+                  false
+                )}
                 currentUserId={user?.id}
                 isExpanded={isPlayersExpanded}
                 onToggleExpand={() => setIsPlayersExpanded(!isPlayersExpanded)}

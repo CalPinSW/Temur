@@ -214,7 +214,9 @@ export function MainNavigator() {
           component={AdminStack}
           options={{
             tabBarLabel: 'Admin',
-            tabBarIcon: ({ color }) => <MaterialIcons name="admin-panel-settings" size={24} color={color} />,
+            tabBarIcon: ({ color }) => (
+              <MaterialIcons name="admin-panel-settings" size={24} color={color} />
+            ),
           }}
         />
       )}

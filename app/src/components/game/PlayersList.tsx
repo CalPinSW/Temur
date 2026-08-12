@@ -12,7 +12,12 @@ interface PlayersListProps {
   onToggleExpand: () => void;
 }
 
-export function PlayersList({ players, currentUserId, isExpanded, onToggleExpand }: PlayersListProps) {
+export function PlayersList({
+  players,
+  currentUserId,
+  isExpanded,
+  onToggleExpand,
+}: PlayersListProps) {
   const { colors } = useTheme();
 
   if (players.length === 0) return null;
@@ -34,17 +39,19 @@ export function PlayersList({ players, currentUserId, isExpanded, onToggleExpand
               style={[
                 styles.playerItem,
                 { borderBottomColor: colors.border },
-                isCurrentUser && { backgroundColor: colors.backgroundTertiary }
+                isCurrentUser && { backgroundColor: colors.backgroundTertiary },
               ]}
             >
               <View style={styles.playerInfo}>
                 <View style={styles.playerNameContainer}>
-                  <ThemedTextBox variant="body" color="primary" weight={isCurrentUser ? "semibold" : "medium"}>
+                  <ThemedTextBox
+                    variant="body"
+                    color="primary"
+                    weight={isCurrentUser ? 'semibold' : 'medium'}
+                  >
                     {`${actualIndex + 1}. ${playerGame.profile.display_name || playerGame.profile.username}`}
                   </ThemedTextBox>
-                  {isCurrentUser && (
-                    <ThemedBadge variant="info" text="You" />
-                  )}
+                  {isCurrentUser && <ThemedBadge variant="info" text="You" />}
                 </View>
                 {playerGame.average_rating !== undefined && (
                   <View style={styles.ratingContainer}>
@@ -61,7 +68,7 @@ export function PlayersList({ players, currentUserId, isExpanded, onToggleExpand
       </View>
       {showExpandButton && (
         <ThemedButton
-          title={isExpanded ? "Show Less" : `Show All ${players.length} Players`}
+          title={isExpanded ? 'Show Less' : `Show All ${players.length} Players`}
           variant="ghost"
           onPress={onToggleExpand}
           style={styles.expandButton}

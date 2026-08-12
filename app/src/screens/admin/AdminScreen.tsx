@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { ThemedButton, ThemedTextBox, ThemedCard, ThemedDateTimePicker, ThemedInput, ThemedDropdown, DropdownOption } from '@/components/themed';
+import {
+  ThemedButton,
+  ThemedTextBox,
+  ThemedCard,
+  ThemedDateTimePicker,
+  ThemedInput,
+  ThemedDropdown,
+  DropdownOption,
+} from '@/components/themed';
 import { supabase } from '@/services/supabase';
 
 const getNextSaturday = (fromDate: Date): Date => {
@@ -68,14 +70,14 @@ export function AdminScreen() {
 
         if (error) throw error;
 
-        const existingGameDates = (existingGames || []).map(
-          (game) => new Date(game.kickoff_date)
-        );
+        const existingGameDates = (existingGames || []).map((game) => new Date(game.kickoff_date));
 
         let candidateDate = getNextSaturday(new Date());
 
         while (existingGameDates.some((gameDate) => isSameDay(gameDate, candidateDate))) {
-          candidateDate = getNextSaturday(new Date(candidateDate.getTime() + 7 * 24 * 60 * 60 * 1000));
+          candidateDate = getNextSaturday(
+            new Date(candidateDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+          );
         }
 
         setKickoffDate(candidateDate);
@@ -94,7 +96,7 @@ export function AdminScreen() {
     try {
       setIsCreating(true);
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('games')
         .insert({
           kickoff_date: kickoffDate.toISOString(),
@@ -125,9 +127,11 @@ export function AdminScreen() {
     }
   };
 
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -187,18 +191,10 @@ export function AdminScreen() {
             </ThemedTextBox>
             <View style={styles.teamNameContainer}>
               <View style={styles.teamInputWrapper}>
-                <ThemedInput
-                  label="Team 1 Name"
-                  value={team1Name}
-                  onChangeText={setTeam1Name}
-                />
+                <ThemedInput label="Team 1 Name" value={team1Name} onChangeText={setTeam1Name} />
               </View>
               <View style={styles.teamInputWrapper}>
-                <ThemedInput
-                  label="Team 2 Name"
-                  value={team2Name}
-                  onChangeText={setTeam2Name}
-                />
+                <ThemedInput label="Team 2 Name" value={team2Name} onChangeText={setTeam2Name} />
               </View>
             </View>
           </View>
@@ -262,11 +258,5 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 8,
-  },
-  quickActions: {
-    marginTop: 16,
-  },
-  quickActionButton: {
-    marginBottom: 8,
   },
 });

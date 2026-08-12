@@ -135,7 +135,7 @@ export function HomeScreen({ screen, onSelectTab1, onSelectTab2 }: HomeScreenPro
           onValueChange={setToggleValue}
         />
         <View style={styles.toggleSpacer} />
-        <ThemedToggle label="Disabled toggle" value={true} onValueChange={() => { }} disabled />
+        <ThemedToggle label="Disabled toggle" value={true} onValueChange={() => {}} disabled />
       </ThemedCard>
 
       <View style={styles.spacer} />

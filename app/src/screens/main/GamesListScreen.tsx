@@ -1,16 +1,33 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { ThemedTextBox } from '@/components/themed';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { GameWithPlayers } from '@/types/game';
+import { Game, GameWithPlayers } from '@/types/game';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GameOverviewCard } from '@/components/game/GameOverviewCard';
 
 interface GamesListScreenProps {
   onNavigateToGame: (gameId: string) => void;
+}
+
+interface RawGame extends Game {
+  player_games:
+    | {
+        id: string;
+        user_id: string;
+        signup_order: number;
+        team: number | null;
+        profile: {
+          id: string;
+          username: string;
+          display_name: string | null;
+          avatar_url: string | null;
+        };
+      }[]
+    | null;
 }
 
 export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
@@ -30,7 +47,8 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
 
       const { data: games, error } = await supabase
         .from('games')
-        .select(`
+        .select(
+          `
           *,
           player_games (
             id,
@@ -44,18 +62,19 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
               avatar_url
             )
           )
-        `)
+        `
+        )
         .gte('visible_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
         .order('kickoff_date', { ascending: true });
 
       if (error) throw error;
 
-      const processedGames: GameWithPlayers[] = (games || []).map((game) => ({
+      const processedGames: GameWithPlayers[] = ((games as RawGame[]) || []).map((game) => ({
         ...game,
         player_games: game.player_games || [],
         player_count: game.player_games?.length || 0,
-        user_signed_up: game.player_games?.some((pg: any) => pg.user_id === user.id) || false,
-      }));
+        user_signed_up: game.player_games?.some((pg) => pg.user_id === user.id) || false,
+      })) as GameWithPlayers[];
 
       const isAdmin = profile?.is_admin || false;
       const visibleGames = isAdmin
@@ -114,17 +133,21 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
     fetchGames();
   };
 
-
-
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
       >
         <View style={styles.header}>
@@ -135,7 +158,12 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
 
         {upcomingGames.length > 0 && (
           <View style={styles.section}>
-            <ThemedTextBox variant="subheading" weight="semibold" color="primary" style={styles.sectionTitle}>
+            <ThemedTextBox
+              variant="subheading"
+              weight="semibold"
+              color="primary"
+              style={styles.sectionTitle}
+            >
               Upcoming Games
             </ThemedTextBox>
             {upcomingGames.map((game) => (
@@ -146,10 +174,15 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
 
         {historicGames.length > 0 && (
           <View style={styles.section}>
-            <ThemedTextBox variant="subheading" weight="semibold" color="primary" style={styles.sectionTitle}>
+            <ThemedTextBox
+              variant="subheading"
+              weight="semibold"
+              color="primary"
+              style={styles.sectionTitle}
+            >
               Past Games
             </ThemedTextBox>
-            {historicGames.map(game => (
+            {historicGames.map((game) => (
               <GameOverviewCard key={game.id} game={game} onNavigateToGame={onNavigateToGame} />
             ))}
           </View>

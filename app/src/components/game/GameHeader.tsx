@@ -17,7 +17,11 @@ export function GameHeader({ kickoffDate, isPast, isVisible }: GameHeaderProps) 
   return (
     <View>
       <View style={styles.gameHeader}>
-        <MaterialIcons name="event" size={32} color={isPast ? colors.textSecondary : colors.primary} />
+        <MaterialIcons
+          name="event"
+          size={32}
+          color={isPast ? colors.textSecondary : colors.primary}
+        />
         <View style={styles.gameHeaderText}>
           <ThemedTextBox variant="heading" weight="bold" color="primary">
             {formatDate(kickoffDate)}

@@ -44,9 +44,10 @@ export const getVisiblePlayers = (
     filteredPlayers = getWaitlistPlayers(players, capacity);
   } else {
     const activePlayers = getActivePlayers(players, capacity);
-    filteredPlayers = teamNumber !== undefined
-      ? activePlayers.filter((p) => p.team === teamNumber)
-      : activePlayers.filter((p) => p.team === null);
+    filteredPlayers =
+      teamNumber !== undefined
+        ? activePlayers.filter((p) => p.team === teamNumber)
+        : activePlayers.filter((p) => p.team === null);
   }
 
   if (isExpanded || filteredPlayers.length <= 5) {

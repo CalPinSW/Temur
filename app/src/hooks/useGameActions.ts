@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
+import { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { GameWithPlayers } from '@/types/game';
 
@@ -15,21 +16,19 @@ export function useGameActions(gameId: string, userId?: string) {
 
       const nextSignupOrder = game.player_count + 1;
 
-      const { error } = await supabase
-        .from('player_games')
-        .insert({
-          game_id: gameId,
-          user_id: userId,
-          signup_order: nextSignupOrder,
-        });
+      const { error } = await supabase.from('player_games').insert({
+        game_id: gameId,
+        user_id: userId,
+        signup_order: nextSignupOrder,
+      });
 
       if (error) throw error;
 
       Alert.alert('Success', 'You have signed up for this game!');
       onSuccess();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error signing up:', error);
-      if (error.code === '23505') {
+      if ((error as PostgrestError).code === '23505') {
         Alert.alert('Error', 'You are already signed up for this game');
       } else {
         Alert.alert('Error', 'Failed to sign up. Please try again.');

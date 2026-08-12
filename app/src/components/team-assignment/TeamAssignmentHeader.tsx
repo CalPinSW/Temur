@@ -9,7 +9,11 @@ interface TeamAssignmentHeaderProps {
   playersPerTeam: number;
 }
 
-export function TeamAssignmentHeader({ kickoffDate, playerCount, playersPerTeam }: TeamAssignmentHeaderProps) {
+export function TeamAssignmentHeader({
+  kickoffDate,
+  playerCount,
+  playersPerTeam,
+}: TeamAssignmentHeaderProps) {
   return (
     <View style={styles.header}>
       <ThemedTextBox variant="heading" weight="bold" color="primary">

@@ -1,8 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/services/supabase';
-import { GameWithPlayers, BoardPosition } from '@/types/game';
+import { Game, GameWithPlayers, BoardPosition, PlayerGameWithProfile } from '@/types/game';
 import { getGameCapacity, getActivePlayers } from '@/utils/gameUtils';
+
+interface RawPlayerGame {
+  id: string;
+  user_id: string;
+  signup_order: number;
+  team: number | null;
+  board_x: number | null;
+  board_y: number | null;
+  profile: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
+}
+
+interface RawGame extends Game {
+  player_games: RawPlayerGame[];
+}
 
 export function useTeamAssignment(gameId: string) {
   const [game, setGame] = useState<GameWithPlayers | null>(null);
@@ -13,7 +32,7 @@ export function useTeamAssignment(gameId: string) {
 
   const fetchGameDetails = useCallback(async () => {
     try {
-      const { data: gameData, error: gameError } = await supabase
+      const { data, error: gameError } = await supabase
         .from('games')
         .select(
           `
@@ -39,12 +58,18 @@ export function useTeamAssignment(gameId: string) {
 
       if (gameError) throw gameError;
 
+      const gameData = data as RawGame;
       const allPlayers = (gameData.player_games || []).sort(
-        (a: any, b: any) => a.signup_order - b.signup_order
+        (a, b) => a.signup_order - b.signup_order
       );
 
       const capacity = getGameCapacity(gameData.players_per_team);
-      const activePlayers = getActivePlayers(allPlayers, capacity);
+      // This query doesn't select game_id/created_at/updated_at (only the game
+      // detail screen needs those), so RawPlayerGame is a subset of PlayerGameWithProfile.
+      const activePlayers = getActivePlayers(
+        allPlayers as unknown as PlayerGameWithProfile[],
+        capacity
+      );
 
       const processedGame: GameWithPlayers = {
         ...gameData,
@@ -57,7 +82,7 @@ export function useTeamAssignment(gameId: string) {
 
       const assignments: Record<string, number | null> = {};
       const positions: Record<string, BoardPosition | null> = {};
-      activePlayers.forEach((pg: any) => {
+      activePlayers.forEach((pg) => {
         assignments[pg.id] = pg.team;
         positions[pg.id] =
           pg.board_x !== null && pg.board_y !== null ? { x: pg.board_x, y: pg.board_y } : null;

@@ -27,12 +27,24 @@ export function TeamsSection({
   const activePlayers = getActivePlayers(players, capacity);
   const team1Players = getVisiblePlayers(players, capacity, isExpanded, currentUserId, 1, false);
   const team2Players = getVisiblePlayers(players, capacity, isExpanded, currentUserId, 2, false);
-  const unassignedPlayers = getVisiblePlayers(players, capacity, isExpanded, currentUserId, undefined, false);
+  const unassignedPlayers = getVisiblePlayers(
+    players,
+    capacity,
+    isExpanded,
+    currentUserId,
+    undefined,
+    false
+  );
 
   return (
     <View>
       <View style={styles.teamSection}>
-        <ThemedTextBox variant="subheading" weight="semibold" color="primary" style={styles.teamTitle}>
+        <ThemedTextBox
+          variant="subheading"
+          weight="semibold"
+          color="primary"
+          style={styles.teamTitle}
+        >
           {team1Name}
         </ThemedTextBox>
         <PlayersList
@@ -44,7 +56,12 @@ export function TeamsSection({
       </View>
 
       <View style={styles.teamSection}>
-        <ThemedTextBox variant="subheading" weight="semibold" color="primary" style={styles.teamTitle}>
+        <ThemedTextBox
+          variant="subheading"
+          weight="semibold"
+          color="primary"
+          style={styles.teamTitle}
+        >
           {team2Name}
         </ThemedTextBox>
         <PlayersList
@@ -57,7 +74,12 @@ export function TeamsSection({
 
       {activePlayers.some((pg) => pg.team === null) && (
         <View style={styles.teamSection}>
-          <ThemedTextBox variant="subheading" weight="semibold" color="secondary" style={styles.teamTitle}>
+          <ThemedTextBox
+            variant="subheading"
+            weight="semibold"
+            color="secondary"
+            style={styles.teamTitle}
+          >
             Unassigned
           </ThemedTextBox>
           <PlayersList

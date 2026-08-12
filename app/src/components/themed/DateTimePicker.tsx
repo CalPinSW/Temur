@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme';
 import { ThemedButton } from './Button';
 import { ThemedTextBox } from './TextBox';
@@ -50,7 +50,7 @@ export function ThemedDateTimePicker({
     }
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date) => {
+  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       if (event.type === 'set' && selectedDate) {
         // For datetime mode on Android, show time picker after date is selected
@@ -90,12 +90,20 @@ export function ThemedDateTimePicker({
     return (
       <View style={styles.container}>
         {label && (
-          <ThemedTextBox variant="subheading" weight="semibold" color="primary" style={styles.label}>
+          <ThemedTextBox
+            variant="subheading"
+            weight="semibold"
+            color="primary"
+            style={styles.label}
+          >
             {label}
           </ThemedTextBox>
         )}
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}
+          style={[
+            styles.button,
+            { backgroundColor: colors.backgroundTertiary, borderColor: colors.border },
+          ]}
           onPress={() => {
             setCurrentMode('date');
             setShowPicker(true);
@@ -128,7 +136,10 @@ export function ThemedDateTimePicker({
         </ThemedTextBox>
       )}
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: colors.backgroundTertiary, borderColor: colors.border }]}
+        style={[
+          styles.button,
+          { backgroundColor: colors.backgroundTertiary, borderColor: colors.border },
+        ]}
         onPress={() => setShowPicker(true)}
         activeOpacity={0.7}
       >
@@ -137,12 +148,7 @@ export function ThemedDateTimePicker({
         </ThemedTextBox>
       </TouchableOpacity>
 
-      <Modal
-        visible={showPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancel}
-      >
+      <Modal visible={showPicker} transparent animationType="fade" onRequestClose={handleCancel}>
         <TouchableOpacity
           style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}
           activeOpacity={1}

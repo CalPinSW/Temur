@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
 import { useTheme } from '@/theme';
 
-export interface DropdownOption<T = any> {
+export interface DropdownOption<T = unknown> {
   label: string;
   value: T;
 }
 
-interface ThemedDropdownProps<T = any> {
+interface ThemedDropdownProps<T = unknown> {
   label?: string;
   value: T;
   options: DropdownOption<T>[];
@@ -18,7 +18,7 @@ interface ThemedDropdownProps<T = any> {
   placeholder?: string;
 }
 
-export function ThemedDropdown<T = any>({
+export function ThemedDropdown<T = unknown>({
   label,
   value,
   options,

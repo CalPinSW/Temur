@@ -23,7 +23,14 @@ export function WaitlistSection({
   onToggleExpand,
 }: WaitlistSectionProps) {
   const { colors } = useTheme();
-  const waitlistPlayers = getVisiblePlayers(players, capacity, isExpanded, currentUserId, undefined, true);
+  const waitlistPlayers = getVisiblePlayers(
+    players,
+    capacity,
+    isExpanded,
+    currentUserId,
+    undefined,
+    true
+  );
 
   return (
     <View>

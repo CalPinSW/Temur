@@ -88,7 +88,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           set({ profile: null });
         }
       });
-
     } catch (error) {
       console.error('[AuthStore] Error initializing auth:', error);
     } finally {
