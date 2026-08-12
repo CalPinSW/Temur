@@ -7,72 +7,96 @@ const CHUNK_SIZE = 1800; // Leave some headroom
 
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string): Promise<string | null> => {
-    const chunkCountStr = await SecureStore.getItemAsync(`${key}_chunks`);
+    try {
+      console.log(`[SecureStore] Getting item: ${key}`);
+      const chunkCountStr = await SecureStore.getItemAsync(`${key}_chunks`);
 
-    if (chunkCountStr) {
-      // Value was chunked
-      const chunkCount = parseInt(chunkCountStr, 10);
-      const chunks: string[] = [];
+      if (chunkCountStr) {
+        // Value was chunked
+        const chunkCount = parseInt(chunkCountStr, 10);
+        const chunks: string[] = [];
 
-      for (let i = 0; i < chunkCount; i++) {
-        const chunk = await SecureStore.getItemAsync(`${key}_chunk_${i}`);
-        if (chunk) chunks.push(chunk);
+        for (let i = 0; i < chunkCount; i++) {
+          const chunk = await SecureStore.getItemAsync(`${key}_chunk_${i}`);
+          if (chunk) chunks.push(chunk);
+        }
+
+        console.log(`[SecureStore] Retrieved ${chunks.length} chunks for ${key}`);
+        return chunks.join('');
       }
 
-      return chunks.join('');
+      // Try regular storage (for small values or migration)
+      const value = await SecureStore.getItemAsync(key);
+      console.log(`[SecureStore] Retrieved value for ${key}:`, value ? 'exists' : 'null');
+      return value;
+    } catch (error) {
+      console.error(`[SecureStore] Error getting item ${key}:`, error);
+      return null;
     }
-
-    // Try regular storage (for small values or migration)
-    return SecureStore.getItemAsync(key);
   },
 
   setItem: async (key: string, value: string): Promise<void> => {
-    // First, clean up any existing chunks
-    const existingChunks = await SecureStore.getItemAsync(`${key}_chunks`);
-    if (existingChunks) {
-      const count = parseInt(existingChunks, 10);
-      for (let i = 0; i < count; i++) {
-        await SecureStore.deleteItemAsync(`${key}_chunk_${i}`);
-      }
-      await SecureStore.deleteItemAsync(`${key}_chunks`);
-    }
-
-    // Also clean up non-chunked version if it exists
-    await SecureStore.deleteItemAsync(key);
-
-    if (value.length <= CHUNK_SIZE) {
-      // Small enough to store directly
-      await SecureStore.setItemAsync(key, value);
-    } else {
-      // Need to chunk
-      const chunks = [];
-      for (let i = 0; i < value.length; i += CHUNK_SIZE) {
-        chunks.push(value.slice(i, i + CHUNK_SIZE));
+    try {
+      console.log(`[SecureStore] Setting item: ${key}, length: ${value.length}`);
+      // First, clean up any existing chunks
+      const existingChunks = await SecureStore.getItemAsync(`${key}_chunks`);
+      if (existingChunks) {
+        const count = parseInt(existingChunks, 10);
+        for (let i = 0; i < count; i++) {
+          await SecureStore.deleteItemAsync(`${key}_chunk_${i}`);
+        }
+        await SecureStore.deleteItemAsync(`${key}_chunks`);
       }
 
-      // Store chunk count
-      await SecureStore.setItemAsync(`${key}_chunks`, chunks.length.toString());
+      // Also clean up non-chunked version if it exists
+      await SecureStore.deleteItemAsync(key);
 
-      // Store each chunk
-      for (let i = 0; i < chunks.length; i++) {
-        await SecureStore.setItemAsync(`${key}_chunk_${i}`, chunks[i]);
+      if (value.length <= CHUNK_SIZE) {
+        // Small enough to store directly
+        await SecureStore.setItemAsync(key, value);
+        console.log(`[SecureStore] Stored ${key} directly`);
+      } else {
+        // Need to chunk
+        const chunks = [];
+        for (let i = 0; i < value.length; i += CHUNK_SIZE) {
+          chunks.push(value.slice(i, i + CHUNK_SIZE));
+        }
+
+        // Store chunk count
+        await SecureStore.setItemAsync(`${key}_chunks`, chunks.length.toString());
+
+        // Store each chunk
+        for (let i = 0; i < chunks.length; i++) {
+          await SecureStore.setItemAsync(`${key}_chunk_${i}`, chunks[i]);
+        }
+        console.log(`[SecureStore] Stored ${key} in ${chunks.length} chunks`);
       }
+    } catch (error) {
+      console.error(`[SecureStore] Error setting item ${key}:`, error);
+      throw error;
     }
   },
 
   removeItem: async (key: string): Promise<void> => {
-    // Remove chunked data if it exists
-    const chunkCountStr = await SecureStore.getItemAsync(`${key}_chunks`);
-    if (chunkCountStr) {
-      const chunkCount = parseInt(chunkCountStr, 10);
-      for (let i = 0; i < chunkCount; i++) {
-        await SecureStore.deleteItemAsync(`${key}_chunk_${i}`);
+    try {
+      console.log(`[SecureStore] Removing item: ${key}`);
+      // Remove chunked data if it exists
+      const chunkCountStr = await SecureStore.getItemAsync(`${key}_chunks`);
+      if (chunkCountStr) {
+        const chunkCount = parseInt(chunkCountStr, 10);
+        for (let i = 0; i < chunkCount; i++) {
+          await SecureStore.deleteItemAsync(`${key}_chunk_${i}`);
+        }
+        await SecureStore.deleteItemAsync(`${key}_chunks`);
       }
-      await SecureStore.deleteItemAsync(`${key}_chunks`);
-    }
 
-    // Also remove non-chunked version
-    await SecureStore.deleteItemAsync(key);
+      // Also remove non-chunked version
+      await SecureStore.deleteItemAsync(key);
+      console.log(`[SecureStore] Removed ${key}`);
+    } catch (error) {
+      console.error(`[SecureStore] Error removing item ${key}:`, error);
+      throw error;
+    }
   },
 };
 

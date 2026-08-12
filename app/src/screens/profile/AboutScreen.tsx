@@ -31,7 +31,7 @@ export function AboutScreen({ onGoBack }: AboutScreenProps) {
         <View style={styles.logoSection}>
           <Text style={styles.appIcon}>🧾</Text>
           <ThemedTextBox variant="heading" weight="bold" align="center">
-            App Name
+            MatchDay
           </ThemedTextBox>
           <ThemedTextBox variant="body" color="secondary" align="center">
             App Tagline
@@ -68,7 +68,7 @@ export function AboutScreen({ onGoBack }: AboutScreenProps) {
         </View>
 
         <ThemedTextBox variant="caption" color="tertiary" align="center">
-          {`© ${new Date().getFullYear()} App Name. All rights reserved.`}
+          {`© ${new Date().getFullYear()} MatchDay. All rights reserved.`}
         </ThemedTextBox>
       </ScrollView>
     </SafeAreaView>

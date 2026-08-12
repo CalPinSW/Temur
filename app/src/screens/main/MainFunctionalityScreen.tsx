@@ -1,32 +1,44 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '@/theme';
+import React, { useState } from 'react';
+import { GamesListScreen } from './GamesListScreen';
+import { GameDetailScreen } from './GameDetailScreen';
+import { TeamAssignmentScreen } from './TeamAssignmentScreen';
 
 export function MainFunctionalityScreen() {
-  const { colors } = useTheme();
+  const [currentScreen, setCurrentScreen] = useState<'list' | 'detail' | 'teamAssignment'>('list');
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
-  return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      edges={['top']}
-    >
-      <View style={[styles.centeredContent, { backgroundColor: colors.background }]}>
-        <Text>MainFunctionalityScreen</Text>
-      </View>
-    </SafeAreaView>
-  );
+  const handleNavigateToGame = (gameId: string) => {
+    setSelectedGameId(gameId);
+    setCurrentScreen('detail');
+  };
+
+  const handleGoBack = () => {
+    setCurrentScreen('list');
+    setSelectedGameId(null);
+  };
+
+  const handleNavigateToTeamAssignment = (gameId: string) => {
+    setSelectedGameId(gameId);
+    setCurrentScreen('teamAssignment');
+  };
+
+  const handleBackToDetail = () => {
+    setCurrentScreen('detail');
+  };
+
+  if (currentScreen === 'teamAssignment' && selectedGameId) {
+    return <TeamAssignmentScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
+  }
+
+  if (currentScreen === 'detail' && selectedGameId) {
+    return (
+      <GameDetailScreen
+        gameId={selectedGameId}
+        onGoBack={handleGoBack}
+        onNavigateToTeamAssignment={handleNavigateToTeamAssignment}
+      />
+    );
+  }
+
+  return <GamesListScreen onNavigateToGame={handleNavigateToGame} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centeredContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#fff',
-  },
-});

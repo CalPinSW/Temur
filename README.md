@@ -326,6 +326,25 @@ supabase db push
 # The command will show which migrations will be applied and ask for confirmation
 ```
 
+#### Troubleshooting: "permission denied to alter role" / `cli_login_postgres`
+
+`supabase db push` (and `db pull`, `migration list`) normally authenticate via a
+temporary OAuth-managed Postgres role. On some projects this fails with:
+
+```
+unexpected login role status 400: {"message":"Failed to create login role: ERROR:  42501: permission denied to alter role
+DETAIL:  Only roles with the CREATEROLE attribute and the ADMIN option on role "cli_login_postgres" may alter this role.
+```
+
+This is a known, currently-open bug in Supabase's Management API (see
+[supabase/cli#5091](https://github.com/supabase/cli/issues/5091)) — it isn't fixed by
+re-logging in or upgrading the CLI. Work around it by skipping the broken flow and
+authenticating with the database password directly (`SUPABASE_PASSWORD` in `app/.env`):
+
+```bash
+SUPABASE_DB_PASSWORD=$(grep '^SUPABASE_PASSWORD=' app/.env | cut -d '=' -f2-) supabase db push
+```
+
 ### Edge Functions
 
 Deploy updated Edge Functions to Supabase:

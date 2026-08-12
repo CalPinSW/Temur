@@ -9,11 +9,13 @@ import { HomeScreen } from '@/screens/home';
 import { FriendsScreen, SearchUsersScreen, FriendRequestsScreen } from '@/screens/friends';
 import { ProfileScreen, EditProfileScreen, AboutScreen } from '@/screens/profile';
 import { MainFunctionalityScreen } from '@/screens/main/MainFunctionalityScreen';
+import { AdminScreen } from '@/screens/admin';
 
 export type MainTabParamList = {
   HomeTab: undefined;
   MainFunctionalityTab: undefined;
   FriendsTab: { screen?: 'list' | 'search' | 'requests' } | undefined;
+  AdminTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -65,6 +67,10 @@ function FriendsStack({
       onNavigateToRequests={() => setScreen('requests')}
     />
   );
+}
+
+function AdminStack() {
+  return <AdminScreen />;
 }
 
 function ProfileStack() {
@@ -119,6 +125,7 @@ const badgeStyles = StyleSheet.create({
 export function MainNavigator() {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
 
   const fetchPendingCount = useCallback(async () => {
@@ -173,14 +180,16 @@ export function MainNavigator() {
         },
       }}
     >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeStack}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => <MaterialIcons name="home" size={24} color={color} />,
-        }}
-      />
+      {profile?.is_admin && (
+        <Tab.Screen
+          name="HomeTab"
+          component={HomeStack}
+          options={{
+            tabBarLabel: 'Home',
+            tabBarIcon: ({ color }) => <MaterialIcons name="home" size={24} color={color} />,
+          }}
+        />
+      )}
       <Tab.Screen
         name="MainFunctionalityTab"
         component={MainFunctionalityStack}
@@ -199,6 +208,16 @@ export function MainNavigator() {
           ),
         }}
       />
+      {profile?.is_admin && (
+        <Tab.Screen
+          name="AdminTab"
+          component={AdminStack}
+          options={{
+            tabBarLabel: 'Admin',
+            tabBarIcon: ({ color }) => <MaterialIcons name="admin-panel-settings" size={24} color={color} />,
+          }}
+        />
+      )}
       <Tab.Screen
         name="ProfileTab"
         component={ProfileStack}

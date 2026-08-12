@@ -32,7 +32,7 @@ export const Colors = {
     inputDisabled: '#EEEEEE',
     inputPlaceholder: '#999999',
 
-    shadow: 'rgba(0, 0, 0, 0.1)',
+    shadow: 'rgba(0, 0, 0, 0.3)',
   },
   dark: {
     background: '#000000',
