@@ -9,9 +9,17 @@ export function navigate(name: string, params?: Record<string, unknown>) {
   }
 }
 
-export type NotificationScreen = 'FriendRequests' | 'Friends' | 'Home';
+export type NotificationScreen =
+  | 'FriendRequests'
+  | 'Friends'
+  | 'Home'
+  | 'GroupInvites'
+  | 'GameDetail';
 
-export function navigateFromNotification(screen: NotificationScreen) {
+export function navigateFromNotification(
+  screen: NotificationScreen,
+  data?: Record<string, unknown>
+) {
   if (!navigationRef.isReady()) return;
 
   switch (screen) {
@@ -22,6 +30,17 @@ export function navigateFromNotification(screen: NotificationScreen) {
     case 'Friends':
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       navigationRef.navigate('FriendsTab' as any);
+      break;
+    case 'GroupInvites':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigationRef.navigate('GroupsTab' as any, { screen: 'invites' });
+      break;
+    case 'GameDetail':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigationRef.navigate('MainFunctionalityTab' as any, {
+        screen: 'detail',
+        gameId: data?.gameId,
+      });
       break;
     case 'Home':
     default:

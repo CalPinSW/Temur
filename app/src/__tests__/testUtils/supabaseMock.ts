@@ -21,6 +21,7 @@ export interface QueryBuilder {
   order: jest.Mock;
   limit: jest.Mock;
   single: jest.Mock;
+  maybeSingle: jest.Mock;
   then: <TResult1 = QueryResult, TResult2 = never>(
     onFulfilled?: ((value: QueryResult) => TResult1 | PromiseLike<TResult1>) | null,
     onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
@@ -49,6 +50,7 @@ export function createQueryBuilder(
   });
 
   builder.single = jest.fn(() => Promise.resolve(result));
+  builder.maybeSingle = jest.fn(() => Promise.resolve(result));
   builder.then = (onFulfilled, onRejected) => Promise.resolve(result).then(onFulfilled, onRejected);
 
   return builder;
@@ -64,6 +66,9 @@ export function createSupabaseMock() {
     from: jest.fn<QueryBuilder, [string]>(),
     channel: jest.fn(() => channel),
     removeChannel: jest.fn(),
+    functions: {
+      invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
+    },
     auth: {
       getUser: jest.fn(),
       getSession: jest.fn(),

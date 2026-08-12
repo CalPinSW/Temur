@@ -40,7 +40,11 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
               </ThemedTextBox>
             </View>
           </View>
-          {!isVisible && <ThemedBadge variant="warning" text="Not visible yet" />}
+          {game.invitation_status === 'pending' ? (
+            <ThemedBadge variant="info" text="Invited" />
+          ) : (
+            !isVisible && <ThemedBadge variant="warning" text="Not visible yet" />
+          )}
         </View>
 
         <View style={styles.gameCardInfo}>

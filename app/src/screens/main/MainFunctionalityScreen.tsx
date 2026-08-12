@@ -1,11 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GamesListScreen } from './GamesListScreen';
 import { GameDetailScreen } from './GameDetailScreen';
 import { TeamAssignmentScreen } from './TeamAssignmentScreen';
+import { CreateGameScreen } from './CreateGameScreen';
 
-export function MainFunctionalityScreen() {
-  const [currentScreen, setCurrentScreen] = useState<'list' | 'detail' | 'teamAssignment'>('list');
+interface MainFunctionalityScreenProps {
+  route?: { params?: { screen?: 'detail'; gameId?: string } };
+}
+
+export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps) {
+  const [currentScreen, setCurrentScreen] = useState<
+    'list' | 'detail' | 'teamAssignment' | 'create'
+  >('list');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (route?.params?.screen === 'detail' && route.params.gameId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedGameId(route.params.gameId);
+
+      setCurrentScreen('detail');
+    }
+  }, [route?.params?.screen, route?.params?.gameId]);
 
   const handleNavigateToGame = (gameId: string) => {
     setSelectedGameId(gameId);
@@ -26,6 +42,18 @@ export function MainFunctionalityScreen() {
     setCurrentScreen('detail');
   };
 
+  const handleNavigateToCreateGame = () => {
+    setCurrentScreen('create');
+  };
+
+  const handleGameCreated = () => {
+    setCurrentScreen('list');
+  };
+
+  if (currentScreen === 'create') {
+    return <CreateGameScreen onGoBack={handleGoBack} onCreated={handleGameCreated} />;
+  }
+
   if (currentScreen === 'teamAssignment' && selectedGameId) {
     return <TeamAssignmentScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
   }
@@ -40,5 +68,10 @@ export function MainFunctionalityScreen() {
     );
   }
 
-  return <GamesListScreen onNavigateToGame={handleNavigateToGame} />;
+  return (
+    <GamesListScreen
+      onNavigateToGame={handleNavigateToGame}
+      onNavigateToCreateGame={handleNavigateToCreateGame}
+    />
+  );
 }

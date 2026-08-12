@@ -24,6 +24,8 @@ function makeGame(overrides: Partial<GameWithPlayers> = {}): GameWithPlayers {
     team1_name: 'Team A',
     team2_name: 'Team B',
     players_per_team: 7,
+    group_id: null,
+    created_by: null,
     player_games: [],
     player_count: 3,
     user_signed_up: false,

@@ -1,4 +1,4 @@
-import { PlayerGameWithProfile } from '@/types/game';
+import { Game, PlayerGameWithProfile } from '@/types/game';
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -63,6 +63,15 @@ export const getVisiblePlayers = (
   }
 
   return filteredPlayers.slice(0, 5);
+};
+
+export const isGameAdmin = (
+  game: Pick<Game, 'group_id' | 'created_by'>,
+  userId: string | undefined,
+  adminGroupIds: Set<string>
+): boolean => {
+  if (!userId) return false;
+  return game.group_id ? adminGroupIds.has(game.group_id) : game.created_by === userId;
 };
 
 export const getTeamCounts = (teamAssignments: Record<string, number | null>) => {

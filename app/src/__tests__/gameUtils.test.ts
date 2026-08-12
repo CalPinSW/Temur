@@ -6,6 +6,7 @@ import {
   getWaitlistPlayers,
   getVisiblePlayers,
   getTeamCounts,
+  isGameAdmin,
 } from '@/utils/gameUtils';
 import { PlayerGameWithProfile } from '@/types/game';
 
@@ -146,6 +147,30 @@ describe('gameUtils', () => {
       const visible = getVisiblePlayers(players, capacity, false, 'user-1');
 
       expect(visible.map((p) => p.signup_order)).toEqual([1, 2, 3]);
+    });
+  });
+
+  describe('isGameAdmin', () => {
+    it('returns false when there is no logged-in user', () => {
+      const game = { group_id: null, created_by: 'user-1' };
+      expect(isGameAdmin(game, undefined, new Set())).toBe(false);
+    });
+
+    it('treats the creator as admin of a groupless game', () => {
+      const game = { group_id: null, created_by: 'user-1' };
+      expect(isGameAdmin(game, 'user-1', new Set())).toBe(true);
+      expect(isGameAdmin(game, 'user-2', new Set())).toBe(false);
+    });
+
+    it('treats a groupless legacy game (no creator) as adminless', () => {
+      const game = { group_id: null, created_by: null };
+      expect(isGameAdmin(game, 'user-1', new Set())).toBe(false);
+    });
+
+    it('treats any admin of the game group as admin, regardless of creator', () => {
+      const game = { group_id: 'group-1', created_by: 'user-1' };
+      expect(isGameAdmin(game, 'user-2', new Set(['group-1']))).toBe(true);
+      expect(isGameAdmin(game, 'user-1', new Set())).toBe(false);
     });
   });
 

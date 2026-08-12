@@ -8,14 +8,20 @@ import { useTheme } from '@/theme';
 import { HomeScreen } from '@/screens/home';
 import { FriendsScreen, SearchUsersScreen, FriendRequestsScreen } from '@/screens/friends';
 import { ProfileScreen, EditProfileScreen, AboutScreen } from '@/screens/profile';
-import { MainFunctionalityScreen } from '@/screens/main/MainFunctionalityScreen';
-import { AdminScreen } from '@/screens/admin';
+import { MainFunctionalityScreen, CreateGameScreen } from '@/screens/main';
+import {
+  GroupsListScreen,
+  CreateGroupScreen,
+  GroupDetailScreen,
+  InvitePlayerScreen,
+  GroupInvitesScreen,
+} from '@/screens/groups';
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  MainFunctionalityTab: undefined;
+  MainFunctionalityTab: { screen?: 'detail'; gameId?: string } | undefined;
   FriendsTab: { screen?: 'list' | 'search' | 'requests' } | undefined;
-  AdminTab: undefined;
+  GroupsTab: { screen?: 'list' | 'invites' } | undefined;
   ProfileTab: undefined;
 };
 
@@ -33,8 +39,12 @@ function HomeStack() {
   );
 }
 
-function MainFunctionalityStack() {
-  return <MainFunctionalityScreen />;
+function MainFunctionalityStack({
+  route,
+}: {
+  route?: { params?: { screen?: 'detail'; gameId?: string } };
+}) {
+  return <MainFunctionalityScreen route={route} />;
 }
 
 function FriendsStack({
@@ -69,8 +79,89 @@ function FriendsStack({
   );
 }
 
-function AdminStack() {
-  return <AdminScreen />;
+function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invites' } } }) {
+  const screenParam = route?.params?.screen;
+  const [screen, setScreen] = useState<
+    'list' | 'create' | 'detail' | 'invite' | 'invites' | 'creategame'
+  >(screenParam || 'list');
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const [inviteContext, setInviteContext] = useState<{
+    groupName: string;
+    existingMemberIds: string[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (screenParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setScreen(screenParam);
+    }
+  }, [screenParam]);
+
+  if (screen === 'invites') {
+    return <GroupInvitesScreen onGoBack={() => setScreen('list')} />;
+  }
+
+  if (screen === 'create') {
+    return (
+      <CreateGroupScreen
+        onGoBack={() => setScreen('list')}
+        onCreated={(newGroupId) => {
+          setGroupId(newGroupId);
+          setScreen('detail');
+        }}
+      />
+    );
+  }
+
+  if (screen === 'invite' && groupId && inviteContext) {
+    return (
+      <InvitePlayerScreen
+        groupId={groupId}
+        groupName={inviteContext.groupName}
+        existingMemberIds={inviteContext.existingMemberIds}
+        onGoBack={() => setScreen('detail')}
+      />
+    );
+  }
+
+  if (screen === 'creategame' && groupId) {
+    return (
+      <CreateGameScreen
+        presetGroupId={groupId}
+        onGoBack={() => setScreen('detail')}
+        onCreated={() => setScreen('detail')}
+      />
+    );
+  }
+
+  if (screen === 'detail' && groupId) {
+    return (
+      <GroupDetailScreen
+        groupId={groupId}
+        onGoBack={() => setScreen('list')}
+        onNavigateToInvite={(id, groupName, existingMemberIds) => {
+          setGroupId(id);
+          setInviteContext({ groupName, existingMemberIds });
+          setScreen('invite');
+        }}
+        onNavigateToCreateGame={(id) => {
+          setGroupId(id);
+          setScreen('creategame');
+        }}
+      />
+    );
+  }
+
+  return (
+    <GroupsListScreen
+      onNavigateToCreate={() => setScreen('create')}
+      onNavigateToGroup={(id) => {
+        setGroupId(id);
+        setScreen('detail');
+      }}
+      onNavigateToInvites={() => setScreen('invites')}
+    />
+  );
 }
 
 function ProfileStack() {
@@ -93,6 +184,19 @@ function FriendsTabIcon({ pendingCount, color }: { pendingCount: number; color: 
   return (
     <View style={{ position: 'relative' }}>
       <MaterialIcons name="groups" size={24} color={color} />
+      {pendingCount > 0 && (
+        <View style={badgeStyles.badge}>
+          <Text style={badgeStyles.badgeText}>{pendingCount > 9 ? '9+' : pendingCount}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function GroupsTabIcon({ pendingCount, color }: { pendingCount: number; color: string }) {
+  return (
+    <View style={{ position: 'relative' }}>
+      <MaterialIcons name="group-work" size={24} color={color} />
       {pendingCount > 0 && (
         <View style={badgeStyles.badge}>
           <Text style={badgeStyles.badgeText}>{pendingCount > 9 ? '9+' : pendingCount}</Text>
@@ -125,8 +229,8 @@ const badgeStyles = StyleSheet.create({
 export function MainNavigator() {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
-  const profile = useAuthStore((state) => state.profile);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
+  const [pendingGroupInviteCount, setPendingGroupInviteCount] = useState(0);
 
   const fetchPendingCount = useCallback(async () => {
     if (!user) return;
@@ -139,6 +243,19 @@ export function MainNavigator() {
       setPendingRequestCount(count || 0);
     } catch (error) {
       console.error('Error fetching pending count:', error);
+    }
+  }, [user]);
+
+  const fetchPendingGroupInviteCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const { count } = await supabase
+        .from('group_invitations')
+        .select('*', { count: 'exact', head: true })
+        .eq('invited_user_id', user.id);
+      setPendingGroupInviteCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching pending group invite count:', error);
     }
   }, [user]);
 
@@ -167,6 +284,30 @@ export function MainNavigator() {
     };
   }, [fetchPendingCount]);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPendingGroupInviteCount();
+
+    const channel = supabase
+      .channel('group-invites-badge')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_invitations',
+        },
+        () => {
+          fetchPendingGroupInviteCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPendingGroupInviteCount]);
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -180,7 +321,7 @@ export function MainNavigator() {
         },
       }}
     >
-      {profile?.is_admin && (
+      {__DEV__ && (
         <Tab.Screen
           name="HomeTab"
           component={HomeStack}
@@ -194,8 +335,8 @@ export function MainNavigator() {
         name="MainFunctionalityTab"
         component={MainFunctionalityStack}
         options={{
-          tabBarLabel: 'Main functionality',
-          tabBarIcon: ({ color }) => <MaterialIcons name="agriculture" size={24} color={color} />,
+          tabBarLabel: 'Games',
+          tabBarIcon: ({ color }) => <MaterialIcons name="sports-soccer" size={24} color={color} />,
         }}
       />
       <Tab.Screen
@@ -208,18 +349,16 @@ export function MainNavigator() {
           ),
         }}
       />
-      {profile?.is_admin && (
-        <Tab.Screen
-          name="AdminTab"
-          component={AdminStack}
-          options={{
-            tabBarLabel: 'Admin',
-            tabBarIcon: ({ color }) => (
-              <MaterialIcons name="admin-panel-settings" size={24} color={color} />
-            ),
-          }}
-        />
-      )}
+      <Tab.Screen
+        name="GroupsTab"
+        component={GroupsStack}
+        options={{
+          tabBarLabel: 'Groups',
+          tabBarIcon: ({ color }) => (
+            <GroupsTabIcon pendingCount={pendingGroupInviteCount} color={color} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileStack}

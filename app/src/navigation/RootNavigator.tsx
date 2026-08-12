@@ -22,9 +22,10 @@ export function RootNavigator() {
     },
     onNotificationResponse: (response) => {
       console.log('Notification tapped:', response);
-      const screen = response.notification.request.content.data?.screen as NotificationScreen;
+      const data = response.notification.request.content.data;
+      const screen = data?.screen as NotificationScreen;
       if (screen) {
-        navigateFromNotification(screen);
+        navigateFromNotification(screen, data);
       }
     },
   });
