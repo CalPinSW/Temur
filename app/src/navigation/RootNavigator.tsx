@@ -17,6 +17,7 @@ export function RootNavigator() {
 
   // Initialize push notifications when user is logged in
   useNotifications({
+    userId: user?.id,
     onNotificationReceived: (notification) => {
       console.log('Notification received:', notification);
     },

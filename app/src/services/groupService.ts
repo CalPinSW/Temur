@@ -15,10 +15,25 @@ export async function createGroup(name: string, description: string | null, crea
 
 export async function updateGroup(
   groupId: string,
-  updates: { name?: string; description?: string | null }
+  updates: {
+    name?: string;
+    description?: string | null;
+    team_assignment_message_template?: string | null;
+  }
 ): Promise<void> {
   const { error } = await supabase.from('groups').update(updates).eq('id', groupId);
   if (error) throw error;
+}
+
+export async function getGroupMessageTemplate(groupId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('team_assignment_message_template')
+    .eq('id', groupId)
+    .single();
+
+  if (error) throw error;
+  return data?.team_assignment_message_template ?? null;
 }
 
 export async function inviteToGroup(
@@ -40,6 +55,7 @@ export async function inviteToGroup(
   await supabase.functions.invoke('send-notification', {
     body: {
       userId: invitedUserId,
+      type: notification.type,
       title: notification.title,
       body: notification.body,
       data: notification.data,

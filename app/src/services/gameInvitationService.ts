@@ -25,6 +25,7 @@ export async function inviteFriendsToGame(
       supabase.functions.invoke('send-notification', {
         body: {
           userId,
+          type: notification.type,
           title: notification.title,
           body: notification.body,
           data: notification.data,

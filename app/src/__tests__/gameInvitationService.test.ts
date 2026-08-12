@@ -32,6 +32,12 @@ describe('gameInvitationService', () => {
         { game_id: 'game-1', invited_by: 'user-1', invited_user_id: 'user-3' },
       ]);
       expect(mockSupabase.functions.invoke).toHaveBeenCalledTimes(2);
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'send-notification',
+        expect.objectContaining({
+          body: expect.objectContaining({ userId: 'user-2', type: 'game_invite' }),
+        })
+      );
     });
 
     it('does nothing when there are no friends to invite', async () => {

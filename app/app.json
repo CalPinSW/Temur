@@ -58,11 +58,11 @@
       "@react-native-community/datetimepicker",
       "expo-apple-authentication"
     ],
+    "owner": "calpin",
     "extra": {
       "eas": {
-        "projectId": "e6ee05a2-9bd2-4bcc-8598-4558bc82991b"
+        "projectId": "59de9d9c-499a-4b0a-adcd-858b2799501f"
       }
-    },
-    "owner": "calpin"
+    }
   }
 }

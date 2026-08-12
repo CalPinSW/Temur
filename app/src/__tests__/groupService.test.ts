@@ -10,6 +10,7 @@ import { supabase } from '@/services/supabase';
 import {
   createGroup,
   updateGroup,
+  getGroupMessageTemplate,
   inviteToGroup,
   acceptGroupInvitation,
   declineGroupInvitation,
@@ -62,6 +63,52 @@ describe('groupService', () => {
       expect(builder.update).toHaveBeenCalledWith({ name: 'New Name' });
       expect(builder.eq).toHaveBeenCalledWith('id', 'group-1');
     });
+
+    it('passes through the team assignment message template', async () => {
+      const builder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      await updateGroup('group-1', { team_assignment_message_template: 'Good luck!' });
+
+      expect(builder.update).toHaveBeenCalledWith({
+        team_assignment_message_template: 'Good luck!',
+      });
+    });
+  });
+
+  describe('getGroupMessageTemplate', () => {
+    it('returns the stored template', async () => {
+      const builder = createQueryBuilder({
+        data: { team_assignment_message_template: 'Good luck!' },
+        error: null,
+      });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      const result = await getGroupMessageTemplate('group-1');
+
+      expect(builder.select).toHaveBeenCalledWith('team_assignment_message_template');
+      expect(builder.eq).toHaveBeenCalledWith('id', 'group-1');
+      expect(result).toBe('Good luck!');
+    });
+
+    it('returns null when no template is set', async () => {
+      const builder = createQueryBuilder({
+        data: { team_assignment_message_template: null },
+        error: null,
+      });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      const result = await getGroupMessageTemplate('group-1');
+
+      expect(result).toBeNull();
+    });
+
+    it('throws when the fetch fails', async () => {
+      const builder = createQueryBuilder({ data: null, error: new Error('boom') });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      await expect(getGroupMessageTemplate('group-1')).rejects.toThrow('boom');
+    });
   });
 
   describe('inviteToGroup', () => {
@@ -79,7 +126,7 @@ describe('groupService', () => {
       expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
         'send-notification',
         expect.objectContaining({
-          body: expect.objectContaining({ userId: 'user-2' }),
+          body: expect.objectContaining({ userId: 'user-2', type: 'group_invite' }),
         })
       );
     });

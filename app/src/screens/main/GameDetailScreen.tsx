@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { ThemedTextBox, ThemedCard, ThemedButton, ThemedToggle } from '@/components/themed';
+import {
+  ThemedTextBox,
+  ThemedCard,
+  ThemedButton,
+  ThemedToggle,
+  ThemedInput,
+} from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGameDetails } from '@/hooks/useGameDetails';
 import { useGameActions } from '@/hooks/useGameActions';
@@ -13,6 +19,8 @@ import {
   declineGameInvitation,
   inviteFriendsToGame,
 } from '@/services/gameInvitationService';
+import { notifyTeamAssignments } from '@/services/gameNotificationService';
+import { getGroupMessageTemplate } from '@/services/groupService';
 import { supabase } from '@/services/supabase';
 import {
   getGameCapacity,
@@ -48,6 +56,10 @@ export function GameDetailScreen({
   const [isInviteSectionOpen, setIsInviteSectionOpen] = useState(false);
   const [selectedInviteFriendIds, setSelectedInviteFriendIds] = useState<Set<string>>(new Set());
   const [isInviting, setIsInviting] = useState(false);
+  const [isNotifySectionOpen, setIsNotifySectionOpen] = useState(false);
+  const [notifyMessage, setNotifyMessage] = useState('');
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [isNotifying, setIsNotifying] = useState(false);
 
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
   const { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw } = useGameActions(
@@ -161,6 +173,42 @@ export function GameDetailScreen({
       Alert.alert('Error', 'Failed to send invites');
     } finally {
       setIsInviting(false);
+    }
+  };
+
+  const handleToggleNotifySection = async () => {
+    const next = !isNotifySectionOpen;
+    setIsNotifySectionOpen(next);
+
+    if (next && !notifyMessage && game.group_id) {
+      try {
+        setIsLoadingTemplate(true);
+        setNotifyMessage((await getGroupMessageTemplate(game.group_id)) || '');
+      } catch (error) {
+        console.error('Error loading message template:', error);
+      } finally {
+        setIsLoadingTemplate(false);
+      }
+    }
+  };
+
+  const handleNotifyPlayers = async () => {
+    try {
+      setIsNotifying(true);
+      await notifyTeamAssignments(
+        gameId,
+        game.player_games,
+        game.team1_name,
+        game.team2_name,
+        notifyMessage.trim()
+      );
+      setIsNotifySectionOpen(false);
+      Alert.alert('Success', 'Players notified!');
+    } catch (error) {
+      console.error('Error notifying players:', error);
+      Alert.alert('Error', 'Failed to notify players');
+    } finally {
+      setIsNotifying(false);
     }
   };
 
@@ -291,6 +339,38 @@ export function GameDetailScreen({
           </ThemedCard>
         )}
 
+        {isAdmin && hasTeams && (
+          <ThemedCard variant="elevated" title="Notify Players">
+            <ThemedButton
+              title={isNotifySectionOpen ? 'Hide' : 'Notify Players of Teams'}
+              variant="outline"
+              onPress={handleToggleNotifySection}
+            />
+            {isNotifySectionOpen && (
+              <View style={styles.notifySection}>
+                <ThemedInput
+                  label="Message"
+                  value={notifyMessage}
+                  onChangeText={setNotifyMessage}
+                  multiline
+                  placeholder="Add a message for players..."
+                  editable={!isLoadingTemplate}
+                />
+                <ThemedTextBox variant="caption" color="secondary" style={styles.notifyHint}>
+                  {`Each player's team is added automatically, e.g. "You're on ${game.team1_name}".`}
+                </ThemedTextBox>
+                <ThemedButton
+                  title={isNotifying ? 'Sending...' : 'Send Notifications'}
+                  variant="primary"
+                  onPress={handleNotifyPlayers}
+                  disabled={isNotifying || isLoadingTemplate}
+                  style={styles.sendInvitesButton}
+                />
+              </View>
+            )}
+          </ThemedCard>
+        )}
+
         {waitlistPlayers.length > 0 && (
           <ThemedCard variant="elevated" title="Waitlist">
             <WaitlistSection
@@ -360,5 +440,11 @@ const styles = StyleSheet.create({
   },
   sendInvitesButton: {
     marginTop: 12,
+  },
+  notifySection: {
+    marginTop: 12,
+  },
+  notifyHint: {
+    marginTop: 8,
   },
 });

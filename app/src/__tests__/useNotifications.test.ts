@@ -32,20 +32,43 @@ describe('useNotifications', () => {
     mockAddReceivedListener.mockReturnValue({ remove: removeReceived });
   });
 
-  it('registers for push notifications and saves the token when one is returned', async () => {
+  it('registers for push notifications and saves the token when a user is logged in', async () => {
     mockRegister.mockResolvedValue({ token: 'expo-token', platform: 'ios' });
 
-    renderHook(() => useNotifications());
+    renderHook(() => useNotifications({ userId: 'user-1' }));
 
     await waitFor(() => expect(mockSaveToken).toHaveBeenCalledWith('expo-token'));
   });
 
   it('does not save a token when registration returns null', async () => {
-    renderHook(() => useNotifications());
+    renderHook(() => useNotifications({ userId: 'user-1' }));
 
     await waitFor(() => expect(mockRegister).toHaveBeenCalled());
 
     expect(mockSaveToken).not.toHaveBeenCalled();
+  });
+
+  it('does not register when there is no logged-in user', () => {
+    renderHook(() => useNotifications());
+
+    expect(mockRegister).not.toHaveBeenCalled();
+  });
+
+  it('re-registers when the logged-in user changes', async () => {
+    mockRegister.mockResolvedValue({ token: 'expo-token', platform: 'ios' });
+
+    const { rerender } = renderHook(
+      ({ userId }: { userId: string | undefined }) => useNotifications({ userId }),
+      { initialProps: { userId: undefined } }
+    );
+
+    expect(mockRegister).not.toHaveBeenCalled();
+
+    rerender({ userId: 'user-1' });
+    await waitFor(() => expect(mockRegister).toHaveBeenCalledTimes(1));
+
+    rerender({ userId: 'user-2' });
+    await waitFor(() => expect(mockRegister).toHaveBeenCalledTimes(2));
   });
 
   it('forwards received notifications to the onNotificationReceived callback', () => {

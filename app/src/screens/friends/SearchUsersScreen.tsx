@@ -89,6 +89,7 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
         await supabase.functions.invoke('send-notification', {
           body: {
             userId: friendId,
+            type: notification.type,
             title: notification.title,
             body: notification.body,
             data: notification.data,

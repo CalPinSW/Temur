@@ -4,6 +4,7 @@ export interface Group {
   id: string;
   name: string;
   description: string | null;
+  team_assignment_message_template: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
