@@ -20,5 +20,12 @@ module.exports = function (api) {
         },
       ],
     ],
+    // Jest's CommonJS environment can't evaluate native `import()`, so rewrite
+    // dynamic imports to `require()` under test only; Metro handles them natively.
+    env: {
+      test: {
+        plugins: ['babel-plugin-dynamic-import-node'],
+      },
+    },
   };
 };
