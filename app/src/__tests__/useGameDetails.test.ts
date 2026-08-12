@@ -54,7 +54,8 @@ describe('useGameDetails', () => {
       data: { ...baseGameRow, kickoff_date: '2099-01-01T18:00:00.000Z' },
       error: null,
     });
-    mockFromTables(mockSupabase, { games: gamesBuilder });
+    const invitationsBuilder = createQueryBuilder({ data: null, error: null });
+    mockFromTables(mockSupabase, { games: gamesBuilder, game_invitations: invitationsBuilder });
 
     const { result } = renderHook(() => useGameDetails('game-1', 'user-1'));
 
@@ -78,7 +79,12 @@ describe('useGameDetails', () => {
       ],
       error: null,
     });
-    mockFromTables(mockSupabase, { games: gamesBuilder, player_ratings: ratingsBuilder });
+    const invitationsBuilder = createQueryBuilder({ data: null, error: null });
+    mockFromTables(mockSupabase, {
+      games: gamesBuilder,
+      player_ratings: ratingsBuilder,
+      game_invitations: invitationsBuilder,
+    });
 
     const { result } = renderHook(() => useGameDetails('game-1', 'user-1'));
 
@@ -112,7 +118,8 @@ describe('useGameDetails', () => {
 
   it('unsubscribes from the realtime channel on unmount', async () => {
     const gamesBuilder = createQueryBuilder({ data: baseGameRow, error: null });
-    mockFromTables(mockSupabase, { games: gamesBuilder });
+    const invitationsBuilder = createQueryBuilder({ data: null, error: null });
+    mockFromTables(mockSupabase, { games: gamesBuilder, game_invitations: invitationsBuilder });
 
     const { result, unmount } = renderHook(() => useGameDetails('game-1', 'user-1'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));

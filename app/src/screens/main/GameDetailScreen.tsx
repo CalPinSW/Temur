@@ -1,16 +1,25 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { ThemedTextBox, ThemedCard, ThemedButton } from '@/components/themed';
+import { ThemedTextBox, ThemedCard, ThemedButton, ThemedToggle } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGameDetails } from '@/hooks/useGameDetails';
 import { useGameActions } from '@/hooks/useGameActions';
+import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
+import { useAcceptedFriends } from '@/hooks/useAcceptedFriends';
+import {
+  acceptGameInvitation,
+  declineGameInvitation,
+  inviteFriendsToGame,
+} from '@/services/gameInvitationService';
+import { supabase } from '@/services/supabase';
 import {
   getGameCapacity,
   getActivePlayers,
   getWaitlistPlayers,
   getVisiblePlayers,
+  isGameAdmin,
 } from '@/utils/gameUtils';
 import {
   GameHeader,
@@ -34,14 +43,19 @@ export function GameDetailScreen({
 }: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
-  const profile = useAuthStore((state) => state.profile);
   const [isPlayersExpanded, setIsPlayersExpanded] = useState(false);
+  const [isRespondingToInvite, setIsRespondingToInvite] = useState(false);
+  const [isInviteSectionOpen, setIsInviteSectionOpen] = useState(false);
+  const [selectedInviteFriendIds, setSelectedInviteFriendIds] = useState<Set<string>>(new Set());
+  const [isInviting, setIsInviting] = useState(false);
 
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
   const { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw } = useGameActions(
     gameId,
     user?.id
   );
+  const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
+  const { friends } = useAcceptedFriends(user?.id);
 
   if (isLoading) {
     return (
@@ -72,12 +86,83 @@ export function GameDetailScreen({
     );
   }
 
+  const isAdmin = isGameAdmin(game, user?.id, adminGroupIds);
   const isPast = new Date(game.kickoff_date) < new Date();
   const isVisible = new Date(game.visible_at) <= new Date();
   const hasTeams = game.player_games.some((pg) => pg.team !== null);
   const capacity = getGameCapacity(game.players_per_team);
   const activePlayers = getActivePlayers(game.player_games, capacity);
   const waitlistPlayers = getWaitlistPlayers(game.player_games, capacity);
+
+  const invitableFriends = friends.filter(
+    (friend) => !game.player_games.some((pg) => pg.user_id === friend.id)
+  );
+
+  const handleAcceptInvite = async () => {
+    if (!game.invitation_id || !user) return;
+
+    try {
+      setIsRespondingToInvite(true);
+      await acceptGameInvitation(game.invitation_id, gameId, user.id, game.player_count);
+      refetch();
+    } catch (error) {
+      console.error('Error accepting invite:', error);
+      Alert.alert('Error', 'Failed to accept invite');
+    } finally {
+      setIsRespondingToInvite(false);
+    }
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!game.invitation_id) return;
+
+    try {
+      setIsRespondingToInvite(true);
+      await declineGameInvitation(game.invitation_id);
+      onGoBack();
+    } catch (error) {
+      console.error('Error declining invite:', error);
+      Alert.alert('Error', 'Failed to decline invite');
+    } finally {
+      setIsRespondingToInvite(false);
+    }
+  };
+
+  const toggleInviteFriend = (friendId: string) => {
+    setSelectedInviteFriendIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(friendId)) {
+        next.delete(friendId);
+      } else {
+        next.add(friendId);
+      }
+      return next;
+    });
+  };
+
+  const handleSendInvites = async () => {
+    if (!user || selectedInviteFriendIds.size === 0) return;
+
+    try {
+      setIsInviting(true);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, display_name')
+        .eq('id', user.id)
+        .single();
+      const inviterName = profile?.display_name || profile?.username || 'Someone';
+
+      await inviteFriendsToGame(gameId, Array.from(selectedInviteFriendIds), user.id, inviterName);
+      setSelectedInviteFriendIds(new Set());
+      setIsInviteSectionOpen(false);
+      Alert.alert('Success', 'Invites sent!');
+    } catch (error) {
+      console.error('Error inviting friends:', error);
+      Alert.alert('Error', 'Failed to send invites');
+    } finally {
+      setIsInviting(false);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -89,6 +174,30 @@ export function GameDetailScreen({
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {game.invitation_status === 'pending' && (
+          <ThemedCard variant="elevated" title="You're Invited">
+            <ThemedTextBox variant="body" color="secondary" style={styles.inviteBannerText}>
+              You&apos;ve been invited to this game. Accept to sign up.
+            </ThemedTextBox>
+            <View style={styles.inviteBannerActions}>
+              <ThemedButton
+                title="Decline"
+                variant="secondary"
+                onPress={handleDeclineInvite}
+                disabled={isRespondingToInvite}
+                style={styles.inviteBannerButton}
+              />
+              <ThemedButton
+                title={isRespondingToInvite ? 'Accepting...' : 'Accept'}
+                variant="primary"
+                onPress={handleAcceptInvite}
+                disabled={isRespondingToInvite}
+                style={styles.inviteBannerButton}
+              />
+            </View>
+          </ThemedCard>
+        )}
+
         <ThemedCard variant="elevated">
           <GameHeader kickoffDate={game.kickoff_date} isPast={isPast} isVisible={isVisible} />
 
@@ -98,14 +207,14 @@ export function GameDetailScreen({
             waitlistCount={waitlistPlayers.length}
           />
 
-          {!isPast && isVisible && (
+          {!isPast && isVisible && game.invitation_status !== 'pending' && (
             <GameActions
               isUserSignedUp={game.user_signed_up}
               isSigningUp={isSigningUp}
               isWithdrawing={isWithdrawing}
               onSignUp={() => handleSignUp(game, refetch)}
               onWithdraw={() => handleWithdraw(game, refetch)}
-              isAdmin={profile?.is_admin}
+              isAdmin={isAdmin}
               hasPlayers={game.player_count > 0}
               onNavigateToTeamAssignment={
                 onNavigateToTeamAssignment ? () => onNavigateToTeamAssignment(gameId) : undefined
@@ -113,6 +222,44 @@ export function GameDetailScreen({
             />
           )}
         </ThemedCard>
+
+        {isAdmin && !game.group_id && (
+          <ThemedCard variant="elevated" title="Invite Friends">
+            <ThemedButton
+              title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
+              variant="outline"
+              onPress={() => setIsInviteSectionOpen(!isInviteSectionOpen)}
+            />
+            {isInviteSectionOpen && (
+              <View style={styles.inviteSection}>
+                {invitableFriends.length === 0 ? (
+                  <ThemedTextBox variant="body" color="secondary" style={styles.inviteSectionText}>
+                    All your friends are already signed up, or you have no friends to invite.
+                  </ThemedTextBox>
+                ) : (
+                  invitableFriends.map((friend) => (
+                    <View key={friend.id} style={styles.friendRow}>
+                      <ThemedToggle
+                        label={friend.display_name || friend.username}
+                        value={selectedInviteFriendIds.has(friend.id)}
+                        onValueChange={() => toggleInviteFriend(friend.id)}
+                      />
+                    </View>
+                  ))
+                )}
+                {invitableFriends.length > 0 && (
+                  <ThemedButton
+                    title={isInviting ? 'Sending...' : 'Send Invites'}
+                    variant="primary"
+                    onPress={handleSendInvites}
+                    disabled={isInviting || selectedInviteFriendIds.size === 0}
+                    style={styles.sendInvitesButton}
+                  />
+                )}
+              </View>
+            )}
+          </ThemedCard>
+        )}
 
         {activePlayers.length > 0 && (
           <ThemedCard variant="elevated" title={hasTeams ? 'Teams' : 'Players'}>
@@ -178,6 +325,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
+    gap: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -190,5 +338,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     gap: 16,
+  },
+  inviteBannerText: {
+    marginBottom: 12,
+  },
+  inviteBannerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  inviteBannerButton: {
+    flex: 1,
+  },
+  inviteSection: {
+    marginTop: 12,
+  },
+  inviteSectionText: {
+    marginTop: 8,
+  },
+  friendRow: {
+    paddingVertical: 8,
+  },
+  sendInvitesButton: {
+    marginTop: 12,
   },
 });

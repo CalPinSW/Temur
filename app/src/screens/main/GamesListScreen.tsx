@@ -2,15 +2,18 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { ThemedTextBox } from '@/components/themed';
+import { ThemedTextBox, ThemedButton } from '@/components/themed';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
 import { Game, GameWithPlayers } from '@/types/game';
+import { isGameAdmin } from '@/utils/gameUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GameOverviewCard } from '@/components/game/GameOverviewCard';
 
 interface GamesListScreenProps {
   onNavigateToGame: (gameId: string) => void;
+  onNavigateToCreateGame: () => void;
 }
 
 interface RawGame extends Game {
@@ -30,10 +33,18 @@ interface RawGame extends Game {
     | null;
 }
 
-export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
+interface RawInvitation {
+  game_id: string;
+  status: 'pending' | 'accepted';
+}
+
+export function GamesListScreen({
+  onNavigateToGame,
+  onNavigateToCreateGame,
+}: GamesListScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
-  const profile = useAuthStore((state) => state.profile);
+  const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
   const [upcomingGames, setUpcomingGames] = useState<GameWithPlayers[]>([]);
   const [historicGames, setHistoricGames] = useState<GameWithPlayers[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,10 +56,11 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
     try {
       const now = new Date().toISOString();
 
-      const { data: games, error } = await supabase
-        .from('games')
-        .select(
-          `
+      const [{ data: games, error }, { data: invitations }] = await Promise.all([
+        supabase
+          .from('games')
+          .select(
+            `
           *,
           player_games (
             id,
@@ -63,23 +75,30 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
             )
           )
         `
-        )
-        .gte('visible_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
-        .order('kickoff_date', { ascending: true });
+          )
+          .gte('visible_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+          .order('kickoff_date', { ascending: true }),
+        supabase.from('game_invitations').select('game_id, status').eq('invited_user_id', user.id),
+      ]);
 
       if (error) throw error;
+
+      const invitationByGameId = new Map(
+        ((invitations as RawInvitation[]) || []).map((inv) => [inv.game_id, inv.status])
+      );
 
       const processedGames: GameWithPlayers[] = ((games as RawGame[]) || []).map((game) => ({
         ...game,
         player_games: game.player_games || [],
         player_count: game.player_games?.length || 0,
         user_signed_up: game.player_games?.some((pg) => pg.user_id === user.id) || false,
+        invitation_status: invitationByGameId.get(game.id),
       })) as GameWithPlayers[];
 
-      const isAdmin = profile?.is_admin || false;
-      const visibleGames = isAdmin
-        ? processedGames
-        : processedGames.filter((game) => new Date(game.visible_at) <= new Date());
+      const visibleGames = processedGames.filter((game) => {
+        if (isGameAdmin(game, user.id, adminGroupIds)) return true;
+        return new Date(game.visible_at) <= new Date();
+      });
 
       const upcoming = visibleGames.filter((game) => new Date(game.kickoff_date) >= new Date(now));
       const historic = visibleGames.filter((game) => new Date(game.kickoff_date) < new Date(now));
@@ -92,7 +111,7 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user, profile]);
+  }, [user, adminGroupIds]);
 
   useEffect(() => {
     fetchGames();
@@ -116,6 +135,17 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
           event: '*',
           schema: 'public',
           table: 'player_games',
+        },
+        () => {
+          fetchGames();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_invitations',
         },
         () => {
           fetchGames();
@@ -154,6 +184,12 @@ export function GamesListScreen({ onNavigateToGame }: GamesListScreenProps) {
           <ThemedTextBox variant="heading" weight="bold" color="primary">
             Games
           </ThemedTextBox>
+          <ThemedButton
+            variant="ghost"
+            onPress={onNavigateToCreateGame}
+            title="+"
+            textStyle={styles.addIcon}
+          />
         </View>
 
         {upcomingGames.length > 0 && (
@@ -213,7 +249,14 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  addIcon: {
+    fontSize: 28,
+    fontWeight: '300',
   },
   section: {
     marginBottom: 24,

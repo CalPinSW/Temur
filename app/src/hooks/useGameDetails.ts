@@ -36,10 +36,11 @@ export function useGameDetails(gameId: string, userId?: string) {
     if (!userId) return;
 
     try {
-      const { data, error: gameError } = await supabase
-        .from('games')
-        .select(
-          `
+      const [{ data, error: gameError }, { data: invitationData }] = await Promise.all([
+        supabase
+          .from('games')
+          .select(
+            `
           *,
           player_games (
             id,
@@ -55,9 +56,16 @@ export function useGameDetails(gameId: string, userId?: string) {
             )
           )
         `
-        )
-        .eq('id', gameId)
-        .single();
+          )
+          .eq('id', gameId)
+          .single(),
+        supabase
+          .from('game_invitations')
+          .select('id, status')
+          .eq('game_id', gameId)
+          .eq('invited_user_id', userId)
+          .maybeSingle(),
+      ]);
 
       if (gameError) throw gameError;
 
@@ -112,6 +120,8 @@ export function useGameDetails(gameId: string, userId?: string) {
         player_games: playersWithRatings as unknown as PlayerGameWithProfile[],
         player_count: playersWithRatings.length,
         user_signed_up: playersWithRatings.some((pg) => pg.user_id === userId),
+        invitation_id: invitationData?.id,
+        invitation_status: invitationData?.status,
       };
 
       setGame(processedGame);
@@ -134,6 +144,18 @@ export function useGameDetails(gameId: string, userId?: string) {
           event: '*',
           schema: 'public',
           table: 'player_games',
+          filter: `game_id=eq.${gameId}`,
+        },
+        () => {
+          fetchGameDetails();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_invitations',
           filter: `game_id=eq.${gameId}`,
         },
         () => {

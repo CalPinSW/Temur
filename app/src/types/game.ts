@@ -7,6 +7,8 @@ export interface Game {
   team1_name: string;
   team2_name: string;
   players_per_team: number;
+  group_id: string | null;
+  created_by: string | null;
 }
 
 export interface PlayerGame {
@@ -50,4 +52,16 @@ export interface GameWithPlayers extends Game {
   player_games: PlayerGameWithProfile[];
   player_count: number;
   user_signed_up: boolean;
+  invitation_id?: string;
+  invitation_status?: 'pending' | 'accepted';
+}
+
+export interface GameInvitation {
+  id: string;
+  game_id: string;
+  invited_by: string;
+  invited_user_id: string;
+  status: 'pending' | 'accepted';
+  created_at: string;
+  updated_at: string;
 }

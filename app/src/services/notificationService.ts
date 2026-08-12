@@ -155,7 +155,11 @@ export function addNotificationReceivedListener(
   return Notifications.addNotificationReceivedListener(callback);
 }
 
-export type NotificationType = 'friend_request' | 'friend_accepted';
+export type NotificationType =
+  | 'friend_request'
+  | 'friend_accepted'
+  | 'group_invite'
+  | 'game_invite';
 
 export interface NotificationPayload {
   type: NotificationType;
@@ -180,5 +184,19 @@ export const NotificationTemplates = {
     title: 'Friend Request Accepted',
     body: `${username} accepted your friend request`,
     data: { screen: 'Friends' },
+  }),
+
+  groupInvite: (groupName: string, fromUsername: string): NotificationPayload => ({
+    type: 'group_invite',
+    title: 'New Group Invite',
+    body: `${fromUsername} invited you to join ${groupName}`,
+    data: { screen: 'GroupInvites' },
+  }),
+
+  gameInvite: (fromUsername: string, gameId: string): NotificationPayload => ({
+    type: 'game_invite',
+    title: 'New Game Invite',
+    body: `${fromUsername} invited you to a game`,
+    data: { screen: 'GameDetail', gameId },
   }),
 };
