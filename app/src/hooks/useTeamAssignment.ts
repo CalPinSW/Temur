@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/services/supabase';
-import { GameWithPlayers } from '@/types/game';
+import { GameWithPlayers, BoardPosition } from '@/types/game';
 import { getGameCapacity, getActivePlayers } from '@/utils/gameUtils';
 
 export function useTeamAssignment(gameId: string) {
@@ -9,18 +9,22 @@ export function useTeamAssignment(gameId: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [teamAssignments, setTeamAssignments] = useState<Record<string, number | null>>({});
+  const [boardPositions, setBoardPositions] = useState<Record<string, BoardPosition | null>>({});
 
   const fetchGameDetails = useCallback(async () => {
     try {
       const { data: gameData, error: gameError } = await supabase
         .from('games')
-        .select(`
+        .select(
+          `
           *,
           player_games (
             id,
             user_id,
             signup_order,
             team,
+            board_x,
+            board_y,
             profile:profiles (
               id,
               username,
@@ -28,7 +32,8 @@ export function useTeamAssignment(gameId: string) {
               avatar_url
             )
           )
-        `)
+        `
+        )
         .eq('id', gameId)
         .single();
 
@@ -51,10 +56,14 @@ export function useTeamAssignment(gameId: string) {
       setGame(processedGame);
 
       const assignments: Record<string, number | null> = {};
+      const positions: Record<string, BoardPosition | null> = {};
       activePlayers.forEach((pg: any) => {
         assignments[pg.id] = pg.team;
+        positions[pg.id] =
+          pg.board_x !== null && pg.board_y !== null ? { x: pg.board_x, y: pg.board_y } : null;
       });
       setTeamAssignments(assignments);
+      setBoardPositions(positions);
     } catch (error) {
       console.error('Error fetching game details:', error);
       Alert.alert('Error', 'Failed to load game details');
@@ -72,6 +81,25 @@ export function useTeamAssignment(gameId: string) {
       ...prev,
       [playerGameId]: team,
     }));
+    setBoardPositions((prev) => ({
+      ...prev,
+      [playerGameId]: null,
+    }));
+  };
+
+  const handleMoveOnBoard = (
+    playerGameId: string,
+    team: number | null,
+    position: BoardPosition | null
+  ) => {
+    setTeamAssignments((prev) => ({
+      ...prev,
+      [playerGameId]: team,
+    }));
+    setBoardPositions((prev) => ({
+      ...prev,
+      [playerGameId]: position,
+    }));
   };
 
   const handleAutoAssign = () => {
@@ -79,34 +107,36 @@ export function useTeamAssignment(gameId: string) {
 
     const players = game.player_games;
     const newAssignments: Record<string, number | null> = {};
+    const newPositions: Record<string, BoardPosition | null> = {};
 
     players.forEach((pg, index) => {
       newAssignments[pg.id] = (index % 2) + 1;
+      newPositions[pg.id] = null;
     });
 
     setTeamAssignments(newAssignments);
+    setBoardPositions(newPositions);
   };
 
   const handleClearAll = () => {
-    Alert.alert(
-      'Clear All Assignments',
-      'Are you sure you want to clear all team assignments?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => {
-            if (!game) return;
-            const newAssignments: Record<string, number | null> = {};
-            game.player_games.forEach((pg) => {
-              newAssignments[pg.id] = null;
-            });
-            setTeamAssignments(newAssignments);
-          },
+    Alert.alert('Clear All Assignments', 'Are you sure you want to clear all team assignments?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: () => {
+          if (!game) return;
+          const newAssignments: Record<string, number | null> = {};
+          const newPositions: Record<string, BoardPosition | null> = {};
+          game.player_games.forEach((pg) => {
+            newAssignments[pg.id] = null;
+            newPositions[pg.id] = null;
+          });
+          setTeamAssignments(newAssignments);
+          setBoardPositions(newPositions);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleSave = async (onSuccess: () => void) => {
@@ -118,12 +148,14 @@ export function useTeamAssignment(gameId: string) {
       const updates = game.player_games.map((pg) => ({
         id: pg.id,
         team: teamAssignments[pg.id],
+        board_x: boardPositions[pg.id]?.x ?? null,
+        board_y: boardPositions[pg.id]?.y ?? null,
       }));
 
       for (const update of updates) {
         const { error } = await supabase
           .from('player_games')
-          .update({ team: update.team })
+          .update({ team: update.team, board_x: update.board_x, board_y: update.board_y })
           .eq('id', update.id);
 
         if (error) throw error;
@@ -148,7 +180,9 @@ export function useTeamAssignment(gameId: string) {
     isLoading,
     isSaving,
     teamAssignments,
+    boardPositions,
     handleAssignTeam,
+    handleMoveOnBoard,
     handleAutoAssign,
     handleClearAll,
     handleSave,

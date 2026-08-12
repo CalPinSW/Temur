@@ -6,7 +6,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 type Provider = 'google' | 'apple';
 const redirectTo = makeRedirectUri({
-  scheme: 'appscheme',
+  scheme: 'matchday',
   path: 'auth/callback',
 });
 

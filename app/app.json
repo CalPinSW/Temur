@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "App Name",
-    "slug": "app-slug",
+    "name": "MatchDay",
+    "slug": "matchday",
     "version": "1.0.0",
-    "scheme": "appscheme",
+    "scheme": "matchday",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.appscheme.app",
+      "bundleIdentifier": "com.calpin.matchday",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4F46E5"
       },
-      "package": "com.appscheme.app",
+      "package": "com.calpin.matchday",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -35,7 +35,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "appscheme",
+              "scheme": "matchday",
               "host": "auth",
               "pathPrefix": "/callback"
             }

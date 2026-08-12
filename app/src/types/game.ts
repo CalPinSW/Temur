@@ -15,8 +15,15 @@ export interface PlayerGame {
   user_id: string;
   signup_order: number;
   team: number | null;
+  board_x: number | null;
+  board_y: number | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface BoardPosition {
+  x: number;
+  y: number;
 }
 
 export interface PlayerRating {

@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import { ThemedTextBox, ThemedCard, ThemedButton } from '@/components/themed';
+import { ThemedTextBox, ThemedCard, ThemedButton, ThemedToggle } from '@/components/themed';
 import { useTeamAssignment } from '@/hooks/useTeamAssignment';
 import { getTeamCounts } from '@/utils/gameUtils';
 import {
   TeamAssignmentHeader,
   TeamStatsCard,
   PlayerAssignmentItem,
+  TeamAssignmentBoard,
 } from '@/components/team-assignment';
 
 interface TeamAssignmentScreenProps {
@@ -23,15 +24,22 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
     isLoading,
     isSaving,
     teamAssignments,
+    boardPositions,
     handleAssignTeam,
+    handleMoveOnBoard,
     handleAutoAssign,
     handleClearAll,
     handleSave,
   } = useTeamAssignment(gameId);
+  const [boardView, setBoardView] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -41,7 +49,10 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
 
   if (!game) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
         <View style={styles.errorContainer}>
           <ThemedTextBox variant="body" color="secondary">
             Game not found
@@ -55,48 +66,70 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
   const teamCounts = getTeamCounts(teamAssignments);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['top']}
+    >
       <View style={[styles.headerBar, { borderBottomColor: colors.border }]}>
-        <ThemedButton
-          title="← Back"
-          variant="ghost"
-          onPress={onGoBack}
-          style={styles.backButton}
-        />
+        <ThemedButton title="← Back" variant="ghost" onPress={onGoBack} style={styles.backButton} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <TeamAssignmentHeader
-          kickoffDate={game.kickoff_date}
-          playerCount={game.player_count}
-          playersPerTeam={game.players_per_team}
-        />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        scrollEnabled={scrollEnabled}
+      >
+        {!boardView && (
+          <>
+            <TeamAssignmentHeader
+              kickoffDate={game.kickoff_date}
+              playerCount={game.player_count}
+              playersPerTeam={game.players_per_team}
+            />
+
+            <ThemedCard variant="elevated">
+              <TeamStatsCard
+                team1Name={game.team1_name}
+                team2Name={game.team2_name}
+                team1Count={teamCounts.team1}
+                team2Count={teamCounts.team2}
+                unassignedCount={teamCounts.unassigned}
+                onAutoAssign={handleAutoAssign}
+                onClearAll={handleClearAll}
+              />
+            </ThemedCard>
+          </>
+        )}
 
         <ThemedCard variant="elevated">
-          <TeamStatsCard
-            team1Name={game.team1_name}
-            team2Name={game.team2_name}
-            team1Count={teamCounts.team1}
-            team2Count={teamCounts.team2}
-            unassignedCount={teamCounts.unassigned}
-            onAutoAssign={handleAutoAssign}
-            onClearAll={handleClearAll}
-          />
+          <ThemedToggle value={boardView} onValueChange={setBoardView} label="Board view" />
         </ThemedCard>
 
-        <ThemedCard variant="elevated" title="Players">
-          <View style={styles.playersList}>
-            {game.player_games.map((playerGame, index) => (
-              <PlayerAssignmentItem
-                key={playerGame.id}
-                playerName={playerGame.profile.display_name || playerGame.profile.username}
-                position={index + 1}
-                currentTeam={teamAssignments[playerGame.id]}
-                onAssignTeam={(team) => handleAssignTeam(playerGame.id, team)}
-              />
-            ))}
-          </View>
-        </ThemedCard>
+        {boardView ? (
+          <TeamAssignmentBoard
+            players={game.player_games}
+            teamAssignments={teamAssignments}
+            boardPositions={boardPositions}
+            team1Name={game.team1_name}
+            team2Name={game.team2_name}
+            onMovePlayer={handleMoveOnBoard}
+            onDragActiveChange={(active) => setScrollEnabled(!active)}
+          />
+        ) : (
+          <ThemedCard variant="elevated" title="Players">
+            <View style={styles.playersList}>
+              {game.player_games.map((playerGame, index) => (
+                <PlayerAssignmentItem
+                  key={playerGame.id}
+                  playerName={playerGame.profile.display_name || playerGame.profile.username}
+                  position={index + 1}
+                  currentTeam={teamAssignments[playerGame.id]}
+                  onAssignTeam={(team) => handleAssignTeam(playerGame.id, team)}
+                />
+              ))}
+            </View>
+          </ThemedCard>
+        )}
 
         <View style={styles.saveButtonContainer}>
           <ThemedButton
