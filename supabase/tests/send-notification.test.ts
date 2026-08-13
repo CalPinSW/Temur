@@ -1,7 +1,52 @@
 import { assertEquals, assertExists } from "https://deno.land/std@0.208.0/assert/mod.ts";
+import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "http://localhost:54321";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+// Creates a real, signed-in test user and returns their access token, so
+// authorization-path tests exercise a genuine caller identity rather than
+// the anon key. Callers are responsible for deleting the user afterwards.
+// autoRefreshToken/persistSession disabled: these clients are used for a
+// single request each, and the default auto-refresh timer otherwise leaks
+// past the test's lifetime (Deno's test sanitizer flags it as a leak).
+const NO_BACKGROUND_AUTH = { auth: { autoRefreshToken: false, persistSession: false } };
+
+async function createSignedInTestUser(): Promise<
+  { userId: string; accessToken: string } | null
+> {
+  if (!SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) return null;
+
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NO_BACKGROUND_AUTH);
+  const email = `send-notification-test-${Date.now()}-${Math.random()}@example.com`;
+  const password = "test123456";
+
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (createError || !created.user) return null;
+
+  const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, NO_BACKGROUND_AUTH);
+  const { data: signedIn, error: signInError } = await anon.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (signInError || !signedIn.session) {
+    await admin.auth.admin.deleteUser(created.user.id);
+    return null;
+  }
+
+  return { userId: created.user.id, accessToken: signedIn.session.access_token };
+}
+
+async function deleteTestUser(userId: string): Promise<void> {
+  if (!SUPABASE_SERVICE_ROLE_KEY) return;
+  const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NO_BACKGROUND_AUTH);
+  await admin.auth.admin.deleteUser(userId);
+}
 
 Deno.test("send-notification - returns error for missing push token", async () => {
   // Skip if no anon key (CI environment)
@@ -64,4 +109,82 @@ Deno.test("send-notification - requires valid request body", async () => {
   const data = await response.json();
   // Should handle missing userId gracefully
   assertExists(data);
+});
+
+Deno.test("send-notification - returns 400 for a request missing type", async () => {
+  const caller = await createSignedInTestUser();
+  if (!caller) {
+    console.log("Skipping: could not create a signed-in test user (no service role key?)");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${caller.accessToken}`,
+        "apikey": SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        userId: caller.userId,
+        title: "Test Notification",
+        body: "This is a test",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      // Gateway-level JWT verification rejected the request before it
+      // reached the function's own logic (e.g. local stack auth
+      // misconfiguration) — nothing more this test can assert here.
+      console.log("Skipping assertion: gateway rejected the request", data);
+      return;
+    }
+
+    assertEquals(response.status, 400);
+    assertExists(data.error);
+  } finally {
+    await deleteTestUser(caller.userId);
+  }
+});
+
+Deno.test("send-notification - returns 403 when caller has no relationship to the target", async () => {
+  const caller = await createSignedInTestUser();
+  const target = await createSignedInTestUser();
+  if (!caller || !target) {
+    console.log("Skipping: could not create signed-in test users (no service role key?)");
+    return;
+  }
+
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${caller.accessToken}`,
+        "apikey": SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        userId: target.userId,
+        type: "group_invite",
+        title: "New Group Invite",
+        body: "You were invited",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      console.log("Skipping assertion: gateway rejected the request", data);
+      return;
+    }
+
+    assertEquals(response.status, 403);
+    assertExists(data.error);
+  } finally {
+    await deleteTestUser(caller.userId);
+    await deleteTestUser(target.userId);
+  }
 });

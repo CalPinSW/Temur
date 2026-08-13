@@ -33,6 +33,7 @@ export function GroupDetailScreen({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editMessageTemplate, setEditMessageTemplate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const myMembership = members.find((m) => m.user_id === user?.id);
@@ -70,6 +71,7 @@ export function GroupDetailScreen({
   const startEditing = () => {
     setEditName(group.name);
     setEditDescription(group.description || '');
+    setEditMessageTemplate(group.team_assignment_message_template || '');
     setIsEditing(true);
   };
 
@@ -81,6 +83,7 @@ export function GroupDetailScreen({
       await updateGroup(groupId, {
         name: editName.trim(),
         description: editDescription.trim() || null,
+        team_assignment_message_template: editMessageTemplate.trim() || null,
       });
       setIsEditing(false);
       refetch();
@@ -178,6 +181,14 @@ export function GroupDetailScreen({
                 value={editDescription}
                 onChangeText={setEditDescription}
                 multiline
+              />
+              <View style={styles.editSpacer} />
+              <ThemedInput
+                label="Default Team Assignment Message"
+                value={editMessageTemplate}
+                onChangeText={setEditMessageTemplate}
+                multiline
+                hint={`Pre-fills the message when an admin notifies players of their team. "You're on {team}" is always appended automatically.`}
               />
               <View style={styles.editActions}>
                 <ThemedButton

@@ -159,7 +159,9 @@ export type NotificationType =
   | 'friend_request'
   | 'friend_accepted'
   | 'group_invite'
-  | 'game_invite';
+  | 'game_invite'
+  | 'game_visible'
+  | 'team_assigned';
 
 export interface NotificationPayload {
   type: NotificationType;
@@ -199,4 +201,25 @@ export const NotificationTemplates = {
     body: `${fromUsername} invited you to a game`,
     data: { screen: 'GameDetail', gameId },
   }),
+
+  // Not called by client code — the pg_cron sweep (supabase/functions/
+  // sweep-visible-games) constructs this same copy independently in Deno,
+  // since it can't import this React Native module. Keep the two in sync
+  // by hand if this copy changes.
+  gameVisible: (groupName: string, gameId: string): NotificationPayload => ({
+    type: 'game_visible',
+    title: 'New Game Available',
+    body: `A new game is open for sign-ups in ${groupName}`,
+    data: { screen: 'GameDetail', gameId },
+  }),
+
+  teamAssigned: (teamName: string, gameId: string, adminMessage?: string): NotificationPayload => {
+    const suffix = `You're on ${teamName}`;
+    return {
+      type: 'team_assigned',
+      title: 'Team Assignment',
+      body: adminMessage ? `${adminMessage}\n\n${suffix}` : suffix,
+      data: { screen: 'GameDetail', gameId },
+    };
+  },
 };

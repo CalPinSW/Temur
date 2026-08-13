@@ -227,5 +227,32 @@ describe('notificationService', () => {
         data: { screen: 'Friends' },
       });
     });
+
+    it('builds a game visible payload', () => {
+      expect(NotificationTemplates.gameVisible('Tuesday Football', 'game-1')).toEqual({
+        type: 'game_visible',
+        title: 'New Game Available',
+        body: 'A new game is open for sign-ups in Tuesday Football',
+        data: { screen: 'GameDetail', gameId: 'game-1' },
+      });
+    });
+
+    it('builds a team assigned payload with an admin message', () => {
+      expect(NotificationTemplates.teamAssigned('Team A', 'game-1', 'Good luck!')).toEqual({
+        type: 'team_assigned',
+        title: 'Team Assignment',
+        body: "Good luck!\n\nYou're on Team A",
+        data: { screen: 'GameDetail', gameId: 'game-1' },
+      });
+    });
+
+    it('builds a team assigned payload without an admin message', () => {
+      expect(NotificationTemplates.teamAssigned('Team A', 'game-1')).toEqual({
+        type: 'team_assigned',
+        title: 'Team Assignment',
+        body: "You're on Team A",
+        data: { screen: 'GameDetail', gameId: 'game-1' },
+      });
+    });
   });
 });
