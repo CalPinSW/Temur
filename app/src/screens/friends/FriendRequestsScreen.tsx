@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Profile } from '@/types/auth';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
 
@@ -34,7 +35,6 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
   const user = useAuthStore((state) => state.user);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchRequests = useCallback(async () => {
     if (!user) return;
@@ -75,11 +75,7 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
     setIsLoading(false);
   }, [fetchRequests]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchRequests();
-    setIsRefreshing(false);
-  };
+  const { refreshing: isRefreshing, onRefresh: handleRefresh } = useRefreshControl(fetchRequests);
 
   useEffect(() => {
     loadData();

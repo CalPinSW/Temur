@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Image,
+  Alert,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import {
@@ -11,6 +20,7 @@ import {
 } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { updateGroup, updateMemberRole, removeMember, leaveGroup } from '@/services/groupService';
 import { GroupMemberWithProfile } from '@/types/group';
 
@@ -30,6 +40,7 @@ export function GroupDetailScreen({
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const { group, members, isLoading, refetch } = useGroupDetails(groupId);
+  const { refreshing, onRefresh } = useRefreshControl(refetch);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -170,7 +181,17 @@ export function GroupDetailScreen({
         <ThemedButton title="← Back" variant="ghost" onPress={onGoBack} style={styles.backButton} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
         <ThemedCard variant="elevated">
           {isEditing ? (
             <View style={styles.editSection}>
