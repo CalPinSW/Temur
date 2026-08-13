@@ -6,6 +6,7 @@ import { ThemedTextBox, ThemedButton } from '@/components/themed';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { Game, GameWithPlayers } from '@/types/game';
 import { isGameAdmin } from '@/utils/gameUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -48,7 +49,6 @@ export function GamesListScreen({
   const [upcomingGames, setUpcomingGames] = useState<GameWithPlayers[]>([]);
   const [historicGames, setHistoricGames] = useState<GameWithPlayers[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const fetchGames = useCallback(async () => {
     if (!user) return;
@@ -109,7 +109,6 @@ export function GamesListScreen({
       console.error('Error fetching games:', error);
     } finally {
       setIsLoading(false);
-      setRefreshing(false);
     }
   }, [user, adminGroupIds]);
 
@@ -158,10 +157,7 @@ export function GamesListScreen({
     };
   }, [fetchGames]);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchGames();
-  };
+  const { refreshing, onRefresh } = useRefreshControl(fetchGames);
 
   return (
     <SafeAreaView

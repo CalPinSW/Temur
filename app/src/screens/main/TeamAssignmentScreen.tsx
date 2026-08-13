@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { ThemedTextBox, ThemedCard, ThemedButton, ThemedToggle } from '@/components/themed';
 import { useTeamAssignment } from '@/hooks/useTeamAssignment';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { getTeamCounts } from '@/utils/gameUtils';
 import {
   TeamAssignmentHeader,
@@ -23,6 +31,7 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
     game,
     isLoading,
     isSaving,
+    isDirty,
     teamAssignments,
     boardPositions,
     handleAssignTeam,
@@ -30,9 +39,33 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
     handleAutoAssign,
     handleClearAll,
     handleSave,
+    refetch,
   } = useTeamAssignment(gameId);
   const [boardView, setBoardView] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+
+  const handlePullRefresh = useCallback(() => {
+    if (!isDirty) return refetch();
+
+    return new Promise<void>((resolve) => {
+      Alert.alert(
+        'Discard unsaved changes?',
+        'Refreshing will discard your unsaved team assignment changes.',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve() },
+          {
+            text: 'Discard & Refresh',
+            style: 'destructive',
+            onPress: async () => {
+              await refetch();
+              resolve();
+            },
+          },
+        ]
+      );
+    });
+  }, [isDirty, refetch]);
+  const { refreshing, onRefresh } = useRefreshControl(handlePullRefresh);
 
   if (isLoading) {
     return (
@@ -78,6 +111,13 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         scrollEnabled={scrollEnabled}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
         {!boardView && (
           <>

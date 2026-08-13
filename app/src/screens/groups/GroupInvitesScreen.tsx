@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { acceptGroupInvitation, declineGroupInvitation } from '@/services/groupService';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
@@ -16,6 +17,7 @@ export function GroupInvitesScreen({ onGoBack }: GroupInvitesScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const { invitations, isLoading, refetch } = useGroupInvitations(user?.id);
+  const { refreshing, onRefresh } = useRefreshControl(refetch);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const handleAccept = async (invitation: GroupInvitationWithDetails) => {
@@ -113,6 +115,13 @@ export function GroupInvitesScreen({ onGoBack }: GroupInvitesScreenProps) {
           renderItem={renderInvitation}
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={invitations.length === 0 ? styles.emptyList : styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
         />
       )}
     </SafeAreaView>

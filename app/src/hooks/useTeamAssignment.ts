@@ -29,6 +29,7 @@ export function useTeamAssignment(gameId: string) {
   const [isSaving, setIsSaving] = useState(false);
   const [teamAssignments, setTeamAssignments] = useState<Record<string, number | null>>({});
   const [boardPositions, setBoardPositions] = useState<Record<string, BoardPosition | null>>({});
+  const [isDirty, setIsDirty] = useState(false);
 
   const fetchGameDetails = useCallback(async () => {
     try {
@@ -89,6 +90,7 @@ export function useTeamAssignment(gameId: string) {
       });
       setTeamAssignments(assignments);
       setBoardPositions(positions);
+      setIsDirty(false);
     } catch (error) {
       console.error('Error fetching game details:', error);
       Alert.alert('Error', 'Failed to load game details');
@@ -110,6 +112,7 @@ export function useTeamAssignment(gameId: string) {
       ...prev,
       [playerGameId]: null,
     }));
+    setIsDirty(true);
   };
 
   const handleMoveOnBoard = (
@@ -125,6 +128,7 @@ export function useTeamAssignment(gameId: string) {
       ...prev,
       [playerGameId]: position,
     }));
+    setIsDirty(true);
   };
 
   const handleAutoAssign = () => {
@@ -141,6 +145,7 @@ export function useTeamAssignment(gameId: string) {
 
     setTeamAssignments(newAssignments);
     setBoardPositions(newPositions);
+    setIsDirty(true);
   };
 
   const handleClearAll = () => {
@@ -159,6 +164,7 @@ export function useTeamAssignment(gameId: string) {
           });
           setTeamAssignments(newAssignments);
           setBoardPositions(newPositions);
+          setIsDirty(true);
         },
       },
     ]);
@@ -186,6 +192,7 @@ export function useTeamAssignment(gameId: string) {
         if (error) throw error;
       }
 
+      setIsDirty(false);
       Alert.alert('Success', 'Team assignments saved successfully!', [
         {
           text: 'OK',
@@ -204,6 +211,7 @@ export function useTeamAssignment(gameId: string) {
     game,
     isLoading,
     isSaving,
+    isDirty,
     teamAssignments,
     boardPositions,
     handleAssignTeam,
@@ -211,5 +219,6 @@ export function useTeamAssignment(gameId: string) {
     handleAutoAssign,
     handleClearAll,
     handleSave,
+    refetch: fetchGameDetails,
   };
 }

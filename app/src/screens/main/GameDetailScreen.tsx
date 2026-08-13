@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import {
@@ -14,6 +21,7 @@ import { useGameDetails } from '@/hooks/useGameDetails';
 import { useGameActions } from '@/hooks/useGameActions';
 import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
 import { useAcceptedFriends } from '@/hooks/useAcceptedFriends';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import {
   acceptGameInvitation,
   declineGameInvitation,
@@ -68,6 +76,7 @@ export function GameDetailScreen({
   );
   const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
   const { friends } = useAcceptedFriends(user?.id);
+  const { refreshing, onRefresh } = useRefreshControl(refetch);
 
   if (isLoading) {
     return (
@@ -221,7 +230,17 @@ export function GameDetailScreen({
         <ThemedButton title="← Back" variant="ghost" onPress={onGoBack} style={styles.backButton} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
         {game.invitation_status === 'pending' && (
           <ThemedCard variant="elevated" title="You're Invited">
             <ThemedTextBox variant="body" color="secondary" style={styles.inviteBannerText}>
