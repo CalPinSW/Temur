@@ -202,27 +202,98 @@ describe('groupService', () => {
   });
 
   describe('removeMember', () => {
-    it('deletes the member row', async () => {
-      const builder = createQueryBuilder({ data: null, error: null });
-      mockFromTables(mockSupabase, { group_members: builder });
+    it('removes the member from any upcoming group games, then deletes the member row', async () => {
+      const gamesBuilder = createQueryBuilder({
+        data: [
+          { id: 'game-future', kickoff_date: '2030-01-01T00:00:00.000Z' },
+          { id: 'game-past', kickoff_date: '2020-01-01T00:00:00.000Z' },
+        ],
+        error: null,
+      });
+      const playerGamesBuilder = createQueryBuilder({ data: null, error: null });
+      const membersBuilder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, {
+        games: gamesBuilder,
+        player_games: playerGamesBuilder,
+        group_members: membersBuilder,
+      });
 
-      await removeMember('member-1');
+      await removeMember('member-1', 'group-1', 'user-2');
 
-      expect(builder.delete).toHaveBeenCalled();
-      expect(builder.eq).toHaveBeenCalledWith('id', 'member-1');
+      expect(gamesBuilder.eq).toHaveBeenCalledWith('group_id', 'group-1');
+      expect(playerGamesBuilder.delete).toHaveBeenCalled();
+      expect(playerGamesBuilder.eq).toHaveBeenCalledWith('user_id', 'user-2');
+      expect(playerGamesBuilder.in).toHaveBeenCalledWith('game_id', ['game-future']);
+      expect(membersBuilder.delete).toHaveBeenCalled();
+      expect(membersBuilder.eq).toHaveBeenCalledWith('id', 'member-1');
+    });
+
+    it('skips the player_games cleanup when the group has no upcoming games', async () => {
+      const gamesBuilder = createQueryBuilder({
+        data: [{ id: 'game-past', kickoff_date: '2020-01-01T00:00:00.000Z' }],
+        error: null,
+      });
+      const membersBuilder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { games: gamesBuilder, group_members: membersBuilder });
+
+      await removeMember('member-1', 'group-1', 'user-2');
+
+      expect(mockSupabase.from).not.toHaveBeenCalledWith('player_games');
+      expect(membersBuilder.delete).toHaveBeenCalled();
+    });
+
+    it('throws and does not remove the member if the game signup cleanup fails', async () => {
+      const gamesBuilder = createQueryBuilder({ data: null, error: new Error('boom') });
+      const membersBuilder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { games: gamesBuilder, group_members: membersBuilder });
+
+      await expect(removeMember('member-1', 'group-1', 'user-2')).rejects.toThrow('boom');
+      expect(membersBuilder.delete).not.toHaveBeenCalled();
     });
   });
 
   describe('leaveGroup', () => {
-    it('deletes the caller membership row', async () => {
-      const builder = createQueryBuilder({ data: null, error: null });
-      mockFromTables(mockSupabase, { group_members: builder });
+    it('removes the caller from any upcoming group games, then deletes the membership row', async () => {
+      const gamesBuilder = createQueryBuilder({
+        data: [{ id: 'game-future', kickoff_date: '2030-01-01T00:00:00.000Z' }],
+        error: null,
+      });
+      const playerGamesBuilder = createQueryBuilder({ data: null, error: null });
+      const membersBuilder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, {
+        games: gamesBuilder,
+        player_games: playerGamesBuilder,
+        group_members: membersBuilder,
+      });
 
       await leaveGroup('group-1', 'user-1');
 
-      expect(builder.delete).toHaveBeenCalled();
-      expect(builder.eq).toHaveBeenCalledWith('group_id', 'group-1');
-      expect(builder.eq).toHaveBeenCalledWith('user_id', 'user-1');
+      expect(playerGamesBuilder.delete).toHaveBeenCalled();
+      expect(playerGamesBuilder.eq).toHaveBeenCalledWith('user_id', 'user-1');
+      expect(playerGamesBuilder.in).toHaveBeenCalledWith('game_id', ['game-future']);
+      expect(membersBuilder.delete).toHaveBeenCalled();
+      expect(membersBuilder.eq).toHaveBeenCalledWith('group_id', 'group-1');
+      expect(membersBuilder.eq).toHaveBeenCalledWith('user_id', 'user-1');
+    });
+
+    it('skips the player_games cleanup when the group has no upcoming games', async () => {
+      const gamesBuilder = createQueryBuilder({ data: [], error: null });
+      const membersBuilder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { games: gamesBuilder, group_members: membersBuilder });
+
+      await leaveGroup('group-1', 'user-1');
+
+      expect(mockSupabase.from).not.toHaveBeenCalledWith('player_games');
+      expect(membersBuilder.delete).toHaveBeenCalled();
+    });
+
+    it('throws and does not leave the group if the game signup cleanup fails', async () => {
+      const gamesBuilder = createQueryBuilder({ data: null, error: new Error('boom') });
+      const membersBuilder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { games: gamesBuilder, group_members: membersBuilder });
+
+      await expect(leaveGroup('group-1', 'user-1')).rejects.toThrow('boom');
+      expect(membersBuilder.delete).not.toHaveBeenCalled();
     });
   });
 });

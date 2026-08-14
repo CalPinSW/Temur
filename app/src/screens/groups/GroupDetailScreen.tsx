@@ -1,34 +1,30 @@
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Image,
   Alert,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
-import {
-  ThemedButton,
-  ThemedTextBox,
-  ThemedCard,
-  ThemedInput,
-  ThemedBadge,
-} from '@/components/themed';
+import { ThemedButton, ThemedTextBox, ThemedCard, ThemedInput } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
+import { useGroupUpcomingGames } from '@/hooks/useGroupUpcomingGames';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
-import { updateGroup, updateMemberRole, removeMember, leaveGroup } from '@/services/groupService';
-import { GroupMemberWithProfile } from '@/types/group';
+import { updateGroup, leaveGroup } from '@/services/groupService';
+import { formatDate, formatTime } from '@/utils/gameUtils';
 
 interface GroupDetailScreenProps {
   groupId: string;
   onGoBack: () => void;
   onNavigateToInvite: (groupId: string, groupName: string, existingMemberIds: string[]) => void;
   onNavigateToCreateGame: (groupId: string) => void;
+  onNavigateToGames: (groupId: string) => void;
+  onNavigateToGame: (gameId: string) => void;
+  onNavigateToMembers: (groupId: string) => void;
 }
 
 export function GroupDetailScreen({
@@ -36,10 +32,14 @@ export function GroupDetailScreen({
   onGoBack,
   onNavigateToInvite,
   onNavigateToCreateGame,
+  onNavigateToGames,
+  onNavigateToGame,
+  onNavigateToMembers,
 }: GroupDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const { group, members, isLoading, refetch } = useGroupDetails(groupId);
+  const { upcomingGames } = useGroupUpcomingGames(groupId, user?.id);
   const { refreshing, onRefresh } = useRefreshControl(refetch);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
@@ -106,40 +106,6 @@ export function GroupDetailScreen({
     }
   };
 
-  const handleToggleRole = async (member: GroupMemberWithProfile) => {
-    const nextRole = member.role === 'admin' ? 'member' : 'admin';
-    try {
-      await updateMemberRole(member.id, nextRole);
-      refetch();
-    } catch (error) {
-      console.error('Error updating role:', error);
-      Alert.alert('Error', 'Failed to update role');
-    }
-  };
-
-  const handleRemoveMember = (member: GroupMemberWithProfile) => {
-    Alert.alert(
-      'Remove Member',
-      `Remove ${member.profile.display_name || member.profile.username} from ${group.name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await removeMember(member.id);
-              refetch();
-            } catch (error) {
-              console.error('Error removing member:', error);
-              Alert.alert('Error', 'Failed to remove member');
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const handleLeaveGroup = () => {
     Alert.alert('Leave Group', `Are you sure you want to leave ${group.name}?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -160,16 +126,12 @@ export function GroupDetailScreen({
     ]);
   };
 
-  const getInitials = (member: GroupMemberWithProfile) => {
-    if (member.profile.display_name) {
-      return member.profile.display_name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
+  const handleUpcomingGamesPress = () => {
+    if (upcomingGames.length === 1) {
+      onNavigateToGame(upcomingGames[0].id);
+    } else {
+      onNavigateToGames(groupId);
     }
-    return member.profile.username?.slice(0, 2).toUpperCase() || '??';
   };
 
   return (
@@ -269,44 +231,40 @@ export function GroupDetailScreen({
           </View>
         )}
 
-        <ThemedCard variant="elevated" title="Members">
-          {members.map((member) => (
-            <View key={member.id} style={[styles.memberItem, { borderBottomColor: colors.border }]}>
-              {member.profile.avatar_url ? (
-                <Image source={{ uri: member.profile.avatar_url }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.avatarText}>{getInitials(member)}</Text>
-                </View>
-              )}
-              <View style={styles.memberInfo}>
-                <ThemedTextBox variant="body" weight="semibold">
-                  {member.profile.display_name || member.profile.username}
-                </ThemedTextBox>
-                <ThemedTextBox variant="caption" color="secondary">
-                  {`@${member.profile.username}`}
-                </ThemedTextBox>
-              </View>
-              {member.role === 'admin' && <ThemedBadge text="Admin" variant="info" />}
-              {isAdmin && member.user_id !== user?.id && (
-                <View style={styles.memberActions}>
-                  <ThemedButton
-                    title={member.role === 'admin' ? 'Demote' : 'Promote'}
-                    variant="secondary"
-                    size="small"
-                    onPress={() => handleToggleRole(member)}
-                  />
-                  <ThemedButton
-                    title="Remove"
-                    variant="ghost"
-                    size="small"
-                    onPress={() => handleRemoveMember(member)}
-                  />
-                </View>
-              )}
-            </View>
-          ))}
-        </ThemedCard>
+        <View style={styles.summaryCards}>
+          <View style={styles.summaryCard}>
+            <ThemedCard variant="elevated" title="Members" style={styles.summaryCardInner}>
+              <ThemedTextBox variant="body" color="secondary" style={styles.summaryText}>
+                {`${members.length} ${members.length === 1 ? 'member' : 'members'}`}
+              </ThemedTextBox>
+              <ThemedButton
+                title="View Members"
+                variant="outline"
+                size="small"
+                onPress={() => onNavigateToMembers(groupId)}
+              />
+            </ThemedCard>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <ThemedCard variant="elevated" title="Upcoming Games" style={styles.summaryCardInner}>
+              <ThemedTextBox variant="body" color="secondary" style={styles.summaryText}>
+                {upcomingGames.length === 0
+                  ? 'No upcoming games'
+                  : upcomingGames.length === 1
+                    ? `${formatDate(upcomingGames[0].kickoff_date)} at ${formatTime(upcomingGames[0].kickoff_date)}`
+                    : `${upcomingGames.length} games scheduled`}
+              </ThemedTextBox>
+              <ThemedButton
+                title={upcomingGames.length === 1 ? 'View Game' : 'View Games'}
+                variant="outline"
+                size="small"
+                onPress={handleUpcomingGamesPress}
+                disabled={upcomingGames.length === 0}
+              />
+            </ThemedCard>
+          </View>
+        </View>
 
         <View style={styles.leaveSection}>
           <ThemedButton title="Leave Group" variant="ghost" onPress={handleLeaveGroup} />
@@ -375,35 +333,19 @@ const styles = StyleSheet.create({
   adminActionButton: {
     flex: 1,
   },
-  memberItem: {
+  summaryCards: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    gap: 12,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  memberInfo: {
+  summaryCard: {
     flex: 1,
   },
-  memberActions: {
-    flexDirection: 'column',
-    gap: 4,
+  summaryCardInner: {
+    flex: 1,
+  },
+  summaryText: {
+    flexGrow: 1,
+    marginBottom: 12,
   },
   leaveSection: {
     alignItems: 'center',

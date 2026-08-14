@@ -7,6 +7,7 @@ interface ThemedCardProps {
   title?: string;
   variant?: 'elevated' | 'outlined' | 'filled';
   padding?: 'none' | 'small' | 'medium' | 'large';
+  style?: ViewStyle;
 }
 
 export function ThemedCard({
@@ -14,6 +15,7 @@ export function ThemedCard({
   title,
   variant = 'elevated',
   padding = 'medium',
+  style,
 }: ThemedCardProps) {
   const { colors } = useTheme();
 
@@ -59,7 +61,7 @@ export function ThemedCard({
   };
 
   return (
-    <View style={getCardStyle()}>
+    <View style={[getCardStyle(), style]}>
       {title && <Text style={[styles.title, { color: colors.text }]}>{title}</Text>}
       {children}
     </View>

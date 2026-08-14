@@ -15,7 +15,7 @@ jest.mock('@react-navigation/native', () => {
 });
 
 import * as ReactNavigationNative from '@react-navigation/native';
-import { navigate, navigateFromNotification } from '@/services/navigationService';
+import { navigate, navigateFromNotification, navigateToGame } from '@/services/navigationService';
 
 const mockedModule = ReactNavigationNative as unknown as {
   __mockNavigate: jest.Mock;
@@ -41,6 +41,25 @@ describe('navigationService', () => {
       setIsReady(false);
 
       navigate('SomeScreen');
+
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('navigateToGame', () => {
+    it('navigates to the game detail screen on the games tab', () => {
+      navigateToGame('game-1');
+
+      expect(mockNavigate).toHaveBeenCalledWith('MainFunctionalityTab', {
+        screen: 'detail',
+        gameId: 'game-1',
+      });
+    });
+
+    it('does nothing when the navigator is not ready', () => {
+      setIsReady(false);
+
+      navigateToGame('game-1');
 
       expect(mockNavigate).not.toHaveBeenCalled();
     });
