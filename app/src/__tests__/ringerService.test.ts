@@ -14,6 +14,7 @@ import {
   removeRinger,
   getSavedRingers,
   saveRingerName,
+  deleteSavedRinger,
 } from '@/services/ringerService';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
@@ -112,6 +113,25 @@ describe('ringerService', () => {
         { user_id: 'user-1', name: 'Alex Smith' },
         { onConflict: 'user_id,name' }
       );
+    });
+  });
+
+  describe('deleteSavedRinger', () => {
+    it('deletes the saved_ringers row by id', async () => {
+      const builder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { saved_ringers: builder });
+
+      await deleteSavedRinger('ringer-1');
+
+      expect(builder.delete).toHaveBeenCalled();
+      expect(builder.eq).toHaveBeenCalledWith('id', 'ringer-1');
+    });
+
+    it('throws on error', async () => {
+      const builder = createQueryBuilder({ data: null, error: new Error('nope') });
+      mockFromTables(mockSupabase, { saved_ringers: builder });
+
+      await expect(deleteSavedRinger('ringer-1')).rejects.toThrow('nope');
     });
   });
 });

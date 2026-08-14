@@ -7,7 +7,12 @@ import { useAuthStore } from '@/store/authStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '@/theme';
 import { HomeScreen } from '@/screens/home';
-import { FriendsScreen, SearchUsersScreen, FriendRequestsScreen } from '@/screens/friends';
+import {
+  FriendsScreen,
+  SearchUsersScreen,
+  FriendRequestsScreen,
+  RingersScreen,
+} from '@/screens/friends';
 import { ProfileScreen, EditProfileScreen, AboutScreen } from '@/screens/profile';
 import { MainFunctionalityScreen, CreateGameScreen } from '@/screens/main';
 import {
@@ -23,7 +28,7 @@ import {
 export type MainTabParamList = {
   HomeTab: undefined;
   MainFunctionalityTab: { screen?: 'detail'; gameId?: string } | undefined;
-  FriendsTab: { screen?: 'list' | 'search' | 'requests' } | undefined;
+  FriendsTab: { screen?: 'list' | 'search' | 'requests' | 'ringers' } | undefined;
   GroupsTab: { screen?: 'list' | 'invites' } | undefined;
   ProfileTab: undefined;
 };
@@ -53,10 +58,12 @@ function MainFunctionalityStack({
 function FriendsStack({
   route,
 }: {
-  route?: { params?: { screen?: 'list' | 'search' | 'requests' } };
+  route?: { params?: { screen?: 'list' | 'search' | 'requests' | 'ringers' } };
 }) {
   const screenParam = route?.params?.screen;
-  const [screen, setScreen] = useState<'list' | 'search' | 'requests'>(screenParam || 'list');
+  const [screen, setScreen] = useState<'list' | 'search' | 'requests' | 'ringers'>(
+    screenParam || 'list'
+  );
 
   // Update screen when route params change (e.g., from notification)
   useEffect(() => {
@@ -74,10 +81,15 @@ function FriendsStack({
     return <FriendRequestsScreen onGoBack={() => setScreen('list')} />;
   }
 
+  if (screen === 'ringers') {
+    return <RingersScreen onGoBack={() => setScreen('list')} />;
+  }
+
   return (
     <FriendsScreen
       onNavigateToSearch={() => setScreen('search')}
       onNavigateToRequests={() => setScreen('requests')}
+      onNavigateToRingers={() => setScreen('ringers')}
     />
   );
 }
