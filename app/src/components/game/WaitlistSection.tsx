@@ -14,7 +14,7 @@ interface WaitlistSectionProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   isAdmin?: boolean;
-  onRemoveRinger?: (playerGameId: string) => void;
+  onRemoveRinger?: (playerGameId: string, ringerName: string) => void;
 }
 
 export function WaitlistSection({

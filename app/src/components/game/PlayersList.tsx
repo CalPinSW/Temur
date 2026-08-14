@@ -12,7 +12,7 @@ interface PlayersListProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   isAdmin?: boolean;
-  onRemoveRinger?: (playerGameId: string) => void;
+  onRemoveRinger?: (playerGameId: string, ringerName: string) => void;
 }
 
 export function PlayersList({
@@ -73,7 +73,7 @@ export function PlayersList({
                 (playerGame.added_by === currentUserId || isAdmin) && (
                   <TouchableOpacity
                     style={[styles.removeButton, { borderColor: colors.border }]}
-                    onPress={() => onRemoveRinger(playerGame.id)}
+                    onPress={() => onRemoveRinger(playerGame.id, getPlayerDisplayName(playerGame))}
                     activeOpacity={0.7}
                   >
                     <MaterialIcons name="close" size={16} color={colors.textSecondary} />

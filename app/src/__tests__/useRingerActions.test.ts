@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { Alert, AlertButton } from 'react-native';
 import { renderHook, act } from '@testing-library/react-native';
 
 jest.mock('@/services/supabase', () => {
@@ -92,14 +92,32 @@ describe('useRingerActions', () => {
   });
 
   describe('handleRemoveRinger', () => {
-    it('deletes the player_games row and calls onSuccess', async () => {
+    it('asks for confirmation before deleting anything', () => {
+      const { result } = renderHook(() => useRingerActions('game-1', 'user-1'));
+
+      result.current.handleRemoveRinger('pg-1', 'Alex Smith', jest.fn());
+
+      expect(alertSpy).toHaveBeenCalledWith(
+        'Remove Ringer',
+        expect.stringContaining('Alex Smith'),
+        expect.any(Array)
+      );
+      expect(mockSupabase.from).not.toHaveBeenCalled();
+    });
+
+    it('deletes the player_games row and calls onSuccess once confirmed', async () => {
       const builder = createQueryBuilder({ data: null, error: null });
       mockFromTables(mockSupabase, { player_games: builder });
       const onSuccess = jest.fn();
       const { result } = renderHook(() => useRingerActions('game-1', 'user-1'));
 
+      result.current.handleRemoveRinger('pg-1', 'Alex Smith', onSuccess);
+
+      const buttons = alertSpy.mock.calls[0][2];
+      const removeButton = buttons.find((b: AlertButton) => b.text === 'Remove')!;
+
       await act(async () => {
-        await result.current.handleRemoveRinger('pg-1', onSuccess);
+        await removeButton.onPress!();
       });
 
       expect(builder.delete).toHaveBeenCalled();
@@ -108,14 +126,35 @@ describe('useRingerActions', () => {
       expect(result.current.isRemovingRinger).toBe(false);
     });
 
+    it('does not delete anything when cancelled', () => {
+      const builder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { player_games: builder });
+      const onSuccess = jest.fn();
+      const { result } = renderHook(() => useRingerActions('game-1', 'user-1'));
+
+      result.current.handleRemoveRinger('pg-1', 'Alex Smith', onSuccess);
+
+      const buttons = alertSpy.mock.calls[0][2];
+      const cancelButton = buttons.find((b: AlertButton) => b.text === 'Cancel')!;
+
+      expect(cancelButton.onPress).toBeUndefined();
+      expect(builder.delete).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
     it('shows an error alert and does not call onSuccess when the delete fails', async () => {
       const builder = createQueryBuilder({ data: null, error: new Error('boom') });
       mockFromTables(mockSupabase, { player_games: builder });
       const onSuccess = jest.fn();
       const { result } = renderHook(() => useRingerActions('game-1', 'user-1'));
 
+      result.current.handleRemoveRinger('pg-1', 'Alex Smith', onSuccess);
+
+      const buttons = alertSpy.mock.calls[0][2];
+      const removeButton = buttons.find((b: AlertButton) => b.text === 'Remove')!;
+
       await act(async () => {
-        await result.current.handleRemoveRinger('pg-1', onSuccess);
+        await removeButton.onPress!();
       });
 
       expect(onSuccess).not.toHaveBeenCalled();

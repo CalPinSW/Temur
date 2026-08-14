@@ -26,19 +26,28 @@ export function useRingerActions(gameId: string, userId?: string) {
     }
   };
 
-  const handleRemoveRinger = async (playerGameId: string, onSuccess: () => void) => {
-    try {
-      setIsRemovingRinger(true);
+  const handleRemoveRinger = (playerGameId: string, ringerName: string, onSuccess: () => void) => {
+    Alert.alert('Remove Ringer', `Are you sure you want to remove ${ringerName} from this game?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setIsRemovingRinger(true);
 
-      await removeRinger(playerGameId);
+            await removeRinger(playerGameId);
 
-      onSuccess();
-    } catch (error) {
-      console.error('Error removing ringer:', error);
-      Alert.alert('Error', 'Failed to remove ringer. Please try again.');
-    } finally {
-      setIsRemovingRinger(false);
-    }
+            onSuccess();
+          } catch (error) {
+            console.error('Error removing ringer:', error);
+            Alert.alert('Error', 'Failed to remove ringer. Please try again.');
+          } finally {
+            setIsRemovingRinger(false);
+          }
+        },
+      },
+    ]);
   };
 
   return { isAddingRinger, isRemovingRinger, handleAddRinger, handleRemoveRinger };

@@ -290,8 +290,8 @@ export function GameDetailScreen({
     });
   };
 
-  const handleRemoveRingerPress = (playerGameId: string) => {
-    handleRemoveRinger(playerGameId, refetch);
+  const handleRemoveRingerPress = (playerGameId: string, ringerName: string) => {
+    handleRemoveRinger(playerGameId, ringerName, refetch);
   };
 
   return (
