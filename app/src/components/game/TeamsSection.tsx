@@ -13,6 +13,8 @@ interface TeamsSectionProps {
   currentUserId?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  isAdmin?: boolean;
+  onRemoveRinger?: (playerGameId: string, ringerName: string) => void;
 }
 
 export function TeamsSection({
@@ -23,6 +25,8 @@ export function TeamsSection({
   currentUserId,
   isExpanded,
   onToggleExpand,
+  isAdmin,
+  onRemoveRinger,
 }: TeamsSectionProps) {
   const activePlayers = getActivePlayers(players, capacity);
   const team1Players = getVisiblePlayers(players, capacity, isExpanded, currentUserId, 1, false);
@@ -52,6 +56,8 @@ export function TeamsSection({
           currentUserId={currentUserId}
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
+          isAdmin={isAdmin}
+          onRemoveRinger={onRemoveRinger}
         />
       </View>
 
@@ -69,6 +75,8 @@ export function TeamsSection({
           currentUserId={currentUserId}
           isExpanded={isExpanded}
           onToggleExpand={onToggleExpand}
+          isAdmin={isAdmin}
+          onRemoveRinger={onRemoveRinger}
         />
       </View>
 
@@ -87,6 +95,8 @@ export function TeamsSection({
             currentUserId={currentUserId}
             isExpanded={isExpanded}
             onToggleExpand={onToggleExpand}
+            isAdmin={isAdmin}
+            onRemoveRinger={onRemoveRinger}
           />
         </View>
       )}

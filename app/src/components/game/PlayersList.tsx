@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/theme';
 import { ThemedTextBox, ThemedButton, ThemedBadge } from '@/components/themed';
 import { PlayerGameWithProfile } from '@/types/game';
+import { getPlayerDisplayName } from '@/utils/gameUtils';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 interface PlayersListProps {
@@ -10,6 +11,8 @@ interface PlayersListProps {
   currentUserId?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  isAdmin?: boolean;
+  onRemoveRinger?: (playerGameId: string, ringerName: string) => void;
 }
 
 export function PlayersList({
@@ -17,6 +20,8 @@ export function PlayersList({
   currentUserId,
   isExpanded,
   onToggleExpand,
+  isAdmin,
+  onRemoveRinger,
 }: PlayersListProps) {
   const { colors } = useTheme();
 
@@ -49,9 +54,10 @@ export function PlayersList({
                     color="primary"
                     weight={isCurrentUser ? 'semibold' : 'medium'}
                   >
-                    {`${actualIndex + 1}. ${playerGame.profile.display_name || playerGame.profile.username}`}
+                    {`${actualIndex + 1}. ${getPlayerDisplayName(playerGame)}`}
                   </ThemedTextBox>
                   {isCurrentUser && <ThemedBadge variant="info" text="You" />}
+                  {playerGame.is_ringer && <ThemedBadge variant="warning" text="Ringer" />}
                 </View>
                 {playerGame.average_rating !== undefined && (
                   <View style={styles.ratingContainer}>
@@ -62,6 +68,17 @@ export function PlayersList({
                   </View>
                 )}
               </View>
+              {playerGame.is_ringer &&
+                onRemoveRinger &&
+                (playerGame.added_by === currentUserId || isAdmin) && (
+                  <TouchableOpacity
+                    style={[styles.removeButton, { borderColor: colors.border }]}
+                    onPress={() => onRemoveRinger(playerGame.id, getPlayerDisplayName(playerGame))}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialIcons name="close" size={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
             </View>
           );
         })}
@@ -85,8 +102,11 @@ const styles = StyleSheet.create({
   playerItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   playerInfo: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -103,5 +123,14 @@ const styles = StyleSheet.create({
   },
   expandButton: {
     marginTop: 8,
+  },
+  removeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 });

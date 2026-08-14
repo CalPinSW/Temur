@@ -9,18 +9,23 @@ export interface Game {
   players_per_team: number;
   group_id: string | null;
   created_by: string | null;
+  ringers_opened_at: string | null;
+  ringers_opened_by: string | null;
 }
 
 export interface PlayerGame {
   id: string;
   game_id: string;
-  user_id: string;
+  user_id: string | null;
   signup_order: number;
   team: number | null;
   board_x: number | null;
   board_y: number | null;
   created_at: string;
   updated_at: string;
+  is_ringer: boolean;
+  guest_name: string | null;
+  added_by: string | null;
 }
 
 export interface BoardPosition {
@@ -43,7 +48,7 @@ export interface PlayerGameWithProfile extends PlayerGame {
     username: string;
     display_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
   average_rating?: number;
   rating_count?: number;
 }
@@ -54,6 +59,14 @@ export interface GameWithPlayers extends Game {
   user_signed_up: boolean;
   invitation_id?: string;
   invitation_status?: 'pending' | 'accepted';
+}
+
+export interface SavedRinger {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface GameInvitation {

@@ -19,6 +19,7 @@ npm install                 # install deps
 npx expo start              # start Metro/dev server
 npm run ios                 # expo run:ios
 npm run android              # expo run:android
+npm run build:ios:dev       # eas build --platform ios --profile development (remote EAS dev-client build)
 npm run lint                # eslint .
 npm run lint:fix
 npm run format               # prettier --write "**/*.{ts,tsx,js,json}"

@@ -13,7 +13,8 @@ type NotificationType =
   | 'friend_accepted'
   | 'group_invite'
   | 'game_invite'
-  | 'team_assigned';
+  | 'team_assigned'
+  | 'ringers_open';
 
 interface NotificationRequest {
   userId: string;
@@ -87,6 +88,29 @@ async function isAuthorized(
         .not('team', 'is', null)
         .limit(1);
       return !!rows?.length;
+    }
+    case 'ringers_open': {
+      const gameId = data?.gameId;
+      if (typeof gameId !== 'string' || !UUID_RE.test(gameId)) return false;
+
+      const { data: isAdmin } = await authed.rpc('is_game_admin', {
+        p_game_id: gameId,
+        p_user_id: callerId,
+      });
+      if (!isAdmin) return false;
+
+      const { data: game } = await authed
+        .from('games')
+        .select('group_id')
+        .eq('id', gameId)
+        .single();
+      if (!game?.group_id) return false;
+
+      const { data: isMember } = await authed.rpc('is_group_member', {
+        p_group_id: game.group_id,
+        p_user_id: targetUserId,
+      });
+      return !!isMember;
     }
     default:
       return false;

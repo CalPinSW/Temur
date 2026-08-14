@@ -39,7 +39,7 @@ export async function acceptGameInvitation(
   invitationId: string,
   gameId: string,
   userId: string,
-  currentPlayerCount: number
+  signupOrder: number
 ): Promise<void> {
   const { error: updateError } = await supabase
     .from('game_invitations')
@@ -51,7 +51,7 @@ export async function acceptGameInvitation(
   const { error: signupError } = await supabase.from('player_games').insert({
     game_id: gameId,
     user_id: userId,
-    signup_order: currentPlayerCount + 1,
+    signup_order: signupOrder,
   });
 
   if (signupError) throw signupError;

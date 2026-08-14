@@ -12,7 +12,7 @@ import { useTheme } from '@/theme';
 import { ThemedTextBox, ThemedCard, ThemedButton, ThemedToggle } from '@/components/themed';
 import { useTeamAssignment } from '@/hooks/useTeamAssignment';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
-import { getTeamCounts } from '@/utils/gameUtils';
+import { getTeamCounts, getPlayerDisplayName } from '@/utils/gameUtils';
 import {
   TeamAssignmentHeader,
   TeamStatsCard,
@@ -161,7 +161,9 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
               {game.player_games.map((playerGame, index) => (
                 <PlayerAssignmentItem
                   key={playerGame.id}
-                  playerName={playerGame.profile.display_name || playerGame.profile.username}
+                  playerName={
+                    getPlayerDisplayName(playerGame) + (playerGame.is_ringer ? ' (Ringer)' : '')
+                  }
                   position={index + 1}
                   currentTeam={teamAssignments[playerGame.id]}
                   onAssignTeam={(team) => handleAssignTeam(playerGame.id, team)}

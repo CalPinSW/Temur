@@ -7,6 +7,8 @@ import {
   getVisiblePlayers,
   getTeamCounts,
   isGameAdmin,
+  getPlayerDisplayName,
+  getNextSignupOrder,
 } from '@/utils/gameUtils';
 import { PlayerGameWithProfile } from '@/types/game';
 
@@ -21,6 +23,9 @@ function makePlayer(overrides: Partial<PlayerGameWithProfile>): PlayerGameWithPr
     board_y: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
+    is_ringer: false,
+    guest_name: null,
+    added_by: null,
     profile: {
       id: `user-${overrides.signup_order ?? 0}`,
       username: `player${overrides.signup_order ?? 0}`,
@@ -150,6 +155,22 @@ describe('gameUtils', () => {
     });
   });
 
+  describe('getNextSignupOrder', () => {
+    it('returns 1 for an empty player list', () => {
+      expect(getNextSignupOrder([])).toBe(1);
+    });
+
+    it('returns one past the highest existing signup_order', () => {
+      const players = [1, 2, 3].map((signup_order) => makePlayer({ signup_order }));
+      expect(getNextSignupOrder(players)).toBe(4);
+    });
+
+    it('is not fooled by a gap left by a withdrawal (uses max, not count)', () => {
+      const players = [1, 2, 5].map((signup_order) => makePlayer({ signup_order }));
+      expect(getNextSignupOrder(players)).toBe(6);
+    });
+  });
+
   describe('isGameAdmin', () => {
     it('returns false when there is no logged-in user', () => {
       const game = { group_id: null, created_by: 'user-1' };
@@ -171,6 +192,37 @@ describe('gameUtils', () => {
       const game = { group_id: 'group-1', created_by: 'user-1' };
       expect(isGameAdmin(game, 'user-2', new Set(['group-1']))).toBe(true);
       expect(isGameAdmin(game, 'user-1', new Set())).toBe(false);
+    });
+  });
+
+  describe('getPlayerDisplayName', () => {
+    it('prefers display_name over username for a regular player', () => {
+      const player = makePlayer({
+        profile: { id: 'user-1', username: 'p1', display_name: 'Player One', avatar_url: null },
+      });
+      expect(getPlayerDisplayName(player)).toBe('Player One');
+    });
+
+    it('falls back to username when display_name is null', () => {
+      const player = makePlayer({
+        profile: { id: 'user-1', username: 'p1', display_name: null, avatar_url: null },
+      });
+      expect(getPlayerDisplayName(player)).toBe('p1');
+    });
+
+    it('returns the guest name for a ringer, ignoring any profile', () => {
+      const player = makePlayer({ is_ringer: true, guest_name: 'Some Ringer', profile: null });
+      expect(getPlayerDisplayName(player)).toBe('Some Ringer');
+    });
+
+    it('falls back to "Guest" for a ringer with no guest name', () => {
+      const player = makePlayer({ is_ringer: true, guest_name: null, profile: null });
+      expect(getPlayerDisplayName(player)).toBe('Guest');
+    });
+
+    it('does not blow up for a regular player with a null profile', () => {
+      const player = makePlayer({ profile: null });
+      expect(getPlayerDisplayName(player)).toBe('');
     });
   });
 

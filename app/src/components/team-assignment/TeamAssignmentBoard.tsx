@@ -4,6 +4,7 @@ import { useTheme } from '@/theme';
 import { ThemedTextBox } from '@/components/themed';
 import { BoardPosition, PlayerGameWithProfile } from '@/types/game';
 import { DraggablePlayerChip, CHIP_HEIGHT, CHIP_WIDTH } from './DraggablePlayerChip';
+import { getPlayerDisplayName } from '@/utils/gameUtils';
 
 type BoxId = 'pool' | 'team1' | 'team2';
 
@@ -132,7 +133,7 @@ export function TeamAssignmentBoard({
       return (
         <DraggablePlayerChip
           key={pg.id}
-          playerName={pg.profile.display_name || pg.profile.username}
+          playerName={getPlayerDisplayName(pg) + (pg.is_ringer ? ' (Ringer)' : '')}
           team={teamAssignments[pg.id]}
           style={{ position: 'absolute', left, top }}
           onDragStart={() => handleDragStart(boxId)}
@@ -164,7 +165,7 @@ export function TeamAssignmentBoard({
           poolPlayers.map((pg) => (
             <DraggablePlayerChip
               key={pg.id}
-              playerName={pg.profile.display_name || pg.profile.username}
+              playerName={getPlayerDisplayName(pg) + (pg.is_ringer ? ' (Ringer)' : '')}
               team={null}
               onDragStart={() => handleDragStart('pool')}
               onDragRelease={(pageX, pageY) => handleDragRelease(pg.id, pageX, pageY)}

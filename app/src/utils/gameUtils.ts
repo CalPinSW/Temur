@@ -65,6 +65,14 @@ export const getVisiblePlayers = (
   return filteredPlayers.slice(0, 5);
 };
 
+export const getPlayerDisplayName = (pg: PlayerGameWithProfile): string =>
+  pg.is_ringer
+    ? (pg.guest_name ?? 'Guest')
+    : pg.profile?.display_name || pg.profile?.username || '';
+
+export const getNextSignupOrder = (players: PlayerGameWithProfile[]): number =>
+  players.length === 0 ? 1 : Math.max(...players.map((p) => p.signup_order)) + 1;
+
 export const isGameAdmin = (
   game: Pick<Game, 'group_id' | 'created_by'>,
   userId: string | undefined,

@@ -13,6 +13,8 @@ interface WaitlistSectionProps {
   currentUserId?: string;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  isAdmin?: boolean;
+  onRemoveRinger?: (playerGameId: string, ringerName: string) => void;
 }
 
 export function WaitlistSection({
@@ -21,6 +23,8 @@ export function WaitlistSection({
   currentUserId,
   isExpanded,
   onToggleExpand,
+  isAdmin,
+  onRemoveRinger,
 }: WaitlistSectionProps) {
   const { colors } = useTheme();
   const waitlistPlayers = getVisiblePlayers(
@@ -45,6 +49,8 @@ export function WaitlistSection({
         currentUserId={currentUserId}
         isExpanded={isExpanded}
         onToggleExpand={onToggleExpand}
+        isAdmin={isAdmin}
+        onRemoveRinger={onRemoveRinger}
       />
     </View>
   );

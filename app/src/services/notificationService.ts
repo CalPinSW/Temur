@@ -161,7 +161,8 @@ export type NotificationType =
   | 'group_invite'
   | 'game_invite'
   | 'game_visible'
-  | 'team_assigned';
+  | 'team_assigned'
+  | 'ringers_open';
 
 export interface NotificationPayload {
   type: NotificationType;
@@ -222,4 +223,13 @@ export const NotificationTemplates = {
       data: { screen: 'GameDetail', gameId },
     };
   },
+
+  ringersOpen: (gameId: string, adminMessage?: string): NotificationPayload => ({
+    type: 'ringers_open',
+    title: 'Ringers needed!',
+    body: adminMessage?.trim()
+      ? adminMessage.trim()
+      : 'This game is now open to ringers — add one if you know someone who can play.',
+    data: { screen: 'GameDetail', gameId },
+  }),
 };
