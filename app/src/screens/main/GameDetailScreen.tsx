@@ -43,6 +43,7 @@ import {
   getActivePlayers,
   getWaitlistPlayers,
   getVisiblePlayers,
+  getNextSignupOrder,
   isGameAdmin,
 } from '@/utils/gameUtils';
 import {
@@ -145,7 +146,12 @@ export function GameDetailScreen({
 
     try {
       setIsRespondingToInvite(true);
-      await acceptGameInvitation(game.invitation_id, gameId, user.id, game.player_count);
+      await acceptGameInvitation(
+        game.invitation_id,
+        gameId,
+        user.id,
+        getNextSignupOrder(game.player_games)
+      );
       refetch();
     } catch (error) {
       console.error('Error accepting invite:', error);
@@ -277,7 +283,7 @@ export function GameDetailScreen({
   };
 
   const handleSubmitAddRinger = () => {
-    handleAddRinger(ringerNameInput, game.player_count + 1, () => {
+    handleAddRinger(ringerNameInput, getNextSignupOrder(game.player_games), () => {
       setRingerNameInput('');
       setIsAddRingerSectionOpen(false);
       refetch();

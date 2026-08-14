@@ -67,7 +67,7 @@ describe('gameInvitationService', () => {
         player_games: playerGamesBuilder,
       });
 
-      await acceptGameInvitation('invitation-1', 'game-1', 'user-2', 3);
+      await acceptGameInvitation('invitation-1', 'game-1', 'user-2', 4);
 
       expect(invitationsBuilder.update).toHaveBeenCalledWith({ status: 'accepted' });
       expect(invitationsBuilder.eq).toHaveBeenCalledWith('id', 'invitation-1');
@@ -86,7 +86,7 @@ describe('gameInvitationService', () => {
         player_games: playerGamesBuilder,
       });
 
-      await expect(acceptGameInvitation('invitation-1', 'game-1', 'user-2', 3)).rejects.toThrow(
+      await expect(acceptGameInvitation('invitation-1', 'game-1', 'user-2', 4)).rejects.toThrow(
         'gone'
       );
       expect(playerGamesBuilder.insert).not.toHaveBeenCalled();

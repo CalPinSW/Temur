@@ -8,6 +8,7 @@ import {
   getTeamCounts,
   isGameAdmin,
   getPlayerDisplayName,
+  getNextSignupOrder,
 } from '@/utils/gameUtils';
 import { PlayerGameWithProfile } from '@/types/game';
 
@@ -151,6 +152,22 @@ describe('gameUtils', () => {
       const visible = getVisiblePlayers(players, capacity, false, 'user-1');
 
       expect(visible.map((p) => p.signup_order)).toEqual([1, 2, 3]);
+    });
+  });
+
+  describe('getNextSignupOrder', () => {
+    it('returns 1 for an empty player list', () => {
+      expect(getNextSignupOrder([])).toBe(1);
+    });
+
+    it('returns one past the highest existing signup_order', () => {
+      const players = [1, 2, 3].map((signup_order) => makePlayer({ signup_order }));
+      expect(getNextSignupOrder(players)).toBe(4);
+    });
+
+    it('is not fooled by a gap left by a withdrawal (uses max, not count)', () => {
+      const players = [1, 2, 5].map((signup_order) => makePlayer({ signup_order }));
+      expect(getNextSignupOrder(players)).toBe(6);
     });
   });
 

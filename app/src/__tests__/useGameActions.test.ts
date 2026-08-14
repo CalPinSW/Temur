@@ -1,6 +1,6 @@
 import { Alert, AlertButton } from 'react-native';
 import { renderHook, act } from '@testing-library/react-native';
-import { GameWithPlayers } from '@/types/game';
+import { GameWithPlayers, PlayerGameWithProfile } from '@/types/game';
 
 jest.mock('@/services/supabase', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories can't reference outer imports (hoisting)
@@ -35,6 +35,29 @@ function makeGame(overrides: Partial<GameWithPlayers> = {}): GameWithPlayers {
   };
 }
 
+function makePlayerGame(signupOrder: number): PlayerGameWithProfile {
+  return {
+    id: `pg-${signupOrder}`,
+    game_id: 'game-1',
+    user_id: `user-${signupOrder}`,
+    signup_order: signupOrder,
+    team: null,
+    board_x: null,
+    board_y: null,
+    created_at: '',
+    updated_at: '',
+    is_ringer: false,
+    guest_name: null,
+    added_by: null,
+    profile: {
+      id: `user-${signupOrder}`,
+      username: `p${signupOrder}`,
+      display_name: null,
+      avatar_url: null,
+    },
+  };
+}
+
 describe('useGameActions', () => {
   let alertSpy: jest.SpyInstance;
 
@@ -55,7 +78,10 @@ describe('useGameActions', () => {
       const { result } = renderHook(() => useGameActions('game-1', 'user-1'));
 
       await act(async () => {
-        await result.current.handleSignUp(makeGame({ player_count: 3 }), onSuccess);
+        await result.current.handleSignUp(
+          makeGame({ player_games: [makePlayerGame(1), makePlayerGame(2), makePlayerGame(3)] }),
+          onSuccess
+        );
       });
 
       expect(builder.insert).toHaveBeenCalledWith({
@@ -66,6 +92,26 @@ describe('useGameActions', () => {
       expect(onSuccess).toHaveBeenCalled();
       expect(alertSpy).toHaveBeenCalledWith('Success', expect.any(String));
       expect(result.current.isSigningUp).toBe(false);
+    });
+
+    it('signs up at max(signup_order) + 1, not player_count + 1, so a gap left by a withdrawal does not collide', async () => {
+      const builder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { player_games: builder });
+      const onSuccess = jest.fn();
+      const { result } = renderHook(() => useGameActions('game-1', 'user-1'));
+
+      // player 3 withdrew, leaving signup_order 1, 2, 4 (3 rows, but max is 4)
+      await act(async () => {
+        await result.current.handleSignUp(
+          makeGame({
+            player_count: 3,
+            player_games: [makePlayerGame(1), makePlayerGame(2), makePlayerGame(4)],
+          }),
+          onSuccess
+        );
+      });
+
+      expect(builder.insert).toHaveBeenCalledWith(expect.objectContaining({ signup_order: 5 }));
     });
 
     it('shows a specific message for a duplicate signup', async () => {

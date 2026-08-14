@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { GameWithPlayers } from '@/types/game';
+import { getNextSignupOrder } from '@/utils/gameUtils';
 
 export function useGameActions(gameId: string, userId?: string) {
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -14,7 +15,7 @@ export function useGameActions(gameId: string, userId?: string) {
     try {
       setIsSigningUp(true);
 
-      const nextSignupOrder = game.player_count + 1;
+      const nextSignupOrder = getNextSignupOrder(game.player_games);
 
       const { error } = await supabase.from('player_games').insert({
         game_id: gameId,
