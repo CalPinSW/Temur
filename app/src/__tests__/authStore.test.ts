@@ -1,6 +1,6 @@
 jest.mock('expo-auth-session', () => ({
   __esModule: true,
-  makeRedirectUri: jest.fn(() => 'matchday://auth/callback'),
+  makeRedirectUri: jest.fn(() => 'temur://auth/callback'),
 }));
 
 jest.mock('@/services/supabase', () => {
@@ -204,7 +204,7 @@ describe('authStore', () => {
       expect(result.error).toBeNull();
       expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
         'a@b.com',
-        expect.objectContaining({ redirectTo: 'matchday://auth/callback' })
+        expect.objectContaining({ redirectTo: 'temur://auth/callback' })
       );
     });
   });

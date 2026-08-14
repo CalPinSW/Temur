@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useTheme } from '@/theme';
 import {
   navigationRef,
   navigateFromNotification,
@@ -14,6 +15,7 @@ import {
 export function RootNavigator() {
   const user = useAuthStore((state) => state.user);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const { colors } = useTheme();
 
   // Initialize push notifications when user is logged in
   useNotifications({
@@ -33,8 +35,8 @@ export function RootNavigator() {
 
   if (!isInitialized) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -51,6 +53,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
 });

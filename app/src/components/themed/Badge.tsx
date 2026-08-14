@@ -19,7 +19,7 @@ export function ThemedBadge({ text, variant = 'default' }: ThemedBadgeProps) {
         text: colors.text,
       },
       success: {
-        bg: theme === 'light' ? '#DCFCE7' : '#14532D',
+        bg: theme === 'light' ? '#E3F7F7' : '#0D3A3A',
         text: colors.success,
       },
       error: {

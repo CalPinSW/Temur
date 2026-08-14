@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         email,
         password,
         options: {
-          emailRedirectTo: makeRedirectUri({ scheme: 'matchday', path: 'auth/callback' }),
+          emailRedirectTo: makeRedirectUri({ scheme: 'temur', path: 'auth/callback' }),
           data: {
             username,
             display_name: displayName,
@@ -193,7 +193,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: makeRedirectUri({
-          scheme: 'matchday',
+          scheme: 'temur',
           path: 'reset-password',
         }),
       });

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Linking } from 'react-native';
+import { View, Image, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { useTheme } from '@/theme';
 import { ThemedTextBox, ThemedCard, ThemedButton } from '@/components/themed';
+import appIconImage from '../../../assets/icon.png';
 
 interface AboutScreenProps {
   onGoBack: () => void;
@@ -29,12 +30,12 @@ export function AboutScreen({ onGoBack }: AboutScreenProps) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.logoSection}>
-          <Text style={styles.appIcon}>🧾</Text>
+          <Image source={appIconImage} style={styles.appIcon} />
           <ThemedTextBox variant="heading" weight="bold" align="center">
-            MatchDay
+            Temur
           </ThemedTextBox>
           <ThemedTextBox variant="body" color="secondary" align="center">
-            App Tagline
+            Get your game together.
           </ThemedTextBox>
         </View>
 
@@ -68,7 +69,7 @@ export function AboutScreen({ onGoBack }: AboutScreenProps) {
         </View>
 
         <ThemedTextBox variant="caption" color="tertiary" align="center">
-          {`© ${new Date().getFullYear()} MatchDay. All rights reserved.`}
+          {`© ${new Date().getFullYear()} Temur. All rights reserved.`}
         </ThemedTextBox>
       </ScrollView>
     </SafeAreaView>
@@ -99,7 +100,9 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   appIcon: {
-    fontSize: 64,
+    width: 88,
+    height: 88,
+    borderRadius: 20,
     marginBottom: 16,
   },
   infoRow: {

@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "MatchDay",
-    "slug": "matchday",
+    "name": "Temur",
+    "slug": "temur",
     "version": "1.0.0",
-    "scheme": "matchday",
+    "scheme": "temur",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,11 +11,11 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#4F46E5"
+      "backgroundColor": "#0A3B27"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.calpin.matchday",
+      "bundleIdentifier": "com.calpin.temur",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -24,9 +24,9 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#4F46E5"
+        "backgroundColor": "#0A3B27"
       },
-      "package": "com.calpin.matchday",
+      "package": "com.calpin.temur",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -35,7 +35,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "matchday",
+              "scheme": "temur",
               "host": "auth",
               "pathPrefix": "/callback"
             }
@@ -61,7 +61,7 @@
     "owner": "calpin",
     "extra": {
       "eas": {
-        "projectId": "59de9d9c-499a-4b0a-adcd-858b2799501f"
+        "projectId": "c50cd5b5-778e-4177-b68d-41f07f563b4b"
       }
     }
   }
