@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-MatchDay (`app.json` name/slug/scheme: `matchday`, iOS/Android bundle id `com.calpin.matchday`) is a React Native (Expo) mobile app, built from a generic "mobile app template" and now specialized for organizing football/5-a-side games: admins create games, players sign up, admins assign teams (drag-and-drop board), and players rate each other after games. Backend is Supabase (Postgres + Auth + Edge Functions + Storage).
+Temur (`app.json` name/slug/scheme: `temur`, iOS/Android bundle id `com.calpin.temur`) is a React Native (Expo) mobile app, built from a generic "mobile app template" and now specialized for organizing football/5-a-side games: admins create games, players sign up, admins assign teams (drag-and-drop board), and players rate each other after games. Backend is Supabase (Postgres + Auth + Edge Functions + Storage).
 
 Repo layout:
 - `app/` — the Expo React Native app (all frontend work happens here)

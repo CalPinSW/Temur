@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "MatchDay",
-    "slug": "matchday",
+    "name": "Temur",
+    "slug": "temur",
     "version": "1.0.0",
-    "scheme": "matchday",
+    "scheme": "temur",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.calpin.matchday",
+      "bundleIdentifier": "com.calpin.temur",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A3B27"
       },
-      "package": "com.calpin.matchday",
+      "package": "com.calpin.temur",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -35,7 +35,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "matchday",
+              "scheme": "temur",
               "host": "auth",
               "pathPrefix": "/callback"
             }

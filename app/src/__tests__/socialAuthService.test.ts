@@ -6,7 +6,7 @@ jest.mock('expo-web-browser', () => ({
 
 jest.mock('expo-auth-session', () => ({
   __esModule: true,
-  makeRedirectUri: jest.fn(() => 'matchday://auth/callback'),
+  makeRedirectUri: jest.fn(() => 'temur://auth/callback'),
 }));
 
 jest.mock('@/services/supabase', () => {
@@ -35,7 +35,7 @@ describe('socialAuthService', () => {
     });
     mockWebBrowser.openAuthSessionAsync.mockResolvedValue({
       type: 'success',
-      url: 'matchday://auth/callback#access_token=abc123&refresh_token=refresh456',
+      url: 'temur://auth/callback#access_token=abc123&refresh_token=refresh456',
     } as WebBrowser.WebBrowserAuthSessionResult);
     mockSupabase.auth.setSession.mockResolvedValue({
       data: { session: { access_token: 'abc123' } },
@@ -46,7 +46,7 @@ describe('socialAuthService', () => {
 
     expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'matchday://auth/callback', skipBrowserRedirect: true },
+      options: { redirectTo: 'temur://auth/callback', skipBrowserRedirect: true },
     });
     expect(mockSupabase.auth.setSession).toHaveBeenCalledWith({
       access_token: 'abc123',
@@ -103,7 +103,7 @@ describe('socialAuthService', () => {
     });
     mockWebBrowser.openAuthSessionAsync.mockResolvedValue({
       type: 'success',
-      url: 'matchday://auth/callback?error=access_denied&error_description=User+denied+access',
+      url: 'temur://auth/callback?error=access_denied&error_description=User+denied+access',
     } as WebBrowser.WebBrowserAuthSessionResult);
 
     const result = await signInWithGoogle();
