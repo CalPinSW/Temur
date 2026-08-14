@@ -16,6 +16,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Profile } from '@/types/auth';
 import { EmptyState } from '@/components';
 import { removeFriend } from '@/services/friendshipService';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { useTheme } from '@/theme';
 import { ThemedTextBox, ThemedBadge, ThemedButton } from '@/components/themed';
 
@@ -39,7 +40,6 @@ export function FriendsScreen({ onNavigateToSearch, onNavigateToRequests }: Frie
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchFriends = useCallback(async () => {
     if (!user) return;
@@ -130,11 +130,11 @@ export function FriendsScreen({ onNavigateToSearch, onNavigateToRequests }: Frie
     setIsLoading(false);
   }, [fetchFriends, fetchPendingCount]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await Promise.all([fetchFriends(), fetchPendingCount()]);
-    setIsRefreshing(false);
-  };
+  const refreshData = useCallback(
+    () => Promise.all([fetchFriends(), fetchPendingCount()]),
+    [fetchFriends, fetchPendingCount]
+  );
+  const { refreshing: isRefreshing, onRefresh: handleRefresh } = useRefreshControl(refreshData);
 
   const handleRemoveFriend = (friendship: Friendship) => {
     Alert.alert(

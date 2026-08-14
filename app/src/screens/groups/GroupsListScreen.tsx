@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -14,6 +15,7 @@ import { EmptyState } from '@/components';
 import { useAuthStore } from '@/store/authStore';
 import { useGroups } from '@/hooks/useGroups';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
+import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { GroupWithRole } from '@/types/group';
 
 interface GroupsListScreenProps {
@@ -29,8 +31,13 @@ export function GroupsListScreen({
 }: GroupsListScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
-  const { groups, isLoading } = useGroups(user?.id);
-  const { invitations } = useGroupInvitations(user?.id);
+  const { groups, isLoading, refetch: refetchGroups } = useGroups(user?.id);
+  const { invitations, refetch: refetchInvitations } = useGroupInvitations(user?.id);
+  const refreshData = useCallback(
+    () => Promise.all([refetchGroups(), refetchInvitations()]),
+    [refetchGroups, refetchInvitations]
+  );
+  const { refreshing, onRefresh } = useRefreshControl(refreshData);
 
   const renderGroup = ({ item }: { item: GroupWithRole }) => (
     <TouchableOpacity
@@ -113,6 +120,13 @@ export function GroupsListScreen({
         renderItem={renderGroup}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={groups.length === 0 ? styles.emptyList : styles.list}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       />
     </SafeAreaView>
   );
