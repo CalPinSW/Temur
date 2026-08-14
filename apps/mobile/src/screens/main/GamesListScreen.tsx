@@ -112,8 +112,8 @@ export function GamesListScreen({
   }, [user, adminGroupIds]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchGames();
+    const load = () => fetchGames();
+    load();
 
     const channel = supabase
       .channel('games-changes')

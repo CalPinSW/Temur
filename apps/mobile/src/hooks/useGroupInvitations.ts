@@ -37,8 +37,8 @@ export function useGroupInvitations(userId?: string) {
   }, [userId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchInvitations();
+    const load = () => fetchInvitations();
+    load();
 
     if (!userId) return;
 

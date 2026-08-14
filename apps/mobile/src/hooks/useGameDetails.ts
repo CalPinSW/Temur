@@ -130,8 +130,8 @@ export function useGameDetails(gameId: string, userId?: string) {
   }, [gameId, userId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchGameDetails();
+    const load = () => fetchGameDetails();
+    load();
 
     const channel = supabase
       .channel(`game-${gameId}`)

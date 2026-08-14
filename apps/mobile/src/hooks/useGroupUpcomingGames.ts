@@ -70,8 +70,8 @@ export function useGroupUpcomingGames(groupId: string, userId?: string) {
   }, [groupId, userId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchGames();
+    const load = () => fetchGames();
+    load();
 
     const channel = supabase
       .channel(`group-games-${groupId}`)

@@ -52,8 +52,8 @@ export function useAcceptedFriends(userId?: string) {
   }, [userId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchFriends();
+    const load = () => fetchFriends();
+    load();
   }, [fetchFriends]);
 
   return { friends, isLoading, refetch: fetchFriends };

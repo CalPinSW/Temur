@@ -124,12 +124,6 @@ export function FriendsScreen({ onNavigateToSearch, onNavigateToRequests }: Frie
     }
   }, [user]);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    await Promise.all([fetchFriends(), fetchPendingCount()]);
-    setIsLoading(false);
-  }, [fetchFriends, fetchPendingCount]);
-
   const refreshData = useCallback(
     () => Promise.all([fetchFriends(), fetchPendingCount()]),
     [fetchFriends, fetchPendingCount]
@@ -160,9 +154,13 @@ export function FriendsScreen({ onNavigateToSearch, onNavigateToRequests }: Frie
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    async function loadData() {
+      setIsLoading(true);
+      await Promise.all([fetchFriends(), fetchPendingCount()]);
+      setIsLoading(false);
+    }
     loadData();
-  }, [loadData]);
+  }, [fetchFriends, fetchPendingCount]);
 
   const getInitials = (profile: Profile) => {
     if (profile.display_name) {

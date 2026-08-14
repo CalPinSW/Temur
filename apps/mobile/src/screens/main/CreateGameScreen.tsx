@@ -61,6 +61,11 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
 
   const [mode, setMode] = useState<'friends' | 'group'>(presetGroupId ? 'group' : 'friends');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(presetGroupId ?? null);
+  // Falls back to the first admin group once it's loaded, until the user
+  // explicitly picks one — computed at render time instead of synced into
+  // state via an effect, so it always reflects the current adminGroups.
+  const effectiveGroupId =
+    selectedGroupId ?? (!presetGroupId && mode === 'group' ? (adminGroups[0]?.id ?? null) : null);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
 
   const [kickoffDate, setKickoffDate] = useState<Date>(getNextSaturday(new Date()));
@@ -121,13 +126,6 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
     loadDefaultDates();
   }, []);
 
-  useEffect(() => {
-    if (!presetGroupId && mode === 'group' && !selectedGroupId && adminGroups.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedGroupId(adminGroups[0].id);
-    }
-  }, [mode, adminGroups, presetGroupId, selectedGroupId]);
-
   const toggleFriend = (friendId: string) => {
     setSelectedFriendIds((prev) => {
       const next = new Set(prev);
@@ -143,7 +141,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
   const handleCreateGame = async () => {
     if (!user) return;
 
-    if (mode === 'group' && !selectedGroupId) {
+    if (mode === 'group' && !effectiveGroupId) {
       Alert.alert('Select a Group', 'Choose which group this game is for.');
       return;
     }
@@ -159,7 +157,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
           team1_name: team1Name,
           team2_name: team2Name,
           players_per_team: playersPerTeam,
-          group_id: mode === 'group' ? selectedGroupId : null,
+          group_id: mode === 'group' ? effectiveGroupId : null,
           created_by: user.id,
         })
         .select()
@@ -248,7 +246,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
             ) : (
               <ThemedDropdown
                 label="Which group is this game for?"
-                value={selectedGroupId}
+                value={effectiveGroupId}
                 options={groupOptions}
                 onChange={setSelectedGroupId}
               />
@@ -333,7 +331,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
               title={isCreating ? 'Creating...' : 'Create Game'}
               variant="primary"
               onPress={handleCreateGame}
-              disabled={isCreating || (mode === 'group' && !selectedGroupId)}
+              disabled={isCreating || (mode === 'group' && !effectiveGroupId)}
             />
           </View>
 

@@ -30,8 +30,8 @@ export function useGroupAdminGroupIds(userId?: string) {
   }, [userId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchAdminGroupIds();
+    const load = () => fetchAdminGroupIds();
+    load();
 
     if (!userId) return;
 

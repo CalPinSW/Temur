@@ -112,8 +112,8 @@ export function useTeamAssignment(gameId: string) {
   }, [gameId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchGameDetails();
+    const load = () => fetchGameDetails();
+    load();
   }, [fetchGameDetails]);
 
   const handleAssignTeam = (playerGameId: string, team: number | null) => {

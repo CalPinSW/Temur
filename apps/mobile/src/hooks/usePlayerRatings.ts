@@ -15,24 +15,23 @@ export function usePlayerRatings(gameId: string, playerGameIds: string[], userId
   const playerGameIdsKey = playerGameIds.join(',');
 
   useEffect(() => {
-    if (!userId || playerGameIds.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsLoading(false);
-      return;
-    }
+    if (!userId) return;
 
     let cancelled = false;
-    setIsLoading(true);
 
-    getMyRatings(playerGameIds, userId)
-      .then((existing) => {
-        if (cancelled) return;
-        setRatings(existing);
-      })
-      .catch((error) => console.error('Error loading ratings:', error))
-      .finally(() => {
+    async function loadRatings() {
+      setIsLoading(true);
+      try {
+        const existing = await getMyRatings(playerGameIds, userId!);
+        if (!cancelled) setRatings(existing);
+      } catch (error) {
+        console.error('Error loading ratings:', error);
+      } finally {
         if (!cancelled) setIsLoading(false);
-      });
+      }
+    }
+
+    loadRatings();
 
     return () => {
       cancelled = true;

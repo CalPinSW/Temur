@@ -69,18 +69,16 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
     }
   }, [user]);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    await fetchRequests();
-    setIsLoading(false);
-  }, [fetchRequests]);
-
   const { refreshing: isRefreshing, onRefresh: handleRefresh } = useRefreshControl(fetchRequests);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    async function loadData() {
+      setIsLoading(true);
+      await fetchRequests();
+      setIsLoading(false);
+    }
     loadData();
-  }, [loadData]);
+  }, [fetchRequests]);
 
   const acceptRequest = async (requestId: string) => {
     try {

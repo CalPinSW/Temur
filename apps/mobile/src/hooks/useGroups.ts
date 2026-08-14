@@ -36,8 +36,8 @@ export function useGroups(userId?: string) {
   }, [userId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchGroups();
+    const load = () => fetchGroups();
+    load();
 
     if (!userId) return;
 

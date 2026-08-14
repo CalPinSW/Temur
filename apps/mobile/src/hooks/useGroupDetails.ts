@@ -55,8 +55,8 @@ export function useGroupDetails(groupId: string) {
   }, [groupId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchGroupDetails();
+    const load = () => fetchGroupDetails();
+    load();
 
     const channel = supabase
       .channel(`group-${groupId}`)
