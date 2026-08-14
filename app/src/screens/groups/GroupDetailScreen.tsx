@@ -344,6 +344,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   summaryText: {
+    flexGrow: 1,
     marginBottom: 12,
   },
   leaveSection: {
