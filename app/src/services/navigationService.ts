@@ -9,6 +9,10 @@ export function navigate(name: string, params?: Record<string, unknown>) {
   }
 }
 
+export function navigateToGame(gameId: string) {
+  navigate('MainFunctionalityTab', { screen: 'detail', gameId });
+}
+
 export type NotificationScreen =
   | 'FriendRequests'
   | 'Friends'

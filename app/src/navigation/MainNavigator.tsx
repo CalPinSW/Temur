@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, View, StyleSheet } from 'react-native';
 import { supabase } from '@/services/supabase';
+import { navigateToGame } from '@/services/navigationService';
 import { useAuthStore } from '@/store/authStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '@/theme';
@@ -15,6 +16,8 @@ import {
   GroupDetailScreen,
   InvitePlayerScreen,
   GroupInvitesScreen,
+  GroupGamesScreen,
+  GroupMembersScreen,
 } from '@/screens/groups';
 
 export type MainTabParamList = {
@@ -82,7 +85,7 @@ function FriendsStack({
 function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invites' } } }) {
   const screenParam = route?.params?.screen;
   const [screen, setScreen] = useState<
-    'list' | 'create' | 'detail' | 'invite' | 'invites' | 'creategame'
+    'list' | 'create' | 'detail' | 'invite' | 'invites' | 'creategame' | 'games' | 'members'
   >(screenParam || 'list');
   const [groupId, setGroupId] = useState<string | null>(null);
   const [inviteContext, setInviteContext] = useState<{
@@ -134,6 +137,20 @@ function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invite
     );
   }
 
+  if (screen === 'games' && groupId) {
+    return (
+      <GroupGamesScreen
+        groupId={groupId}
+        onGoBack={() => setScreen('detail')}
+        onNavigateToGame={(gameId) => navigateToGame(gameId)}
+      />
+    );
+  }
+
+  if (screen === 'members' && groupId) {
+    return <GroupMembersScreen groupId={groupId} onGoBack={() => setScreen('detail')} />;
+  }
+
   if (screen === 'detail' && groupId) {
     return (
       <GroupDetailScreen
@@ -148,6 +165,9 @@ function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invite
           setGroupId(id);
           setScreen('creategame');
         }}
+        onNavigateToGames={() => setScreen('games')}
+        onNavigateToGame={(gameId) => navigateToGame(gameId)}
+        onNavigateToMembers={() => setScreen('members')}
       />
     );
   }

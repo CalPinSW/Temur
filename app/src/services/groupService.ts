@@ -94,12 +94,44 @@ export async function updateMemberRole(memberId: string, role: GroupRole): Promi
   if (error) throw error;
 }
 
-export async function removeMember(memberId: string): Promise<void> {
+async function removeUpcomingGroupGameSignups(groupId: string, userId: string): Promise<void> {
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('id, kickoff_date')
+    .eq('group_id', groupId);
+
+  if (gamesError) throw gamesError;
+
+  const now = new Date();
+  const upcomingGameIds = (games ?? [])
+    .filter((game) => new Date(game.kickoff_date) > now)
+    .map((game) => game.id);
+
+  if (upcomingGameIds.length === 0) return;
+
+  const { error } = await supabase
+    .from('player_games')
+    .delete()
+    .eq('user_id', userId)
+    .in('game_id', upcomingGameIds);
+
+  if (error) throw error;
+}
+
+export async function removeMember(
+  memberId: string,
+  groupId: string,
+  userId: string
+): Promise<void> {
+  await removeUpcomingGroupGameSignups(groupId, userId);
+
   const { error } = await supabase.from('group_members').delete().eq('id', memberId);
   if (error) throw error;
 }
 
 export async function leaveGroup(groupId: string, userId: string): Promise<void> {
+  await removeUpcomingGroupGameSignups(groupId, userId);
+
   const { error } = await supabase
     .from('group_members')
     .delete()

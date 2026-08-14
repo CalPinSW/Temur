@@ -25,7 +25,7 @@ export function GroupInvitesScreen({ onGoBack }: GroupInvitesScreenProps) {
       setProcessingId(invitation.id);
       await acceptGroupInvitation(invitation.id, invitation.group_id, user.id);
       Alert.alert('Success', `You've joined ${invitation.group.name}!`);
-      refetch();
+      onGoBack();
     } catch (error) {
       console.error('Accept invite error:', error);
       Alert.alert('Error', 'Failed to accept invite');
