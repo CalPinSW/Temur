@@ -1,3 +1,4 @@
+export { ThemedAvatar } from './Avatar';
 export { ThemedButton } from './Button';
 export { ThemedTextBox } from './TextBox';
 export { ThemedInput } from './Input';

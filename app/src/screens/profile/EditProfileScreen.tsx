@@ -89,7 +89,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
       });
 
       const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
       const contentType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
 
       const { error: uploadError } = await supabase.storage
