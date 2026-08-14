@@ -45,6 +45,7 @@ import {
   getVisiblePlayers,
   getNextSignupOrder,
   isGameAdmin,
+  formatGameResult,
 } from '@/utils/gameUtils';
 import {
   GameHeader,
@@ -59,12 +60,14 @@ interface GameDetailScreenProps {
   gameId: string;
   onGoBack: () => void;
   onNavigateToTeamAssignment?: (gameId: string) => void;
+  onNavigateToGameResult?: (gameId: string) => void;
 }
 
 export function GameDetailScreen({
   gameId,
   onGoBack,
   onNavigateToTeamAssignment,
+  onNavigateToGameResult,
 }: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -361,6 +364,32 @@ export function GameDetailScreen({
               }
             />
           )}
+
+          {isPast && (
+            <View style={styles.resultSection}>
+              <ThemedTextBox variant="body" color="secondary">
+                {formatGameResult(
+                  game.team1_name,
+                  game.team2_name,
+                  game.result_team1_score,
+                  game.result_team2_score,
+                  game.result_outcome
+                ) || 'No result entered yet'}
+              </ThemedTextBox>
+              {onNavigateToGameResult && (
+                <ThemedButton
+                  title={
+                    game.result_outcome || game.result_team1_score !== null
+                      ? 'View / Edit Result'
+                      : 'Enter Result'
+                  }
+                  variant="outline"
+                  onPress={() => onNavigateToGameResult(gameId)}
+                  style={styles.resultButton}
+                />
+              )}
+            </View>
+          )}
         </ThemedCard>
 
         {isAdmin && !game.group_id && (
@@ -591,6 +620,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     gap: 16,
+  },
+  resultSection: {
+    marginTop: 12,
+    gap: 8,
+  },
+  resultButton: {
+    alignSelf: 'flex-start',
   },
   inviteBannerText: {
     marginBottom: 12,

@@ -71,25 +71,29 @@ describe('useGameDetails', () => {
       data: { ...baseGameRow, kickoff_date: '2020-01-01T18:00:00.000Z' },
       error: null,
     });
-    const ratingsBuilder = createQueryBuilder({
-      data: [
-        { player_game_id: 'pg-1', rating: 4 },
-        { player_game_id: 'pg-1', rating: 2 },
-        { player_game_id: 'pg-2', rating: 5 },
-      ],
-      error: null,
-    });
     const invitationsBuilder = createQueryBuilder({ data: null, error: null });
     mockFromTables(mockSupabase, {
       games: gamesBuilder,
-      player_ratings: ratingsBuilder,
       game_invitations: invitationsBuilder,
+    });
+    mockSupabase.rpc.mockResolvedValueOnce({
+      data: [
+        { player_game_id: 'pg-1', average_rating: 3, rating_count: 2 },
+        { player_game_id: 'pg-2', average_rating: 5, rating_count: 1 },
+      ],
+      error: null,
     });
 
     const { result } = renderHook(() => useGameDetails('game-1', 'user-1'));
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
+    expect(mockSupabase.rpc).toHaveBeenCalledWith(
+      'get_player_rating_summary',
+      expect.objectContaining({
+        p_player_game_ids: expect.arrayContaining(['pg-1', 'pg-2']),
+      })
+    );
     const pg1 = result.current.game?.player_games.find((p) => p.id === 'pg-1');
     const pg2 = result.current.game?.player_games.find((p) => p.id === 'pg-2');
     expect(pg1?.average_rating).toBe(3);

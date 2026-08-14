@@ -1,4 +1,4 @@
-import { Game, PlayerGameWithProfile } from '@/types/game';
+import { Game, GameOutcome, PlayerGameWithProfile } from '@/types/game';
 
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -80,6 +80,22 @@ export const isGameAdmin = (
 ): boolean => {
   if (!userId) return false;
   return game.group_id ? adminGroupIds.has(game.group_id) : game.created_by === userId;
+};
+
+export const formatGameResult = (
+  team1Name: string,
+  team2Name: string,
+  team1Score: number | null,
+  team2Score: number | null,
+  outcome: GameOutcome | null
+): string | null => {
+  if (team1Score !== null && team2Score !== null) {
+    return `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`;
+  }
+  if (outcome === 'team1_win') return `${team1Name} won`;
+  if (outcome === 'team2_win') return `${team2Name} won`;
+  if (outcome === 'draw') return 'Draw';
+  return null;
 };
 
 export const getTeamCounts = (teamAssignments: Record<string, number | null>) => {

@@ -3,6 +3,7 @@ import { GamesListScreen } from './GamesListScreen';
 import { GameDetailScreen } from './GameDetailScreen';
 import { TeamAssignmentScreen } from './TeamAssignmentScreen';
 import { CreateGameScreen } from './CreateGameScreen';
+import { GameResultScreen } from './GameResultScreen';
 
 interface MainFunctionalityScreenProps {
   route?: { params?: { screen?: 'detail'; gameId?: string } };
@@ -10,7 +11,7 @@ interface MainFunctionalityScreenProps {
 
 export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps) {
   const [currentScreen, setCurrentScreen] = useState<
-    'list' | 'detail' | 'teamAssignment' | 'create'
+    'list' | 'detail' | 'teamAssignment' | 'create' | 'result'
   >('list');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
@@ -38,6 +39,11 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     setCurrentScreen('teamAssignment');
   };
 
+  const handleNavigateToGameResult = (gameId: string) => {
+    setSelectedGameId(gameId);
+    setCurrentScreen('result');
+  };
+
   const handleBackToDetail = () => {
     setCurrentScreen('detail');
   };
@@ -58,12 +64,17 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     return <TeamAssignmentScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
   }
 
+  if (currentScreen === 'result' && selectedGameId) {
+    return <GameResultScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
+  }
+
   if (currentScreen === 'detail' && selectedGameId) {
     return (
       <GameDetailScreen
         gameId={selectedGameId}
         onGoBack={handleGoBack}
         onNavigateToTeamAssignment={handleNavigateToTeamAssignment}
+        onNavigateToGameResult={handleNavigateToGameResult}
       />
     );
   }

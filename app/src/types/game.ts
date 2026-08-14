@@ -1,3 +1,5 @@
+export type GameOutcome = 'team1_win' | 'team2_win' | 'draw';
+
 export interface Game {
   id: string;
   kickoff_date: string;
@@ -11,6 +13,9 @@ export interface Game {
   created_by: string | null;
   ringers_opened_at: string | null;
   ringers_opened_by: string | null;
+  result_team1_score: number | null;
+  result_team2_score: number | null;
+  result_outcome: GameOutcome | null;
 }
 
 export interface PlayerGame {
