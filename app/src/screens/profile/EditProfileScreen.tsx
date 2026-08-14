@@ -190,7 +190,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
             {avatarUrl ? (
               <Image source={{ uri: avatarUrl }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
                 <Text style={styles.avatarText}>{getInitials()}</Text>
               </View>
             )}
@@ -266,7 +266,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#4F46E5',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,

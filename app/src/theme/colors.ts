@@ -1,73 +1,75 @@
 export const Colors = {
   light: {
     background: '#FFFFFF',
-    backgroundSecondary: '#F9F9F9',
-    backgroundTertiary: '#F3F4F6',
+    backgroundSecondary: '#FAF8F3',
+    backgroundTertiary: '#F1EEE6',
     surface: '#FFFFFF',
-    surfaceSecondary: '#F9F9F9',
+    surfaceSecondary: '#FAF8F3',
 
-    text: '#1A1A1A',
-    textSecondary: '#666666',
-    textTertiary: '#999999',
+    text: '#12231C',
+    textSecondary: '#586158',
+    textTertiary: '#8A9089',
     textInverse: '#FFFFFF',
 
-    primary: '#4F46E5',
-    primaryHover: '#4338CA',
+    primary: '#146B45',
+    primaryHover: '#0F5636',
+    accent: '#D89B2A',
 
-    border: '#DDDDDD',
-    borderLight: '#E0E0E0',
+    border: '#DED7C7',
+    borderLight: '#E8E2D5',
 
-    error: '#EF4444',
-    errorBackground: '#FEF2F2',
+    error: '#C93B3B',
+    errorBackground: '#FBF0F0',
 
-    success: '#10B981',
+    success: '#0C7A8F',
 
-    divider: '#E0E0E0',
+    divider: '#E8E2D5',
 
     card: '#FFFFFF',
-    cardBorder: '#DDDDDD',
+    cardBorder: '#DED7C7',
 
-    input: '#F9F9F9',
-    inputBorder: '#DDDDDD',
-    inputDisabled: '#EEEEEE',
-    inputPlaceholder: '#999999',
+    input: '#FAF8F3',
+    inputBorder: '#DED7C7',
+    inputDisabled: '#EEEAE0',
+    inputPlaceholder: '#8A9089',
 
-    shadow: 'rgba(0, 0, 0, 0.3)',
+    shadow: 'rgba(0, 0, 0, 0.15)',
   },
   dark: {
-    background: '#000000',
-    backgroundSecondary: '#1A1A1A',
-    backgroundTertiary: '#2A2A2A',
-    surface: '#1A1A1A',
-    surfaceSecondary: '#2A2A2A',
+    background: '#0A1310',
+    backgroundSecondary: '#141F1A',
+    backgroundTertiary: '#1E2B24',
+    surface: '#141F1A',
+    surfaceSecondary: '#1E2B24',
 
-    text: '#FFFFFF',
-    textSecondary: '#B0B0B0',
-    textTertiary: '#808080',
-    textInverse: '#000000',
+    text: '#F5F3EE',
+    textSecondary: '#A9B3AD',
+    textTertiary: '#7C8880',
+    textInverse: '#0A1310',
 
-    primary: '#6366F1',
-    primaryHover: '#818CF8',
+    primary: '#34A873',
+    primaryHover: '#4FBE8D',
+    accent: '#F0B93D',
 
-    border: '#3A3A3A',
-    borderLight: '#2A2A2A',
+    border: '#2A3830',
+    borderLight: '#1E2B24',
 
-    error: '#F87171',
-    errorBackground: '#3A1A1A',
+    error: '#FA8072',
+    errorBackground: '#2A1512',
 
-    success: '#34D399',
+    success: '#1EC8C8',
 
-    divider: '#3A3A3A',
+    divider: '#2A3830',
 
-    card: '#1A1A1A',
-    cardBorder: '#3A3A3A',
+    card: '#141F1A',
+    cardBorder: '#2A3830',
 
-    input: '#2A2A2A',
-    inputBorder: '#3A3A3A',
-    inputDisabled: '#6a6969b3',
-    inputPlaceholder: '#8e8787ff',
+    input: '#1E2B24',
+    inputBorder: '#2A3830',
+    inputDisabled: 'rgba(169, 179, 173, 0.25)',
+    inputPlaceholder: '#7C8880',
 
-    shadow: 'rgba(0, 0, 0, 0.5)',
+    shadow: 'rgba(0, 0, 0, 0.4)',
   },
 };
 

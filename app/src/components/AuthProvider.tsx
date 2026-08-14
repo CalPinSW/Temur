@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
+import { useTheme } from '@/theme';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const initialize = useAuthStore((state) => state.initialize);
   const isInitialized = useAuthStore((state) => state.isInitialized);
+  const { colors } = useTheme();
 
   useEffect(() => {
     initialize();
@@ -16,9 +18,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   if (!isInitialized) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#4F46E5" />
-        <Text style={styles.text}>Loading...</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.text, { color: colors.textSecondary }]}>Loading...</Text>
       </View>
     );
   }
@@ -31,11 +33,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   text: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
 });
