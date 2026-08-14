@@ -1,32 +1,38 @@
-# Privacy Policy for App Name
+# Privacy Policy for Temur
 
-**Last Updated:** Febuary 18, 2026
+**Last Updated:** August 14, 2026
 
 ## Introduction
 
-{App Name} ("we", "our", or "the app") is a {Basic App Description}. This privacy policy explains how we collect, use, and protect your information.
+Temur ("we", "our", or "the app") is a mobile app for organizing 5-a-side and other football games: admins create games, players sign up, admins assign teams, and players rate each other after games. This privacy policy explains how we collect, use, and protect your information.
 
 ## Information We Collect
 
 ### Account Information
-- Email address (for authentication)
+- Email address (for authentication), or your name and email from Google/Apple if you sign in that way
 - Username and display name (for identification)
 - Profile picture (optional)
 
-### Usage Data -- Not Yet Implemented
-- App interactions and feature usage
-- Device information (for troubleshooting)
+### Game Activity
+- Games you create or sign up for, your position on the waitlist, and your assigned team
+- Ratings other players give you after a game, and ratings you give other players
+- Friend connections between users
+
+### Device Information
+- A push notification token, if you enable push notifications, used to notify you about game updates (signups, team assignments, reminders)
 
 ## How We Use Your Information
 
 - **Authentication**: To verify your identity and secure your account
-- **Social Features**: To enable connecting functionality with friends
+- **Game Organization**: To run signups, waitlists, team assignment, and post-game ratings
+- **Social Features**: To enable friend connections and invites
+- **Notifications**: To alert you about game activity, if enabled
 
 ## Data Storage
 
 - All data is stored securely using Supabase
 - Images are stored in secure cloud storage
-- Passwords are never stored in plain text
+- Passwords are never stored in plain text; social sign-in (Google/Apple) never shares your password with us
 
 ## Data Sharing
 
@@ -34,17 +40,14 @@ We do **not**:
 - Sell your personal information
 - Share your data with advertisers
 - Use your data for marketing purposes
-
-We **do** share:
-- Aggregate, anonymized usage statistics (for app improvement) -- Not Yet Implemented
+- Share your data with anyone outside the third-party services listed below
 
 ## Your Rights
 
 You have the right to:
 - Access your personal data
-- Delete your account and associated data
-- Export your data
-- Opt out of optional data collection
+- Request deletion of your account and associated data by emailing us (see Contact Us below)
+- Opt out of optional data collection, such as push notifications, in the app's settings
 
 ## Data Retention
 
@@ -60,7 +63,7 @@ We implement industry-standard security measures:
 
 ## Children's Privacy
 
-{App Name} is not intended for users under 13 years of age. We do not knowingly collect information from children.
+Temur is not intended for users under 13 years of age. We do not knowingly collect information from children.
 
 ## Changes to This Policy
 
@@ -75,6 +78,7 @@ For privacy-related questions or concerns, please contact:
 
 We use the following third-party services:
 - **Supabase**: Database and authentication
-- **Expo**: App distribution and updates
+- **Expo**: App distribution, updates, and push notifications
+- **Google / Apple**: Optional social sign-in
 
 Each service has its own privacy policy that governs their use of data.
