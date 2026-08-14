@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+
+:root {
+  --background: #ffffff;
+  --background-secondary: #faf8f3;
+  --surface: #ffffff;
+
+  --text: #12231c;
+  --text-secondary: #586158;
+  --text-tertiary: #8a9089;
+
+  --primary: #146b45;
+  --primary-hover: #0f5636;
+  --accent: #d89b2a;
+
+  --border: #ded7c7;
+  --border-light: #e8e2d5;
+
+  --error: #c93b3b;
+  --error-background: #fbf0f0;
+  --success: #0c7a8f;
+
+  --card: #ffffff;
+  --input: #faf8f3;
+  --input-border: #ded7c7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-surface: var(--surface);
+
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+
+  --color-error: var(--error);
+  --color-error-background: var(--error-background);
+  --color-success: var(--success);
+
+  --color-card: var(--card);
+  --color-input: var(--input);
+  --color-input-border: var(--input-border);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a1310;
+    --background-secondary: #141f1a;
+    --surface: #141f1a;
+
+    --text: #f5f3ee;
+    --text-secondary: #a9b3ad;
+    --text-tertiary: #7c8880;
+
+    --primary: #34a873;
+    --primary-hover: #4fbe8d;
+    --accent: #f0b93d;
+
+    --border: #2a3830;
+    --border-light: #1e2b24;
+
+    --error: #fa8072;
+    --error-background: #2a1512;
+    --success: #1ec8c8;
+
+    --card: #141f1a;
+    --input: #1e2b24;
+    --input-border: #2a3830;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+}

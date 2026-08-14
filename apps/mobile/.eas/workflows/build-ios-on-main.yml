@@ -1,0 +1,14 @@
+name: Build iOS on merge to main
+
+on:
+  push:
+    branches: ['main']
+    paths: ['apps/mobile/**']
+
+jobs:
+  build_ios:
+    name: Build iOS (development)
+    type: build
+    params:
+      platform: ios
+      profile: development
