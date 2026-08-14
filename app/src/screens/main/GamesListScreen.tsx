@@ -21,7 +21,7 @@ interface RawGame extends Game {
   player_games:
     | {
         id: string;
-        user_id: string;
+        user_id: string | null;
         signup_order: number;
         team: number | null;
         profile: {
@@ -29,7 +29,7 @@ interface RawGame extends Game {
           username: string;
           display_name: string | null;
           avatar_url: string | null;
-        };
+        } | null;
       }[]
     | null;
 }
@@ -67,7 +67,7 @@ export function GamesListScreen({
             user_id,
             signup_order,
             team,
-            profile:profiles (
+            profile:profiles!player_games_user_id_fkey (
               id,
               username,
               display_name,

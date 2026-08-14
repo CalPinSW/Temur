@@ -54,7 +54,7 @@ export function useGameDetails(gameId: string, userId?: string) {
             is_ringer,
             guest_name,
             added_by,
-            profile:profiles (
+            profile:profiles!player_games_user_id_fkey (
               id,
               username,
               display_name,
