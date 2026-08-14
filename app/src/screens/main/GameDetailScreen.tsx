@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -15,10 +16,12 @@ import {
   ThemedButton,
   ThemedToggle,
   ThemedInput,
+  ThemedBadge,
 } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGameDetails } from '@/hooks/useGameDetails';
 import { useGameActions } from '@/hooks/useGameActions';
+import { useRingerActions } from '@/hooks/useRingerActions';
 import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
 import { useAcceptedFriends } from '@/hooks/useAcceptedFriends';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
@@ -27,9 +30,14 @@ import {
   declineGameInvitation,
   inviteFriendsToGame,
 } from '@/services/gameInvitationService';
-import { notifyTeamAssignments } from '@/services/gameNotificationService';
+import {
+  notifyTeamAssignments,
+  notifyGroupMembersRingersOpen,
+} from '@/services/gameNotificationService';
 import { getGroupMessageTemplate } from '@/services/groupService';
+import { openGameToRingers, getSavedRingers } from '@/services/ringerService';
 import { supabase } from '@/services/supabase';
+import { SavedRinger } from '@/types/game';
 import {
   getGameCapacity,
   getActivePlayers,
@@ -68,9 +76,22 @@ export function GameDetailScreen({
   const [notifyMessage, setNotifyMessage] = useState('');
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const [isNotifying, setIsNotifying] = useState(false);
+  const [isRingersSectionOpen, setIsRingersSectionOpen] = useState(false);
+  const [ringersMessage, setRingersMessage] = useState(
+    'This game is now open to ringers — add one if you know someone who can play!'
+  );
+  const [isOpeningRingers, setIsOpeningRingers] = useState(false);
+  const [isAddRingerSectionOpen, setIsAddRingerSectionOpen] = useState(false);
+  const [ringerNameInput, setRingerNameInput] = useState('');
+  const [savedRingers, setSavedRingers] = useState<SavedRinger[]>([]);
+  const [isLoadingSavedRingers, setIsLoadingSavedRingers] = useState(false);
 
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
   const { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw } = useGameActions(
+    gameId,
+    user?.id
+  );
+  const { isAddingRinger, handleAddRinger, handleRemoveRinger } = useRingerActions(
     gameId,
     user?.id
   );
@@ -221,6 +242,52 @@ export function GameDetailScreen({
     }
   };
 
+  const handleOpenRingers = async () => {
+    if (!user || !game.group_id) return;
+
+    try {
+      setIsOpeningRingers(true);
+      await openGameToRingers(gameId, user.id);
+      await notifyGroupMembersRingersOpen(gameId, game.group_id, ringersMessage.trim());
+      setIsRingersSectionOpen(false);
+      Alert.alert('Success', 'Group notified that this game is open to ringers!');
+      refetch();
+    } catch (error) {
+      console.error('Error opening game to ringers:', error);
+      Alert.alert('Error', 'Failed to open game to ringers');
+    } finally {
+      setIsOpeningRingers(false);
+    }
+  };
+
+  const handleToggleAddRingerSection = async () => {
+    const next = !isAddRingerSectionOpen;
+    setIsAddRingerSectionOpen(next);
+
+    if (next && user) {
+      try {
+        setIsLoadingSavedRingers(true);
+        setSavedRingers(await getSavedRingers(user.id));
+      } catch (error) {
+        console.error('Error loading saved ringers:', error);
+      } finally {
+        setIsLoadingSavedRingers(false);
+      }
+    }
+  };
+
+  const handleSubmitAddRinger = () => {
+    handleAddRinger(ringerNameInput, game.player_count + 1, () => {
+      setRingerNameInput('');
+      setIsAddRingerSectionOpen(false);
+      refetch();
+    });
+  };
+
+  const handleRemoveRingerPress = (playerGameId: string) => {
+    handleRemoveRinger(playerGameId, refetch);
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -339,6 +406,8 @@ export function GameDetailScreen({
                 currentUserId={user?.id}
                 isExpanded={isPlayersExpanded}
                 onToggleExpand={() => setIsPlayersExpanded(!isPlayersExpanded)}
+                isAdmin={isAdmin}
+                onRemoveRinger={handleRemoveRingerPress}
               />
             ) : (
               <PlayersList
@@ -353,7 +422,48 @@ export function GameDetailScreen({
                 currentUserId={user?.id}
                 isExpanded={isPlayersExpanded}
                 onToggleExpand={() => setIsPlayersExpanded(!isPlayersExpanded)}
+                isAdmin={isAdmin}
+                onRemoveRinger={handleRemoveRingerPress}
               />
+            )}
+          </ThemedCard>
+        )}
+
+        {!!game.group_id && !!game.ringers_opened_at && !isPast && (
+          <ThemedCard variant="elevated" title="Add Ringer">
+            <ThemedButton
+              title={isAddRingerSectionOpen ? 'Hide' : 'Add a Ringer'}
+              variant="outline"
+              onPress={handleToggleAddRingerSection}
+            />
+            {isAddRingerSectionOpen && (
+              <View style={styles.notifySection}>
+                <ThemedInput
+                  label="Ringer's name"
+                  value={ringerNameInput}
+                  onChangeText={setRingerNameInput}
+                  placeholder="e.g. Alex Smith"
+                />
+                {!isLoadingSavedRingers && savedRingers.length > 0 && (
+                  <View style={styles.savedRingersRow}>
+                    {savedRingers.map((ringer) => (
+                      <TouchableOpacity
+                        key={ringer.id}
+                        onPress={() => setRingerNameInput(ringer.name)}
+                      >
+                        <ThemedBadge variant="default" text={ringer.name} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+                <ThemedButton
+                  title={isAddingRinger ? 'Adding...' : 'Add Ringer'}
+                  variant="primary"
+                  onPress={handleSubmitAddRinger}
+                  disabled={isAddingRinger || !ringerNameInput.trim()}
+                  style={styles.sendInvitesButton}
+                />
+              </View>
             )}
           </ThemedCard>
         )}
@@ -390,6 +500,42 @@ export function GameDetailScreen({
           </ThemedCard>
         )}
 
+        {isAdmin && !!game.group_id && (
+          <ThemedCard variant="elevated" title="Ringers">
+            {game.ringers_opened_at ? (
+              <ThemedBadge variant="info" text="Open to ringers" />
+            ) : (
+              <>
+                <ThemedButton
+                  title={isRingersSectionOpen ? 'Hide' : 'Open to Ringers'}
+                  variant="outline"
+                  onPress={() => setIsRingersSectionOpen(!isRingersSectionOpen)}
+                />
+                {isRingersSectionOpen && (
+                  <View style={styles.notifySection}>
+                    <ThemedInput
+                      label="Message"
+                      value={ringersMessage}
+                      onChangeText={setRingersMessage}
+                      multiline
+                    />
+                    <ThemedTextBox variant="caption" color="secondary" style={styles.notifyHint}>
+                      Every group member will get a push notification with this message.
+                    </ThemedTextBox>
+                    <ThemedButton
+                      title={isOpeningRingers ? 'Sending...' : 'Send Notifications'}
+                      variant="primary"
+                      onPress={handleOpenRingers}
+                      disabled={isOpeningRingers}
+                      style={styles.sendInvitesButton}
+                    />
+                  </View>
+                )}
+              </>
+            )}
+          </ThemedCard>
+        )}
+
         {waitlistPlayers.length > 0 && (
           <ThemedCard variant="elevated" title="Waitlist">
             <WaitlistSection
@@ -398,6 +544,8 @@ export function GameDetailScreen({
               currentUserId={user?.id}
               isExpanded={isPlayersExpanded}
               onToggleExpand={() => setIsPlayersExpanded(!isPlayersExpanded)}
+              isAdmin={isAdmin}
+              onRemoveRinger={handleRemoveRingerPress}
             />
           </ThemedCard>
         )}
@@ -464,6 +612,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   notifyHint: {
+    marginTop: 8,
+  },
+  savedRingersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 8,
   },
 });

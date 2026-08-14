@@ -6,17 +6,20 @@ import { getGameCapacity, getActivePlayers } from '@/utils/gameUtils';
 
 interface RawPlayerGame {
   id: string;
-  user_id: string;
+  user_id: string | null;
   signup_order: number;
   team: number | null;
   board_x: number | null;
   board_y: number | null;
+  is_ringer: boolean;
+  guest_name: string | null;
+  added_by: string | null;
   profile: {
     id: string;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 interface RawGame extends Game {
@@ -45,6 +48,9 @@ export function useTeamAssignment(gameId: string) {
             team,
             board_x,
             board_y,
+            is_ringer,
+            guest_name,
+            added_by,
             profile:profiles (
               id,
               username,

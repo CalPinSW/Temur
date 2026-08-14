@@ -254,5 +254,32 @@ describe('notificationService', () => {
         data: { screen: 'GameDetail', gameId: 'game-1' },
       });
     });
+
+    it('builds a ringers open payload with a custom admin message', () => {
+      expect(NotificationTemplates.ringersOpen('game-1', 'Need 2 more players!')).toEqual({
+        type: 'ringers_open',
+        title: 'Ringers needed!',
+        body: 'Need 2 more players!',
+        data: { screen: 'GameDetail', gameId: 'game-1' },
+      });
+    });
+
+    it('builds a ringers open payload with a default message when none is given', () => {
+      expect(NotificationTemplates.ringersOpen('game-1')).toEqual({
+        type: 'ringers_open',
+        title: 'Ringers needed!',
+        body: 'This game is now open to ringers — add one if you know someone who can play.',
+        data: { screen: 'GameDetail', gameId: 'game-1' },
+      });
+    });
+
+    it('builds a ringers open payload with the default message when given blank whitespace', () => {
+      expect(NotificationTemplates.ringersOpen('game-1', '   ')).toEqual({
+        type: 'ringers_open',
+        title: 'Ringers needed!',
+        body: 'This game is now open to ringers — add one if you know someone who can play.',
+        data: { screen: 'GameDetail', gameId: 'game-1' },
+      });
+    });
   });
 });

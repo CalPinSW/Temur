@@ -2,6 +2,36 @@ import { supabase } from './supabase';
 import { NotificationTemplates } from './notificationService';
 import { PlayerGameWithProfile } from '@/types/game';
 
+export async function notifyGroupMembersRingersOpen(
+  gameId: string,
+  groupId: string,
+  adminMessage: string
+): Promise<void> {
+  const { data: members, error } = await supabase
+    .from('group_members')
+    .select('user_id')
+    .eq('group_id', groupId);
+
+  if (error) throw error;
+  if (!members?.length) return;
+
+  const notification = NotificationTemplates.ringersOpen(gameId, adminMessage);
+
+  await Promise.all(
+    members.map((member) =>
+      supabase.functions.invoke('send-notification', {
+        body: {
+          userId: member.user_id,
+          type: notification.type,
+          title: notification.title,
+          body: notification.body,
+          data: notification.data,
+        },
+      })
+    )
+  );
+}
+
 export async function notifyTeamAssignments(
   gameId: string,
   players: PlayerGameWithProfile[],

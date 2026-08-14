@@ -5,16 +5,19 @@ import { Game, GameWithPlayers, PlayerGameWithProfile } from '@/types/game';
 
 interface RawPlayerGame {
   id: string;
-  user_id: string;
+  user_id: string | null;
   signup_order: number;
   team: number | null;
   created_at: string;
+  is_ringer: boolean;
+  guest_name: string | null;
+  added_by: string | null;
   profile: {
     id: string;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
   average_rating?: number;
   rating_count?: number;
 }
@@ -48,6 +51,9 @@ export function useGameDetails(gameId: string, userId?: string) {
             signup_order,
             team,
             created_at,
+            is_ringer,
+            guest_name,
+            added_by,
             profile:profiles (
               id,
               username,
