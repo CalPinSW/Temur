@@ -26,9 +26,10 @@ interface RawGame extends Game {
   player_games: RawPlayerGame[];
 }
 
-interface RawRating {
+interface RatingSummary {
   player_game_id: string;
-  rating: number;
+  average_rating: number;
+  rating_count: number;
 }
 
 export function useGameDetails(gameId: string, userId?: string) {
@@ -83,34 +84,23 @@ export function useGameDetails(gameId: string, userId?: string) {
         const playerGameIds = playersWithRatings.map((pg) => pg.id);
 
         if (playerGameIds.length > 0) {
-          const { data: ratingsData, error: ratingsError } = await supabase
-            .from('player_ratings')
-            .select('player_game_id, rating')
-            .in('player_game_id', playerGameIds);
+          const { data: summaryData, error: summaryError } = await supabase.rpc(
+            'get_player_rating_summary',
+            { p_player_game_ids: playerGameIds }
+          );
 
-          if (!ratingsError && ratingsData) {
-            const ratingsByPlayer = (ratingsData as RawRating[]).reduce<Record<string, number[]>>(
-              (acc, rating) => {
-                if (!acc[rating.player_game_id]) {
-                  acc[rating.player_game_id] = [];
-                }
-                acc[rating.player_game_id].push(rating.rating);
-                return acc;
-              },
-              {}
+          if (!summaryError && summaryData) {
+            const summaryByPlayer = new Map(
+              (summaryData as RatingSummary[]).map((s) => [s.player_game_id, s])
             );
 
             playersWithRatings = playersWithRatings.map((pg) => {
-              const ratings = ratingsByPlayer[pg.id] || [];
-              const average =
-                ratings.length > 0
-                  ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length
-                  : undefined;
+              const summary = summaryByPlayer.get(pg.id);
 
               return {
                 ...pg,
-                average_rating: average,
-                rating_count: ratings.length,
+                average_rating: summary ? Number(summary.average_rating) : undefined,
+                rating_count: summary ? summary.rating_count : 0,
               };
             });
           }

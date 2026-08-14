@@ -66,6 +66,7 @@ export function createSupabaseMock() {
     from: jest.fn<QueryBuilder, [string]>(),
     channel: jest.fn(() => channel),
     removeChannel: jest.fn(),
+    rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
     functions: {
       invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
