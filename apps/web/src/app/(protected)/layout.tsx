@@ -23,9 +23,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           Temur
         </Link>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-text-secondary">
+          <Link
+            href="/profile"
+            className="text-sm text-text-secondary hover:text-text"
+          >
             {profile?.display_name || profile?.username}
-          </span>
+          </Link>
           <form action={signOut}>
             <button
               type="submit"
