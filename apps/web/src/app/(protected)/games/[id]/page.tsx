@@ -11,9 +11,13 @@ import {
   getActivePlayers,
   getWaitlistPlayers,
   getPlayerDisplayName,
+  isGameAdmin,
 } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { SignupActions } from './SignupActions';
+import { OpenRingersSection } from './OpenRingersSection';
+import { AddRingerSection } from './AddRingerSection';
+import { RemoveRingerButton } from './RemoveRingerButton';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
@@ -25,18 +29,45 @@ interface RatingSummary {
   rating_count: number;
 }
 
-function PlayerRow({ player, position }: { player: PlayerGameWithProfile; position: number }) {
+function PlayerRow({
+  player,
+  position,
+  gameId,
+  currentUserId,
+  isAdmin,
+}: {
+  player: PlayerGameWithProfile;
+  position: number;
+  gameId: string;
+  currentUserId: string;
+  isAdmin: boolean;
+}) {
+  const canRemoveRinger =
+    player.is_ringer && (player.added_by === currentUserId || isAdmin);
+
   return (
     <li className="flex items-center gap-3 rounded-lg border border-border-light px-3 py-2 text-sm">
       <span className="w-5 text-text-tertiary">{position}</span>
       <span className="flex-1 text-text">{getPlayerDisplayName(player)}</span>
+      {player.is_ringer && (
+        <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+          Ringer
+        </span>
+      )}
       {player.average_rating !== undefined && (
         <span className="text-xs text-text-tertiary">
           ★ {player.average_rating.toFixed(1)} ({player.rating_count})
         </span>
       )}
       {player.team != null && (
-        <span className="ml-auto text-xs text-text-tertiary">Team {player.team}</span>
+        <span className="text-xs text-text-tertiary">Team {player.team}</span>
+      )}
+      {canRemoveRinger && (
+        <RemoveRingerButton
+          gameId={gameId}
+          playerGameId={player.id}
+          ringerName={getPlayerDisplayName(player)}
+        />
       )}
     </li>
   );
@@ -47,22 +78,27 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const user = await getUser();
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('games')
-    .select(
-      `*, player_games (
-        id, user_id, signup_order, team, created_at, is_ringer, guest_name, added_by,
-        profile:profiles!player_games_user_id_fkey ( id, username, display_name, avatar_url )
-      )`
-    )
-    .eq('id', id)
-    .single();
+  const [{ data, error }, { data: adminGroups }] = await Promise.all([
+    supabase
+      .from('games')
+      .select(
+        `*, player_games (
+          id, user_id, signup_order, team, created_at, is_ringer, guest_name, added_by,
+          profile:profiles!player_games_user_id_fkey ( id, username, display_name, avatar_url )
+        )`
+      )
+      .eq('id', id)
+      .single(),
+    supabase.from('group_members').select('group_id').eq('user_id', user!.id).eq('role', 'admin'),
+  ]);
 
   if (error || !data) {
     notFound();
   }
 
   const game = data as RawGame;
+  const adminGroupIds = new Set((adminGroups ?? []).map((row) => row.group_id));
+  const isAdmin = isGameAdmin(game, user!.id, adminGroupIds);
   const isPast = new Date(game.kickoff_date) < new Date();
   let players = (game.player_games ?? []).slice().sort((a, b) => a.signup_order - b.signup_order);
 
@@ -132,10 +168,35 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </h2>
         <ul className="flex flex-col gap-1">
           {activePlayers.map((player, i) => (
-            <PlayerRow key={player.id} player={player} position={i + 1} />
+            <PlayerRow
+              key={player.id}
+              player={player}
+              position={i + 1}
+              gameId={game.id}
+              currentUserId={user!.id}
+              isAdmin={isAdmin}
+            />
           ))}
         </ul>
       </section>
+
+      {!!game.group_id && !!game.ringers_opened_at && !isPast && (
+        <AddRingerSection gameId={game.id} />
+      )}
+
+      {isAdmin && !!game.group_id && (
+        <>
+          {game.ringers_opened_at ? (
+            <p className="text-sm text-text-secondary">
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                Open to ringers
+              </span>
+            </p>
+          ) : (
+            <OpenRingersSection gameId={game.id} groupId={game.group_id} />
+          )}
+        </>
+      )}
 
       {waitlistPlayers.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -144,7 +205,14 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
           </h2>
           <ul className="flex flex-col gap-1">
             {waitlistPlayers.map((player, i) => (
-              <PlayerRow key={player.id} player={player} position={capacity + i + 1} />
+              <PlayerRow
+                key={player.id}
+                player={player}
+                position={capacity + i + 1}
+                gameId={game.id}
+                currentUserId={user!.id}
+                isAdmin={isAdmin}
+              />
             ))}
           </ul>
         </section>
