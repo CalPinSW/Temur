@@ -19,7 +19,7 @@ See [`CLAUDE.md`](./CLAUDE.md) for the full feature list and architecture notes.
 | **Backend** | Supabase Edge Functions |
 | **Database** | Supabase PostgreSQL |
 | **Auth** | Supabase Auth |
-| **Real-time** | Supabase Realtime (WebSockets) — mobile only so far |
+| **Real-time** | Supabase Realtime (WebSockets) — both apps; web currently limited to Friends/Groups nav badge counts |
 
 ## Project Structure
 
@@ -142,6 +142,15 @@ Configure redirect URLs in **Supabase Dashboard → Authentication → URL Confi
   - `https://<your-vercel-domain>/auth/callback` (once deployed — add this once you have a Vercel domain; also update `NEXT_PUBLIC_SITE_URL` in `apps/web`'s production env)
 
 **Site URL** (used to build email confirmation / password reset links) should point at whichever app you consider primary, or be updated per environment — for mobile deep links it must be a scheme your app can handle (e.g. `temur://auth/callback`); for web it's a plain `https://` URL.
+
+### Running Against a Local Supabase Stack
+
+Instead of a remote project, you can point either app at a local Supabase stack (`supabase start`, requires Docker):
+
+- **Studio** — http://127.0.0.1:54323 — browse/edit tables, and manually add pre-confirmed users under Authentication → Users.
+- **Inbucket** (fake mail catcher) — http://127.0.0.1:54324 — local Supabase never sends real emails; password reset / magic link / email-change messages land here instead so you can open them and grab the link/OTP.
+
+Signup email confirmation is already disabled for local dev (`auth.email.enable_confirmations = false` in `supabase/config.toml`), so signing up through the app logs you in immediately without needing Inbucket at all.
 
 ## Testing
 
