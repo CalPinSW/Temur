@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { formatDate, formatTime, type Group, type GroupMemberWithProfile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { EditGroupCard } from './EditGroupCard';
@@ -8,6 +8,7 @@ import { LeaveGroupButton } from './LeaveGroupButton';
 export default async function GroupDetailPage({ params }: PageProps<'/groups/[id]'>) {
   const { id: groupId } = await params;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [{ data: group, error: groupError }, { data: membersData, error: membersError }] =
@@ -25,7 +26,7 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
   if (membersError) throw membersError;
 
   const members = (membersData ?? []) as unknown as GroupMemberWithProfile[];
-  const myMembership = members.find((m) => m.user_id === user!.id);
+  const myMembership = members.find((m) => m.user_id === user.id);
   const isAdmin = myMembership?.role === 'admin';
 
   const { data: upcomingGames } = await supabase

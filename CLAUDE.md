@@ -13,6 +13,8 @@ Both apps authenticate against and read/write the same Supabase project.
 
 > **Keep mobile and web in lock-step.** When you build a feature or fix a user-facing bug, implement/fix it in both `apps/mobile` and `apps/web` — or say explicitly why you're skipping one (e.g. it depends on a native-only capability). Check `docs/web-feature-parity-plan.md` before starting web work: it tracks what's built vs. outstanding. Update it when you close a gap or discover a new one.
 
+> **Add E2E coverage for new web features.** When you ship a new user-facing flow in `apps/web`, add a Playwright spec for its happy path under `apps/web/e2e/` (see "Web E2E tests" below) — don't just rely on unit tests or manual clicking. Bug fixes to existing flows don't need a new spec unless the bug was a regression an E2E test would have caught.
+
 ## Features
 
 - **Auth** — email/password and Google/Apple social sign-in (mobile only for now, see parity plan); profiles auto-created via `handle_new_user()` DB trigger on signup.
@@ -77,9 +79,20 @@ npm run dev -w apps/web      # next dev
 npm run build -w apps/web    # next build
 npm run lint -w apps/web     # eslint
 npm test -w apps/web         # jest (unit tests for pure logic, e.g. team-assignment state/geometry)
+npm run test:e2e -w apps/web # playwright (see "Web E2E tests" below)
 ```
 
 Needs `apps/web/.env.local` (copy from `.env.local.example`) pointing at the **same** Supabase project as mobile's `apps/mobile/.env`.
+
+#### Web E2E tests
+
+Playwright specs live in `apps/web/e2e/`. They run against the **local** Supabase stack only — never the shared remote project — because global setup creates and deletes real auth users. Before running them:
+
+```bash
+supabase start                                          # from repo root
+```
+
+Then point `apps/web/.env.local` at the local stack (`supabase status -o json` prints the URL/publishable key) instead of the remote project, and run `npm run test:e2e -w apps/web`. `e2e/global-setup.ts` creates two deterministic test accounts (`E2E_USERS.primary`/`secondary` in `e2e/global-setup.ts`) directly via the Supabase Admin API, signs each in through the real UI once, and saves per-user `storageState` for specs to reuse (`test.use({ storageState: primaryStorageState })`, from `e2e/helpers.ts`). Specs run fully serially (`workers: 1`) since they share those two accounts and mutate overlapping state — don't parallelize without rethinking that.
 
 ### Shared package (`packages/shared`)
 

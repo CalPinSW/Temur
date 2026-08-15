@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { type GroupMemberWithProfile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { MembersList } from './MembersList';
@@ -6,6 +6,7 @@ import { MembersList } from './MembersList';
 export default async function GroupMembersPage({ params }: PageProps<'/groups/[id]/members'>) {
   const { id: groupId } = await params;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [{ data: group, error: groupError }, { data: membersData, error: membersError }] =
@@ -23,7 +24,7 @@ export default async function GroupMembersPage({ params }: PageProps<'/groups/[i
   if (membersError) throw membersError;
 
   const members = (membersData ?? []) as unknown as GroupMemberWithProfile[];
-  const myMembership = members.find((m) => m.user_id === user!.id);
+  const myMembership = members.find((m) => m.user_id === user.id);
   const isAdmin = myMembership?.role === 'admin';
 
   const sorted = [...members].sort((a, b) => {
@@ -39,7 +40,7 @@ export default async function GroupMembersPage({ params }: PageProps<'/groups/[i
       <MembersList
         groupId={groupId}
         groupName={group.name}
-        currentUserId={user!.id}
+        currentUserId={user.id}
         isAdmin={isAdmin}
         initialMembers={sorted}
       />

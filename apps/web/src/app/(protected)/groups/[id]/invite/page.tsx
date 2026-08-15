@@ -5,6 +5,7 @@ import { InviteSearch } from './InviteSearch';
 export default async function InviteToGroupPage({ params }: PageProps<'/groups/[id]/invite'>) {
   const { id: groupId } = await params;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [{ data: group, error: groupError }, { data: members, error: membersError }] =
@@ -16,7 +17,7 @@ export default async function InviteToGroupPage({ params }: PageProps<'/groups/[
   if (groupError || !group) notFound();
   if (membersError) throw membersError;
 
-  const isAdmin = (members ?? []).some((m) => m.user_id === user!.id && m.role === 'admin');
+  const isAdmin = (members ?? []).some((m) => m.user_id === user.id && m.role === 'admin');
   if (!isAdmin) redirect(`/groups/${groupId}`);
 
   const existingMemberIds = (members ?? []).map((m) => m.user_id);

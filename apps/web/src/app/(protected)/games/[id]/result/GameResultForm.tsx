@@ -120,8 +120,11 @@ export function GameResultForm({
       {entryMode === 'score' ? (
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
-            <label className="text-sm font-medium text-text-secondary">{team1Name}</label>
+            <label htmlFor="team1Score" className="text-sm font-medium text-text-secondary">
+              {team1Name}
+            </label>
             <input
+              id="team1Score"
               type="number"
               inputMode="numeric"
               min={0}
@@ -132,8 +135,11 @@ export function GameResultForm({
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <label className="text-sm font-medium text-text-secondary">{team2Name}</label>
+            <label htmlFor="team2Score" className="text-sm font-medium text-text-secondary">
+              {team2Name}
+            </label>
             <input
+              id="team2Score"
               type="number"
               inputMode="numeric"
               min={0}

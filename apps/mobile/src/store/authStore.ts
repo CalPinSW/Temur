@@ -173,7 +173,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ isLoading: true });
 
       try {
-        await withTimeout(supabase.auth.signOut(), 5000, 'signOut');
+        // 'local' scope only ends this device's session — the default
+        // 'global' scope revokes every session for this user everywhere,
+        // which would also sign them out of the web app.
+        await withTimeout(supabase.auth.signOut({ scope: 'local' }), 5000, 'signOut');
       } catch (timeoutError) {
         console.error('Sign out timeout, clearing local state:', timeoutError);
       }

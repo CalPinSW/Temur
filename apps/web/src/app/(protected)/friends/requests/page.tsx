@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { type Profile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { RequestsList, type FriendRequest } from './RequestsList';
@@ -9,12 +10,13 @@ interface RawRequest {
 
 export default async function FriendRequestsPage() {
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('friendships')
     .select('id, requester:profiles!friendships_user_id_fkey(*)')
-    .eq('friend_id', user!.id)
+    .eq('friend_id', user.id)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
 
