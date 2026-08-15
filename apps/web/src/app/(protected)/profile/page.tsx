@@ -2,16 +2,17 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getInitials } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { getThemeMode } from '@/lib/theme';
+import { ThemeToggle } from './ThemeToggle';
 
 export default async function ProfilePage() {
   const user = await getUser();
   if (!user) redirect('/login');
   const supabase = await createClient();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username, display_name, avatar_url')
-    .eq('id', user.id)
-    .single();
+  const [{ data: profile }, themeMode] = await Promise.all([
+    supabase.from('profiles').select('username, display_name, avatar_url').eq('id', user.id).single(),
+    getThemeMode(),
+  ]);
 
   const isEmailUser = user?.app_metadata?.provider === 'email' || !user?.app_metadata?.provider;
   const initials = getInitials(profile?.display_name, profile?.username);
@@ -51,6 +52,7 @@ export default async function ProfilePage() {
               Change Password
             </Link>
           )}
+          <ThemeToggle currentMode={themeMode} />
           {process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL && (
             <a
               href={process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL}
@@ -64,19 +66,22 @@ export default async function ProfilePage() {
         </nav>
       </section>
 
-      {process.env.NEXT_PUBLIC_SUPPORT_EMAIL && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold tracking-wide text-text-tertiary">SUPPORT</h2>
-          <nav className="flex flex-col rounded-lg border border-border bg-card">
+      <section className="flex flex-col gap-2">
+        <h2 className="text-xs font-semibold tracking-wide text-text-tertiary">SUPPORT</h2>
+        <nav className="flex flex-col divide-y divide-border-light rounded-lg border border-border bg-card">
+          {process.env.NEXT_PUBLIC_SUPPORT_EMAIL && (
             <a
               href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL}`}
               className="px-4 py-3 text-text hover:bg-background-secondary"
             >
               Contact Support
             </a>
-          </nav>
-        </section>
-      )}
+          )}
+          <Link href="/profile/about" className="px-4 py-3 text-text hover:bg-background-secondary">
+            About
+          </Link>
+        </nav>
+      </section>
     </div>
   );
 }

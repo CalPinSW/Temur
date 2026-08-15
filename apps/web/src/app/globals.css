@@ -54,7 +54,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  /* :not([data-theme="light"]) lets an explicit light override (see the
+     appearance toggle, apps/web/src/lib/theme.ts) win over the OS setting;
+     "system" mode leaves data-theme unset, so this still applies. */
+  :root:not([data-theme='light']) {
     --background: #0a1310;
     --background-secondary: #141f1a;
     --surface: #141f1a;
@@ -78,6 +81,32 @@
     --input: #1e2b24;
     --input-border: #2a3830;
   }
+}
+
+/* Explicit dark mode, regardless of OS preference. */
+:root[data-theme='dark'] {
+  --background: #0a1310;
+  --background-secondary: #141f1a;
+  --surface: #141f1a;
+
+  --text: #f5f3ee;
+  --text-secondary: #a9b3ad;
+  --text-tertiary: #7c8880;
+
+  --primary: #34a873;
+  --primary-hover: #4fbe8d;
+  --accent: #f0b93d;
+
+  --border: #2a3830;
+  --border-light: #1e2b24;
+
+  --error: #fa8072;
+  --error-background: #2a1512;
+  --success: #1ec8c8;
+
+  --card: #141f1a;
+  --input: #1e2b24;
+  --input-border: #2a3830;
 }
 
 body {
