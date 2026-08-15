@@ -18,6 +18,13 @@ test.describe('Games', () => {
     await page.goto('/games/new');
     await expect(page.getByRole('heading', { name: 'Create Game' })).toBeVisible();
 
+    // The suggested default Visible From can land in the future depending
+    // on what day the suite runs — set it explicitly in the (recent) past
+    // so this game is a normal, already-visible list item, not a preview
+    // (that's its own dedicated test below). The games list only looks
+    // back 90 days, so this has to be recent, not just "in the past".
+    const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+    await page.getByLabel('Visible From').fill(recentPast);
     await page.getByLabel('Team 1 Name').fill(team1);
     await page.getByLabel('Team 2 Name').fill(team2);
     await page.getByRole('button', { name: 'Create Game' }).click();
@@ -44,5 +51,51 @@ test.describe('Games', () => {
     await page.getByRole('button', { name: 'Withdraw' }).click();
     await expect(page.getByRole('button', { name: 'Sign up' })).toBeVisible();
     await expect(page.getByText(/^Signed up \(0\//)).toBeVisible();
+  });
+
+  test('shows a not-yet-visible game to its creator greyed out and non-clickable', async ({
+    page,
+  }) => {
+    const suffix = Date.now();
+    const previewTeam1 = `E2E-Preview-T1-${suffix}`;
+    const previewTeam2 = `E2E-Preview-T2-${suffix}`;
+
+    await page.goto('/games/new');
+    await page.getByLabel('Visible From').fill('2099-01-01T10:00');
+    await page.getByLabel('Team 1 Name').fill(previewTeam1);
+    await page.getByLabel('Team 2 Name').fill(previewTeam2);
+    await page.getByRole('button', { name: 'Create Game' }).click();
+    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+
+    await page.goto('/games');
+    const heading = `${previewTeam1} vs ${previewTeam2}`;
+    await expect(page.getByRole('link', { name: heading })).not.toBeVisible();
+    const card = page.locator('div[aria-disabled="true"]', { hasText: previewTeam1 });
+    await expect(card).toBeVisible();
+    await expect(card.getByText('Not visible yet')).toBeVisible();
+    // aria-disabled is decorative here — assert it's genuinely inert by
+    // confirming the click doesn't navigate anywhere.
+    await card.click();
+    await expect(page).toHaveURL(/\/games$/);
+  });
+
+  test('creator deletes a game', async ({ page }) => {
+    const suffix = Date.now();
+    const deleteTeam1 = `E2E-Delete-T1-${suffix}`;
+    const deleteTeam2 = `E2E-Delete-T2-${suffix}`;
+
+    await page.goto('/games/new');
+    await page.getByLabel('Team 1 Name').fill(deleteTeam1);
+    await page.getByLabel('Team 2 Name').fill(deleteTeam2);
+    await page.getByRole('button', { name: 'Create Game' }).click();
+    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Delete Game' }).click();
+    await page.waitForURL('**/games');
+
+    await expect(
+      page.getByRole('link', { name: `${deleteTeam1} vs ${deleteTeam2}` })
+    ).not.toBeVisible();
   });
 });

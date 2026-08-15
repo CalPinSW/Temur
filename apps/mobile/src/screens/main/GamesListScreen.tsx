@@ -7,7 +7,7 @@ import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
-import { Game, GameWithPlayers, isGameAdmin } from '@temur/shared';
+import { Game, GameWithPlayers, getGameVisibilityStatus } from '@temur/shared';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GameOverviewCard } from '@/components/game/GameOverviewCard';
 
@@ -38,6 +38,10 @@ interface RawInvitation {
   status: 'pending' | 'accepted';
 }
 
+export interface GameListItem extends GameWithPlayers {
+  isPreview: boolean;
+}
+
 export function GamesListScreen({
   onNavigateToGame,
   onNavigateToCreateGame,
@@ -45,8 +49,8 @@ export function GamesListScreen({
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
-  const [upcomingGames, setUpcomingGames] = useState<GameWithPlayers[]>([]);
-  const [historicGames, setHistoricGames] = useState<GameWithPlayers[]>([]);
+  const [upcomingGames, setUpcomingGames] = useState<GameListItem[]>([]);
+  const [historicGames, setHistoricGames] = useState<GameListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchGames = useCallback(async () => {
@@ -94,10 +98,10 @@ export function GamesListScreen({
         invitation_status: invitationByGameId.get(game.id),
       })) as GameWithPlayers[];
 
-      const visibleGames = processedGames.filter((game) => {
-        if (isGameAdmin(game, user.id, adminGroupIds)) return true;
-        return new Date(game.visible_at) <= new Date();
-      });
+      const visibleGames: GameListItem[] = processedGames
+        .map((game) => ({ game, status: getGameVisibilityStatus(game, user.id, adminGroupIds) }))
+        .filter(({ status }) => status.visible)
+        .map(({ game, status }) => ({ ...game, isPreview: status.isPreview }));
 
       const upcoming = visibleGames.filter((game) => new Date(game.kickoff_date) >= new Date(now));
       const historic = visibleGames.filter((game) => new Date(game.kickoff_date) < new Date(now));

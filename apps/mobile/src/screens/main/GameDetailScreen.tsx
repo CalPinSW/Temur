@@ -91,10 +91,8 @@ export function GameDetailScreen({
   const [isLoadingSavedRingers, setIsLoadingSavedRingers] = useState(false);
 
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
-  const { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw } = useGameActions(
-    gameId,
-    user?.id
-  );
+  const { isSigningUp, isWithdrawing, isDeleting, handleSignUp, handleWithdraw, handleDelete } =
+    useGameActions(gameId, user?.id);
   const { isAddingRinger, handleAddRinger, handleRemoveRinger } = useRingerActions(
     gameId,
     user?.id
@@ -133,6 +131,7 @@ export function GameDetailScreen({
   }
 
   const isAdmin = isGameAdmin(game, user?.id, adminGroupIds);
+  const isCreator = !!user && game.created_by === user.id;
   const isPast = new Date(game.kickoff_date) < new Date();
   const isVisible = new Date(game.visible_at) <= new Date();
   const hasTeams = game.player_games.some((pg) => pg.team !== null);
@@ -584,6 +583,16 @@ export function GameDetailScreen({
             />
           </ThemedCard>
         )}
+
+        {isCreator && (
+          <ThemedButton
+            title={isDeleting ? 'Deleting...' : 'Delete Game'}
+            variant="danger"
+            onPress={() => handleDelete(onGoBack)}
+            disabled={isDeleting}
+            style={styles.deleteButton}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -627,6 +636,10 @@ const styles = StyleSheet.create({
   },
   resultButton: {
     alignSelf: 'flex-start',
+  },
+  deleteButton: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
   },
   inviteBannerText: {
     marginBottom: 12,

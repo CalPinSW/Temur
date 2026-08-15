@@ -7,12 +7,16 @@ import {
   formatDate,
   formatTime,
   getGameCapacity,
-  isGameAdmin,
+  getGameVisibilityStatus,
 } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 
 interface RawGame extends Game {
   player_games: Pick<PlayerGameWithProfile, 'id' | 'user_id' | 'signup_order' | 'team' | 'profile'>[] | null;
+}
+
+interface GameListItem extends GameWithPlayers {
+  isPreview: boolean;
 }
 
 async function loadGames(userId: string) {
@@ -43,9 +47,10 @@ async function loadGames(userId: string) {
     user_signed_up: game.player_games?.some((pg) => pg.user_id === userId) ?? false,
   }));
 
-  const visible = processed.filter(
-    (game) => isGameAdmin(game, userId, adminGroupIds) || new Date(game.visible_at) <= new Date()
-  );
+  const visible: GameListItem[] = processed
+    .map((game) => ({ game, status: getGameVisibilityStatus(game, userId, adminGroupIds) }))
+    .filter(({ status }) => status.visible)
+    .map(({ game, status }) => ({ ...game, isPreview: status.isPreview }));
 
   const now = new Date();
   const upcoming = visible.filter((game) => new Date(game.kickoff_date) >= now);
@@ -54,17 +59,21 @@ async function loadGames(userId: string) {
   return { upcoming, past };
 }
 
-function GameCard({ game }: { game: GameWithPlayers }) {
+function GameCard({ game }: { game: GameListItem }) {
   const capacity = getGameCapacity(game.players_per_team);
 
-  return (
-    <Link
-      href={`/games/${game.id}`}
-      className="flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary"
-    >
-      <span className="font-medium text-text">
-        {game.team1_name} vs {game.team2_name}
-      </span>
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium text-text">
+          {game.team1_name} vs {game.team2_name}
+        </span>
+        {game.isPreview && (
+          <span className="rounded-full bg-background-secondary px-2 py-0.5 text-xs font-medium text-text-tertiary">
+            Not visible yet
+          </span>
+        )}
+      </div>
       <span className="text-sm text-text-secondary">
         {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
       </span>
@@ -72,6 +81,26 @@ function GameCard({ game }: { game: GameWithPlayers }) {
         {game.player_count}/{capacity} signed up
         {game.user_signed_up ? ' · You’re in' : ''}
       </span>
+    </>
+  );
+
+  if (game.isPreview) {
+    return (
+      <div
+        aria-disabled="true"
+        className="flex cursor-not-allowed flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 opacity-60"
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/games/${game.id}`}
+      className="flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary"
+    >
+      {content}
     </Link>
   );
 }
