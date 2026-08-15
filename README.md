@@ -58,8 +58,8 @@ docs/                        # Cross-cutting docs (e.g. web-feature-parity-plan.
 ### Installation
 
 ```bash
-git clone https://github.com/CalPinSW/football-org-app.git
-cd football-org-app
+git clone https://github.com/CalPinSW/Temur.git
+cd Temur
 
 # Install all workspaces (mobile, web, shared) from the root
 npm install
