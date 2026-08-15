@@ -81,6 +81,16 @@ export default async function GamesPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-text">Games</h1>
+        <Link
+          href="/games/new"
+          className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+        >
+          + Create
+        </Link>
+      </div>
+
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-text">Upcoming games</h2>
         {upcoming.length === 0 ? (
