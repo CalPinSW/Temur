@@ -12,7 +12,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -44,15 +44,21 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
+      # Pinned (not "latest"): a newer local Postgres bootstrap image was
+      # found to not grant `authenticated` default SELECT/INSERT/etc.
+      # privileges on public tables the same way this version does, which
+      # broke every E2E test exercising a real signed-in session (service-role-based
+      # tests elsewhere don't hit this since service_role bypasses grants).
+      # Bump deliberately, verifying grants survive a fresh `supabase db reset`.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.72.7
 
       - name: Start local Supabase stack
         run: supabase start
@@ -100,9 +106,10 @@ jobs:
         with:
           deno-version: v2.x
 
+      # Kept in sync with the e2e job's pin above — see the comment there.
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.72.7
 
       - name: Start local Supabase stack
         run: supabase start

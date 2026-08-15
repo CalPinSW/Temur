@@ -8,13 +8,15 @@ export default defineConfig({
   // still run in parallel across workers.
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // No retries — a flaky pass would hide real bugs; fix the root cause
+  // instead of masking it with a retry.
+  retries: 0,
   // All spec files share the same two E2E accounts and mutate overlapping
   // state (profile, groups, games) — run strictly serially rather than
   // fighting cross-file races for a suite this size.
   workers: 1,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
-  timeout: 30_000,
+  timeout: 15_000,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
     trace: 'retain-on-failure',

@@ -50,7 +50,7 @@ docs/                        # Cross-cutting docs (e.g. web-feature-parity-plan.
 
 ### Prerequisites
 
-- Node.js 20+ (see `.nvmrc`)
+- Node.js 22+ (see `.nvmrc`)
 - Expo CLI (for mobile)
 - Supabase CLI (`npm install -g supabase`)
 - iOS Simulator (Mac) or Android Emulator (for mobile)
