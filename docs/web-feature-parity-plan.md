@@ -6,16 +6,15 @@
 
 - **Auth** — email/password sign in, sign up (with username), email-confirmation callback (`app/auth/callback`), sign out. Session managed via `@supabase/ssr` cookies + middleware refresh.
 - **Games — list & detail** — upcoming/past games list (`app/(protected)/games`), respecting the same visibility rule as mobile (visible once `visible_at` passes, or always visible to the game's admin). Game detail page with capacity/waitlist display and sign up / withdraw (Server Actions), using `@temur/shared`'s `getGameCapacity`/`getActivePlayers`/`getWaitlistPlayers`/`getNextSignupOrder`/`getPlayerDisplayName`.
-- **Friends** — friends list with remove (`app/(protected)/friends`), search + send request (`friends/search`, debounced client-side search calling a Server Action directly), accept/decline incoming requests (`friends/requests`). Sends a `send-notification` push on new request, same as mobile (no-op for users without a push token, so this works even though web itself has no push story yet). Uses `@temur/shared`'s new `getInitials`.
+- **Profile** — view (`app/(protected)/profile`), edit display name/username/avatar (`profile/edit`, avatar via `<input type="file">` uploaded directly to the `avatars` Storage bucket, owner-write RLS already in place), change password (`profile/change-password`, email-auth users only). Uses `@temur/shared`'s `validateUsername`/`formatUsername`/`getInitials` (new — extracted from mobile's duplicated initials logic). Theme toggle and push-notification toggle still outstanding (see below).
+- **Friends** — friends list with remove (`app/(protected)/friends`), search + send request (`friends/search`, debounced client-side search calling a Server Action directly), accept/decline incoming requests (`friends/requests`). Sends a `send-notification` push on new request, same as mobile (no-op for users without a push token, so this works even though web itself has no push story yet). Uses `@temur/shared`'s `getInitials`.
 
 ## Outstanding
 
 Each item below references the mobile implementation to mirror (screens/hooks/services under `apps/mobile/src/`).
 
-### Profile
-- Mirror: `screens/profile/{ProfileScreen,EditProfileScreen,AboutScreen}.tsx`.
-- Avatar upload/change → Supabase Storage `avatars` bucket. Straightforward on web via `<input type="file">`; no native-picker equivalent needed.
-- Display name / username editing (reuse `@temur/shared`'s `validateUsername`/`formatUsername`, already used by the web signup form).
+### Profile (remaining)
+- Mirror: `screens/profile/AboutScreen.tsx` — not yet built on web (version/build info + GitHub link); low priority, static content.
 - Theme toggle (light/dark/system) — web currently just follows `prefers-color-scheme` via CSS; an explicit toggle needs its own preference storage (e.g. a cookie), separate from mobile's `ThemeContext`.
 - Push-notification toggle — blocked on the Notifications item below.
 
