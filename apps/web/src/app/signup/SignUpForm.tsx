@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { formatUsername } from '@temur/shared';
+import { SocialSignInButtons } from '@/components/auth/SocialSignInButtons';
 import { signUp, type SignUpFormState } from './actions';
 
 const initialState: SignUpFormState = {};
@@ -107,6 +108,8 @@ export function SignUpForm() {
           Sign in
         </Link>
       </p>
+
+      <SocialSignInButtons />
     </form>
   );
 }

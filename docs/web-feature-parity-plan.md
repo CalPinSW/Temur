@@ -4,7 +4,7 @@
 
 ## Built
 
-- **Auth** — email/password sign in, sign up (with username), email-confirmation callback (`app/auth/callback`), sign out. Session managed via `@supabase/ssr` cookies + middleware refresh.
+- **Auth** — email/password sign in, sign up (with username), email-confirmation callback (`app/auth/callback`), sign out. Session managed via `@supabase/ssr` cookies + middleware refresh. Social sign-in scaffolding (Google/Apple buttons on `/login` and `/signup`, `supabase.auth.signInWithOAuth` redirect flow via a shared `signInWithProvider` Server Action in `lib/auth/socialActions.ts`, reusing the same `/auth/callback` route email confirmation already uses since it's provider-agnostic) — **not yet functional**, the providers aren't configured in the Supabase dashboard yet, so clicking these currently errors. Simpler than mobile's `expo-auth-session` custom-scheme + manual token-extraction flow, since web gets a plain redirect.
 - **Games — list, detail & creation** — upcoming/past games list (`app/(protected)/games`), respecting the same visibility rule as mobile (visible once `visible_at` passes, or always visible to the game's admin). Game detail page with capacity/waitlist display and sign up / withdraw (Server Actions), using `@temur/shared`'s `getGameCapacity`/`getActivePlayers`/`getWaitlistPlayers`/`getNextSignupOrder`/`getPlayerDisplayName`. Create game (`games/new`, optional `?group=<id>` preset from a group's detail page): friends-invite or group mode, default kickoff defaults to the next Saturday not already taken (mirrors mobile's clash-avoidance loop), visible-from date, players-per-team, team names; friends mode sends `game_invite` pushes on create, same as mobile.
 - **Results & ratings** — result entry (score or win/draw/loss outcome, `games/[id]/result`) via the `set_game_result` RPC — open to anyone who can view the game, not admin-gated, same as the RPC's own authorization; player ratings 1–10 (own ratings private) via `player_ratings` upsert, aggregate averages on the game detail page's player rows via `get_player_rating_summary`. Entry point only shown once the game's kickoff has passed, matching mobile.
 - **Ringers** — on the game detail page (group games only): admin "Open to Ringers" (sends a `ringers_open` push to every group member, mirrors `notifyGroupMembersRingersOpen`), any group member can then "Add a Ringer" with saved-name quick-picks until kickoff, ringer badge + remove button (adder or admin) on player rows. Saved-ringer management (`/friends/ringers`, linked from the Friends page) — add/list/delete names for quick re-add, mirrors mobile's `RingersScreen`.
@@ -27,9 +27,8 @@ Each item below references the mobile implementation to mirror (screens/hooks/se
 - Web options to evaluate: Web Push API + a service worker (real push, more setup — VAPID keys, service worker lifecycle), or defer entirely for v1 and rely on realtime in-app badge counts (see below) plus email as the out-of-band channel.
 - Either way, `send-notification` will need a second delivery path alongside Expo push once web notifications exist.
 
-### Social sign-in
-- Mirror: `services/socialAuthService.ts`, the Google/Apple buttons in `screens/auth/{SignInScreen,SignUpScreen}.tsx`.
-- Web uses standard Supabase OAuth redirect flow (`supabase.auth.signInWithOAuth`) rather than `expo-auth-session`'s custom-scheme redirect — simpler than mobile, not blocked on anything.
+### Social sign-in — provider configuration
+- Code is in (see Built above); the Google and Apple OAuth apps/credentials still need to be set up in the Supabase dashboard (Auth → Providers) before the buttons will actually work. Not something this repo can do — needs whoever holds the Supabase project's dashboard access.
 
 ### Cross-cutting: realtime updates
 - Mobile subscribes to `postgres_changes` (games, player_games, friendships, group_invitations, game_invitations) to live-update lists and tab badge counts. Web's current pages are plain Server Components that only refresh on navigation/`revalidatePath` after a mutation.
