@@ -366,8 +366,16 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Forwards these from supabase/.env into local edge functions' own runtime
+# env — without this, Deno.env.get('EDGE_FUNCTION_SECRET') etc. inside a
+# function is undefined locally even though the value is right there in
+# supabase/.env (that file is read by the CLI itself, not automatically
+# passed through to function runtimes).
+[edge_runtime.secrets]
+EDGE_FUNCTION_SECRET = "env(EDGE_FUNCTION_SECRET)"
+RESEND_API_KEY = "env(RESEND_API_KEY)"
+RESEND_FROM_EMAIL = "env(RESEND_FROM_EMAIL)"
+PUBLIC_SITE_URL = "env(PUBLIC_SITE_URL)"
 
 # Cron has no user JWT to present, so this function authenticates callers
 # itself via a shared secret header instead (see its own source) — matches

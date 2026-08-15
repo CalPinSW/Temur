@@ -111,11 +111,29 @@ jobs:
         with:
           version: 2.72.7
 
+      # EDGE_FUNCTION_SECRET must exist before `supabase start` — the local
+      # edge runtime reads supabase/.env (via [edge_runtime.secrets] in
+      # config.toml) at boot, not on later writes. A fixed test-only value;
+      # nothing here needs to match any real secret.
+      - name: Configure edge function test secret
+        run: echo "EDGE_FUNCTION_SECRET=ci-test-secret" > .env
+
       - name: Start local Supabase stack
         run: supabase start
 
+      # supabase/tests/*.test.ts read these directly (separately from what
+      # the edge function runtime itself gets via config.toml) to create
+      # real signed-in test users and call functions authenticated — without
+      # them, every test needing a real session silently no-ops instead of
+      # asserting anything.
       - name: Run integration tests
-        run: deno task test
+        run: |
+          STATUS=$(supabase status -o json)
+          export SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
+          export SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
+          export SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r .SERVICE_ROLE_KEY)
+          export EDGE_FUNCTION_SECRET=ci-test-secret
+          deno task test
 
       - name: Stop local Supabase stack
         if: always()
