@@ -70,6 +70,21 @@ export const getPlayerDisplayName = (pg: PlayerGameWithProfile): string =>
     ? (pg.guest_name ?? 'Guest')
     : pg.profile?.display_name || pg.profile?.username || '';
 
+export const getInitials = (
+  displayName?: string | null,
+  username?: string | null
+): string => {
+  if (displayName) {
+    return displayName
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return username?.slice(0, 2).toUpperCase() || '??';
+};
+
 export const getNextSignupOrder = (players: Pick<PlayerGameWithProfile, 'signup_order'>[]): number =>
   players.length === 0 ? 1 : Math.max(...players.map((p) => p.signup_order)) + 1;
 

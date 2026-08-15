@@ -22,10 +22,13 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <Link href="/games" className="text-lg font-semibold text-text">
           Temur
         </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-text-secondary">
+        <nav className="flex items-center gap-4">
+          <Link href="/friends" className="text-sm text-text-secondary hover:text-text">
+            Friends
+          </Link>
+          <Link href="/profile" className="text-sm text-text-secondary hover:text-text">
             {profile?.display_name || profile?.username}
-          </span>
+          </Link>
           <form action={signOut}>
             <button
               type="submit"
@@ -34,7 +37,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
               Sign out
             </button>
           </form>
-        </div>
+        </nav>
       </header>
       <main className="flex flex-1 flex-col">{children}</main>
     </div>
