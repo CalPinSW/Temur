@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { type GroupWithRole } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 
@@ -9,14 +10,15 @@ interface RawGroupMember {
 
 export default async function GroupsPage() {
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [{ data: memberRows, error }, { count: inviteCount }] = await Promise.all([
-    supabase.from('group_members').select('role, group:groups(*)').eq('user_id', user!.id),
+    supabase.from('group_members').select('role, group:groups(*)').eq('user_id', user.id),
     supabase
       .from('group_invitations')
       .select('*', { count: 'exact', head: true })
-      .eq('invited_user_id', user!.id),
+      .eq('invited_user_id', user.id),
   ]);
 
   if (error) throw error;

@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { formatDate, type Game, type GameOutcome, type PlayerGameWithProfile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { GameResultForm } from './GameResultForm';
@@ -11,6 +11,7 @@ interface RawGame extends Game {
 export default async function GameResultPage({ params }: PageProps<'/games/[id]/result'>) {
   const { id: gameId } = await params;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -28,7 +29,7 @@ export default async function GameResultPage({ params }: PageProps<'/games/[id]/
 
   const game = data as RawGame;
   const players = game.player_games ?? [];
-  const ratablePlayers = players.filter((pg) => pg.user_id !== user!.id);
+  const ratablePlayers = players.filter((pg) => pg.user_id !== user.id);
   const ratablePlayerIds = ratablePlayers.map((pg) => pg.id);
 
   const { data: myRatings } =
@@ -36,7 +37,7 @@ export default async function GameResultPage({ params }: PageProps<'/games/[id]/
       ? await supabase
           .from('player_ratings')
           .select('player_game_id, rating')
-          .eq('rated_by', user!.id)
+          .eq('rated_by', user.id)
           .in('player_game_id', ratablePlayerIds)
       : { data: [] };
 

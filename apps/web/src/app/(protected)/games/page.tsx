@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import {
   type Game,
   type GameWithPlayers,
@@ -77,7 +78,8 @@ function GameCard({ game }: { game: GameWithPlayers }) {
 
 export default async function GamesPage() {
   const user = await getUser();
-  const { upcoming, past } = await loadGames(user!.id);
+  if (!user) redirect('/login');
+  const { upcoming, past } = await loadGames(user.id);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8">

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   formatDate,
   formatTime,
@@ -39,6 +39,7 @@ function GameCard({ game }: { game: GameWithPlayers }) {
 export default async function GroupGamesPage({ params }: PageProps<'/groups/[id]/games'>) {
   const { id: groupId } = await params;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [{ data: group, error: groupError }, { data: games, error: gamesError }] =
@@ -64,7 +65,7 @@ export default async function GroupGamesPage({ params }: PageProps<'/groups/[id]
     ...game,
     player_games: (game.player_games ?? []) as PlayerGameWithProfile[],
     player_count: game.player_games?.length ?? 0,
-    user_signed_up: game.player_games?.some((pg) => pg.user_id === user!.id) ?? false,
+    user_signed_up: game.player_games?.some((pg) => pg.user_id === user.id) ?? false,
   }));
 
   return (

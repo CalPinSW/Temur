@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { type Profile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { CreateGameForm } from './CreateGameForm';
@@ -11,6 +12,7 @@ export default async function CreateGamePage({
 }: PageProps<'/games/new'>) {
   const { group: presetGroupId } = await searchParams;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [
@@ -22,17 +24,17 @@ export default async function CreateGamePage({
     supabase
       .from('group_members')
       .select('group:groups(id, name)')
-      .eq('user_id', user!.id)
+      .eq('user_id', user.id)
       .eq('role', 'admin'),
     supabase
       .from('friendships')
       .select('friend:profiles!friendships_friend_id_fkey(*)')
-      .eq('user_id', user!.id)
+      .eq('user_id', user.id)
       .eq('status', 'accepted'),
     supabase
       .from('friendships')
       .select('friend:profiles!friendships_user_id_fkey(*)')
-      .eq('friend_id', user!.id)
+      .eq('friend_id', user.id)
       .eq('status', 'accepted'),
     supabase
       .from('games')

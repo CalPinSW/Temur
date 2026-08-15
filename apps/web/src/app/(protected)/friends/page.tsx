@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { type Profile, getInitials } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { RemoveFriendButton } from './RemoveFriendButton';
@@ -36,14 +37,15 @@ async function loadFriends(userId: string) {
 
 export default async function FriendsPage() {
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [friends, { count: pendingCount }] = await Promise.all([
-    loadFriends(user!.id),
+    loadFriends(user.id),
     supabase
       .from('friendships')
       .select('*', { count: 'exact', head: true })
-      .eq('friend_id', user!.id)
+      .eq('friend_id', user.id)
       .eq('status', 'pending'),
   ]);
 

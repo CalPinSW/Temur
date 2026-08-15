@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   type Game,
   type GameOutcome,
@@ -76,6 +76,7 @@ function PlayerRow({
 export default async function GameDetailPage({ params }: PageProps<'/games/[id]'>) {
   const { id } = await params;
   const user = await getUser();
+  if (!user) redirect('/login');
   const supabase = await createClient();
 
   const [{ data, error }, { data: adminGroups }] = await Promise.all([
@@ -89,7 +90,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
       )
       .eq('id', id)
       .single(),
-    supabase.from('group_members').select('group_id').eq('user_id', user!.id).eq('role', 'admin'),
+    supabase.from('group_members').select('group_id').eq('user_id', user.id).eq('role', 'admin'),
   ]);
 
   if (error || !data) {
@@ -98,7 +99,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
 
   const game = data as RawGame;
   const adminGroupIds = new Set((adminGroups ?? []).map((row) => row.group_id));
-  const isAdmin = isGameAdmin(game, user!.id, adminGroupIds);
+  const isAdmin = isGameAdmin(game, user.id, adminGroupIds);
   const isPast = new Date(game.kickoff_date) < new Date();
   let players = (game.player_games ?? []).slice().sort((a, b) => a.signup_order - b.signup_order);
 
@@ -125,7 +126,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const capacity = getGameCapacity(game.players_per_team);
   const activePlayers = getActivePlayers(players, capacity);
   const waitlistPlayers = getWaitlistPlayers(players, capacity);
-  const isSignedUp = players.some((p) => p.user_id === user!.id);
+  const isSignedUp = players.some((p) => p.user_id === user.id);
   const resultOutcome = game.result_outcome as GameOutcome | null;
   const hasResult = game.result_team1_score !== null || resultOutcome !== null;
 
@@ -182,7 +183,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
               player={player}
               position={i + 1}
               gameId={game.id}
-              currentUserId={user!.id}
+              currentUserId={user.id}
               isAdmin={isAdmin}
             />
           ))}
@@ -219,7 +220,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
                 player={player}
                 position={capacity + i + 1}
                 gameId={game.id}
-                currentUserId={user!.id}
+                currentUserId={user.id}
                 isAdmin={isAdmin}
               />
             ))}
