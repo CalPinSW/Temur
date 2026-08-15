@@ -32,9 +32,14 @@ interface Friendship {
 interface FriendsScreenProps {
   onNavigateToSearch: () => void;
   onNavigateToRequests: () => void;
+  onNavigateToRingers: () => void;
 }
 
-export function FriendsScreen({ onNavigateToSearch, onNavigateToRequests }: FriendsScreenProps) {
+export function FriendsScreen({
+  onNavigateToSearch,
+  onNavigateToRequests,
+  onNavigateToRingers,
+}: FriendsScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const [friends, setFriends] = useState<Friendship[]>([]);
@@ -258,6 +263,18 @@ export function FriendsScreen({ onNavigateToSearch, onNavigateToRequests }: Frie
           <Text style={[styles.requestsArrow, { color: colors.primary }]}>›</Text>
         </TouchableOpacity>
       )}
+
+      <TouchableOpacity
+        style={[styles.requestsBanner, { backgroundColor: colors.backgroundTertiary }]}
+        onPress={onNavigateToRingers}
+      >
+        <View style={styles.requestsBannerContent}>
+          <ThemedTextBox variant="body" weight="semibold">
+            Manage saved ringers
+          </ThemedTextBox>
+        </View>
+        <Text style={[styles.requestsArrow, { color: colors.primary }]}>›</Text>
+      </TouchableOpacity>
 
       <FlatList
         data={friends}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/theme';
-import { ThemedTextBox, ThemedButton, ThemedBadge } from '@/components/themed';
+import { ThemedTextBox, ThemedButton, ThemedBadge, ThemedAvatar } from '@/components/themed';
 import { PlayerGameWithProfile, getPlayerDisplayName } from '@temur/shared';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -46,6 +46,12 @@ export function PlayersList({
                 isCurrentUser && { backgroundColor: colors.backgroundTertiary },
               ]}
             >
+              <ThemedAvatar
+                avatarUrl={playerGame.profile?.avatar_url}
+                displayName={playerGame.profile?.display_name}
+                username={playerGame.profile?.username}
+                size={32}
+              />
               <View style={styles.playerInfo}>
                 <View style={styles.playerNameContainer}>
                   <ThemedTextBox
@@ -109,6 +115,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginLeft: 10,
   },
   playerNameContainer: {
     flexDirection: 'row',

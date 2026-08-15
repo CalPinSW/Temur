@@ -51,3 +51,9 @@ export async function saveRingerName(userId: string, name: string): Promise<void
 
   if (error) throw error;
 }
+
+export async function deleteSavedRinger(ringerId: string): Promise<void> {
+  const { error } = await supabase.from('saved_ringers').delete().eq('id', ringerId);
+
+  if (error) throw error;
+}
