@@ -71,6 +71,14 @@ export default async function FriendsPage() {
         </Link>
       )}
 
+      <Link
+        href="/friends/ringers"
+        className="flex items-center justify-between rounded-lg bg-background-secondary px-4 py-3 transition-colors hover:bg-input"
+      >
+        <span className="font-medium text-text">Manage saved ringers</span>
+        <span className="text-primary">›</span>
+      </Link>
+
       {friends.length === 0 ? (
         <p className="text-sm text-text-secondary">
           No friends yet.{' '}
