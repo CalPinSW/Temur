@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getAuthedSupabaseClient, getAuthedUserId } from '../_shared/rate-limit-example.ts';
+import { buildNotificationEmail, sendEmail } from '../_shared/email.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -155,21 +156,19 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's push token and notification preferences
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('push_token, notifications_enabled')
       .eq('id', userId)
       .single();
 
-    if (profileError || !profile?.push_token) {
+    if (profileError) {
       return new Response(
-        JSON.stringify({ error: 'User has no push token' }),
+        JSON.stringify({ error: 'Could not load recipient profile' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check if user has notifications enabled
     if (profile.notifications_enabled === false) {
       return new Response(
         JSON.stringify({ error: 'User has notifications disabled' }),
@@ -177,27 +176,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send push notification via Expo
-    const response = await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Encoding': 'gzip, deflate',
-      },
-      body: JSON.stringify({
-        to: profile.push_token,
-        title,
-        body,
-        data,
-        sound: 'default',
-      }),
-    });
+    // Push and email are independent delivery paths: a user with no
+    // push_token (every web-only user, since web has no push registration)
+    // should still get an email, so neither path gates the other.
+    let push: unknown = null;
+    if (profile.push_token) {
+      const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify({
+          to: profile.push_token,
+          title,
+          body,
+          data,
+          sound: 'default',
+        }),
+      });
+      push = await pushResponse.json();
+    }
 
-    const result = await response.json();
+    let email: unknown = null;
+    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+    if (authUser?.user?.email) {
+      const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
+      const { subject, html } = buildNotificationEmail(type, title, body, data, siteUrl);
+      email = await sendEmail(authUser.user.email, subject, html);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, result }),
+      JSON.stringify({ success: true, push, email }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

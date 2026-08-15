@@ -73,10 +73,56 @@ Deno.test("send-notification - returns error for missing push token", async () =
   // Function may return 401 (JWT required) or 200 with error
   if (response.status === 200) {
     assertExists(data.error);
-    assertEquals(data.error, "User has no push token");
+    assertEquals(data.error, "Could not load recipient profile");
   } else {
     // JWT verification enabled - this is expected behavior
     assertEquals(response.status, 401);
+  }
+});
+
+Deno.test("send-notification - attempts email even when the recipient has no push token", async () => {
+  const caller = await createSignedInTestUser();
+  if (!caller) {
+    console.log("Skipping: could not create a signed-in test user (no service role key?)");
+    return;
+  }
+
+  try {
+    // Self-notify: callerId === targetUserId auto-authorizes regardless of
+    // type, and a freshly-created test user has no push_token set.
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${caller.accessToken}`,
+        "apikey": SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        userId: caller.userId,
+        type: "friend_accepted",
+        title: "Test Notification",
+        body: "This is a test",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      console.log("Skipping assertion: gateway rejected the request", data);
+      return;
+    }
+
+    assertEquals(response.status, 200);
+    assertEquals(data.success, true);
+    assertEquals(data.push, null);
+    // Email is attempted regardless of push_token presence — without a real
+    // RESEND_API_KEY configured locally this attempt fails gracefully
+    // rather than being skipped outright, which is exactly what this test
+    // is verifying (the previous behavior returned early before ever
+    // reaching the email path when there was no push token).
+    assertExists(data.email);
+  } finally {
+    await deleteTestUser(caller.userId);
   }
 });
 

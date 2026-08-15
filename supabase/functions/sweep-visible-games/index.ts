@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { buildNotificationEmail, sendEmail } from '../_shared/email.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,15 +74,23 @@ Deno.serve(async (req) => {
       // Keep in sync with NotificationTemplates.gameVisible() in
       // app/src/services/notificationService.ts — Deno can't import that
       // React Native module, so the copy is duplicated here by hand.
-      const tickets = ((members as MemberRow[]) || [])
-        .filter((m) => m.profile?.push_token && m.profile.notifications_enabled !== false)
+      const title = 'New Game Available';
+      const body = groupName
+        ? `A new game is open for sign-ups in ${groupName}`
+        : 'A new game is open for sign-ups';
+      const notifyData = { screen: 'GameDetail', gameId: game.id };
+
+      const eligibleMembers = ((members as MemberRow[]) || []).filter(
+        (m) => m.profile?.notifications_enabled !== false
+      );
+
+      const tickets = eligibleMembers
+        .filter((m) => m.profile?.push_token)
         .map((m) => ({
           to: m.profile!.push_token,
-          title: 'New Game Available',
-          body: groupName
-            ? `A new game is open for sign-ups in ${groupName}`
-            : 'A new game is open for sign-ups',
-          data: { screen: 'GameDetail', gameId: game.id },
+          title,
+          body,
+          data: notifyData,
           sound: 'default',
         }));
 
@@ -100,6 +109,22 @@ Deno.serve(async (req) => {
           console.error(`sweep: Expo push batch failed for game ${game.id}`, await resp.text());
         }
       }
+
+      // Email — independent of push_token, same reasoning as
+      // send-notification: this is the only out-of-band channel web-only
+      // members have.
+      const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
+      const { subject, html } = buildNotificationEmail('game_visible', title, body, notifyData, siteUrl);
+      await Promise.all(
+        eligibleMembers.map(async (m) => {
+          const { data: authUser } = await supabase.auth.admin.getUserById(m.user_id);
+          if (!authUser?.user?.email) return;
+          const result = await sendEmail(authUser.user.email, subject, html);
+          if (!result.ok) {
+            console.error(`sweep: email failed for user ${m.user_id} on game ${game.id}`, result.error);
+          }
+        })
+      );
 
       // Mark notified regardless of whether anyone had a token, guarded so
       // overlapping sweep runs can't double-count (each only flips a row
