@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
-import { GroupInvitationWithDetails } from '@/types/group';
+import { GroupInvitationWithDetails } from '@temur/shared';
 
 export function useGroupInvitations(userId?: string) {
   const [invitations, setInvitations] = useState<GroupInvitationWithDetails[]>([]);

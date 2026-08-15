@@ -7,7 +7,7 @@ import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { acceptGroupInvitation, declineGroupInvitation } from '@/services/groupService';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
-import { GroupInvitationWithDetails } from '@/types/group';
+import { GroupInvitationWithDetails } from '@temur/shared';
 
 interface GroupInvitesScreenProps {
   onGoBack: () => void;

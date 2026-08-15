@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
-import { Group, GroupMemberWithProfile } from '@/types/group';
+import { Group, GroupMemberWithProfile } from '@temur/shared';
 
 export function useGroupDetails(groupId: string) {
   const [group, setGroup] = useState<Group | null>(null);

@@ -26,6 +26,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           <Link href="/friends" className="text-sm text-text-secondary hover:text-text">
             Friends
           </Link>
+          <Link href="/groups" className="text-sm text-text-secondary hover:text-text">
+            Groups
+          </Link>
           <Link href="/profile" className="text-sm text-text-secondary hover:text-text">
             {profile?.display_name || profile?.username}
           </Link>

@@ -6,7 +6,7 @@ import { ThemedButton, ThemedTextBox, ThemedInput, ThemedBadge } from '@/compone
 import { useAuthStore } from '@/store/authStore';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { updateMemberRole, removeMember } from '@/services/groupService';
-import { GroupMemberWithProfile } from '@/types/group';
+import { GroupMemberWithProfile } from '@temur/shared';
 
 interface GroupMembersScreenProps {
   groupId: string;
