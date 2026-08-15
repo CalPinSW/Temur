@@ -47,6 +47,15 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
         isAdmin={isAdmin}
       />
 
+      {isAdmin && (
+        <Link
+          href={`/groups/${groupId}/invite`}
+          className="rounded-lg border border-primary px-4 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          Invite Player
+        </Link>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4">
           <span className="text-sm font-medium text-text-secondary">Members</span>
