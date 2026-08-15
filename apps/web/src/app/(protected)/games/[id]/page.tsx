@@ -142,6 +142,15 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
 
       <SignupActions gameId={game.id} isSignedUp={isSignedUp} />
 
+      {isAdmin && players.length > 0 && (
+        <Link
+          href={`/games/${game.id}/team-assignment`}
+          className="self-start rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          Assign Teams
+        </Link>
+      )}
+
       {isPast && (
         <section className="flex flex-col gap-2 rounded-lg border border-border-light px-3 py-2">
           <p className="text-sm text-text-secondary">

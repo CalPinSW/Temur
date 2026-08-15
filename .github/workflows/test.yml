@@ -30,6 +30,9 @@ jobs:
       - name: Unit tests (shared)
         run: npm test -w packages/shared
 
+      - name: Unit tests (web)
+        run: npm test -w apps/web
+
       - name: Build web
         run: npm run build -w apps/web
 
