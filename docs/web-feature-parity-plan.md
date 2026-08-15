@@ -8,6 +8,7 @@
 - **Games — list & detail** — upcoming/past games list (`app/(protected)/games`), respecting the same visibility rule as mobile (visible once `visible_at` passes, or always visible to the game's admin). Game detail page with capacity/waitlist display and sign up / withdraw (Server Actions), using `@temur/shared`'s `getGameCapacity`/`getActivePlayers`/`getWaitlistPlayers`/`getNextSignupOrder`/`getPlayerDisplayName`.
 - **Profile** — view (`app/(protected)/profile`), edit display name/username/avatar (`profile/edit`, avatar via `<input type="file">` uploaded directly to the `avatars` Storage bucket, owner-write RLS already in place), change password (`profile/change-password`, email-auth users only). Uses `@temur/shared`'s `validateUsername`/`formatUsername`/`getInitials` (new — extracted from mobile's duplicated initials logic). Theme toggle and push-notification toggle still outstanding (see below).
 - **Friends** — friends list with remove (`app/(protected)/friends`), search + send request (`friends/search`, debounced client-side search calling a Server Action directly), accept/decline incoming requests (`friends/requests`). Sends a `send-notification` push on new request, same as mobile (no-op for users without a push token, so this works even though web itself has no push story yet). Uses `@temur/shared`'s `getInitials`.
+- **Groups (core)** — list with pending-invite banner and create group (`app/(protected)/groups`, `groups/new`), group detail with inline admin edit (name/description/team-assignment message template) and leave group (`groups/[id]`), member list with promote/demote/remove (`groups/[id]/members`). `Group`/`GroupMember(WithProfile)`/`GroupWithRole`/`GroupInvitation(WithDetails)` types moved from mobile-only `types/group.ts` into `@temur/shared` since both apps need them now. Group invites (send + accept/decline) and the group's upcoming-games list page are still outstanding — see below.
 
 ## Outstanding
 
@@ -18,9 +19,15 @@ Each item below references the mobile implementation to mirror (screens/hooks/se
 - Theme toggle (light/dark/system) — web currently just follows `prefers-color-scheme` via CSS; an explicit toggle needs its own preference storage (e.g. a cookie), separate from mobile's `ThemeContext`.
 - Push-notification toggle — blocked on the Notifications item below.
 
-### Groups
-- Mirror: `screens/groups/*.tsx`, `services/groupService.ts`, `hooks/useGroups*.ts`.
-- List/detail/members/invites, create group, promote/demote/remove members. Same tables/queries as mobile; straightforward CRUD parity.
+### Groups (remaining)
+- Mirror: `screens/groups/{InvitePlayerScreen,GroupInvitesScreen,GroupGamesScreen}.tsx`, `services/groupService.ts` (`inviteToGroup`/`acceptGroupInvitation`/`declineGroupInvitation`), `hooks/useGroupInvitations.ts`, `hooks/useGroupUpcomingGames.ts`.
+- Invite a friend to a group (from the group detail page, admin only) and view/accept/decline incoming group invitations. Sends the same `send-notification` push as friend requests.
+- Group's upcoming-games list page (`groups/[id]/games`) for when a group has more than one upcoming game — group detail already deep-links straight to the single game when there's only one.
+- Same tables/queries as mobile; straightforward CRUD parity, no native dependencies.
+
+### Game creation
+- Mirror: `screens/main/CreateGameScreen.tsx`.
+- Not yet built on web at all (not just for groups) — currently web can only view/sign-up-for games created via mobile or Supabase directly. Needed for the "Create Game" action on a group's detail page once built.
 
 ### Team assignment board
 - Mirror: `components/team-assignment/TeamAssignmentBoard.tsx`, `hooks/useTeamAssignment.ts`, `screens/main/TeamAssignmentScreen.tsx`.

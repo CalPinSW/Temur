@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
-import { Group, GroupRole, GroupWithRole } from '@/types/group';
+import { Group, GroupRole, GroupWithRole } from '@temur/shared';
 
 interface RawGroupMember {
   role: GroupRole;

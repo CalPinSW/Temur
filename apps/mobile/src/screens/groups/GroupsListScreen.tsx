@@ -16,7 +16,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useGroups } from '@/hooks/useGroups';
 import { useGroupInvitations } from '@/hooks/useGroupInvitations';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
-import { GroupWithRole } from '@/types/group';
+import { GroupWithRole } from '@temur/shared';
 
 interface GroupsListScreenProps {
   onNavigateToCreate: () => void;

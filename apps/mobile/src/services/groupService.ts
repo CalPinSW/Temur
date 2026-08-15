@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { NotificationTemplates } from './notificationService';
-import { GroupRole } from '@/types/group';
+import { GroupRole } from '@temur/shared';
 
 export async function createGroup(name: string, description: string | null, createdBy: string) {
   const { data, error } = await supabase
