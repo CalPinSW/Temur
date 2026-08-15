@@ -16,6 +16,11 @@ web-build/
 android/
 ios/
 
+# Next.js / Vercel
+.next/
+out/
+.vercel/
+
 # Environment files
 .env
 .env.local

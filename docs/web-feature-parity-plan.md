@@ -1,0 +1,53 @@
+# Web feature parity plan
+
+`apps/web` (Next.js) is a new companion to `apps/mobile` (Expo), sharing the same Supabase project. This tracks what's built vs. outstanding on web, so feature/bugfix work can keep the two apps in lock-step (see the standing rule in `CLAUDE.md`). Update this file when you close a gap or find a new one.
+
+## Built
+
+- **Auth** — email/password sign in, sign up (with username), email-confirmation callback (`app/auth/callback`), sign out. Session managed via `@supabase/ssr` cookies + middleware refresh.
+- **Games — list & detail** — upcoming/past games list (`app/(protected)/games`), respecting the same visibility rule as mobile (visible once `visible_at` passes, or always visible to the game's admin). Game detail page with capacity/waitlist display and sign up / withdraw (Server Actions), using `@temur/shared`'s `getGameCapacity`/`getActivePlayers`/`getWaitlistPlayers`/`getNextSignupOrder`/`getPlayerDisplayName`.
+
+## Outstanding
+
+Each item below references the mobile implementation to mirror (screens/hooks/services under `apps/mobile/src/`).
+
+### Profile
+- Mirror: `screens/profile/{ProfileScreen,EditProfileScreen,AboutScreen}.tsx`.
+- Avatar upload/change → Supabase Storage `avatars` bucket. Straightforward on web via `<input type="file">`; no native-picker equivalent needed.
+- Display name / username editing (reuse `@temur/shared`'s `validateUsername`/`formatUsername`, already used by the web signup form).
+- Theme toggle (light/dark/system) — web currently just follows `prefers-color-scheme` via CSS; an explicit toggle needs its own preference storage (e.g. a cookie), separate from mobile's `ThemeContext`.
+- Push-notification toggle — blocked on the Notifications item below.
+
+### Friends
+- Mirror: `screens/friends/{FriendsScreen,SearchUsersScreen,FriendRequestsScreen}.tsx`, `services/friendshipService.ts`, `hooks/useAcceptedFriends.ts`.
+- Search users, send/accept/decline requests, remove friends. Same tables/queries as mobile; no native dependencies to work around.
+
+### Groups
+- Mirror: `screens/groups/*.tsx`, `services/groupService.ts`, `hooks/useGroups*.ts`.
+- List/detail/members/invites, create group, promote/demote/remove members. Same tables/queries as mobile; straightforward CRUD parity.
+
+### Team assignment board
+- Mirror: `components/team-assignment/TeamAssignmentBoard.tsx`, `hooks/useTeamAssignment.ts`, `screens/main/TeamAssignmentScreen.tsx`.
+- Needs a **web-native drag-and-drop** reimplementation — mobile's board uses RN `PanResponder`/`Animated.ValueXY`, which has no web equivalent. Recommend `@dnd-kit/core` (or similar) for the web version. The data model is already shared (`board_x`/`board_y`, `team` columns on `player_games`; `getTeamCounts` util), so only the interaction/rendering layer is new work.
+- The simpler list-based team-picker mode (`PlayerAssignmentItem` equivalent) is easy to do first and doesn't need any of this.
+
+### Results & ratings
+- Mirror: `screens/main/GameResultScreen.tsx`, `components/game/GameResultSection.tsx`, `hooks/useGameResult.ts`, `hooks/usePlayerRatings.ts`.
+- Same RPCs as mobile (`set_game_result`, `get_player_rating_summary`) — no native dependencies, should be a direct port.
+
+### Ringers
+- Mirror: `services/ringerService.ts`, `hooks/useRingerActions.ts`, the ringers UI in `screens/main/GameDetailScreen.tsx`.
+- Open a group game to ringers, add/remove guest players, saved-ringer name suggestions. No native dependencies.
+
+### Notifications
+- Mobile uses Expo push (native-only, requires a physical device) via `send-notification`/`sweep-visible-games` edge functions.
+- Web options to evaluate: Web Push API + a service worker (real push, more setup — VAPID keys, service worker lifecycle), or defer entirely for v1 and rely on realtime in-app badge counts (see below) plus email as the out-of-band channel.
+- Either way, `send-notification` will need a second delivery path alongside Expo push once web notifications exist.
+
+### Social sign-in
+- Mirror: `services/socialAuthService.ts`, the Google/Apple buttons in `screens/auth/{SignInScreen,SignUpScreen}.tsx`.
+- Web uses standard Supabase OAuth redirect flow (`supabase.auth.signInWithOAuth`) rather than `expo-auth-session`'s custom-scheme redirect — simpler than mobile, not blocked on anything.
+
+### Cross-cutting: realtime updates
+- Mobile subscribes to `postgres_changes` (games, player_games, friendships, group_invitations, game_invitations) to live-update lists and tab badge counts. Web's current pages are plain Server Components that only refresh on navigation/`revalidatePath` after a mutation.
+- Decide per-feature whether web needs live updates (e.g. a client-side Supabase subscription that calls `router.refresh()`) or whether request-time freshness is good enough — start without it and add where it's actually missed.

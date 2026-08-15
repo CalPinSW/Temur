@@ -25,7 +25,7 @@
 
 ## Step 2: Update eas.json with Your Credentials
 
-Edit `app/eas.json` and replace the placeholder values:
+Edit `apps/mobile/eas.json` and replace the placeholder values:
 
 ```json
 "submit": {
@@ -41,10 +41,10 @@ Edit `app/eas.json` and replace the placeholder values:
 
 ## Step 3: Build for Production
 
-From the `app/` directory, run:
+From the `apps/mobile/` directory, run:
 
 ```bash
-cd app
+cd apps/mobile
 eas build --platform ios --profile production
 ```
 
@@ -115,7 +115,7 @@ When you make changes and want to push an update:
 
 ```bash
 # Build new version
-cd app
+cd apps/mobile
 eas build --platform ios --profile production
 
 # Submit to TestFlight
@@ -171,7 +171,7 @@ Once you're confident from friend testing:
 
 1. Prepare App Store listing (screenshots, description, keywords)
 2. Submit for App Store review
-3. See [BUILD.md](./app/BUILD.md) for full App Store submission guide
+3. See [BUILD.md](./apps/mobile/BUILD.md) for full App Store submission guide
 
 ## Useful Commands
 

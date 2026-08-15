@@ -4,12 +4,9 @@ on:
   pull_request:
 
 jobs:
-  app:
-    name: App unit tests & lint
+  node:
+    name: Node unit tests & lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: app
     steps:
       - uses: actions/checkout@v4
 
@@ -17,16 +14,24 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: app/package-lock.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint mobile
+        run: npm run lint -w apps/mobile
 
-      - name: Unit tests
-        run: npm test
+      - name: Lint web
+        run: npm run lint -w apps/web
+
+      - name: Unit tests (mobile)
+        run: npm test -w apps/mobile
+
+      - name: Unit tests (shared)
+        run: npm test -w packages/shared
+
+      - name: Build web
+        run: npm run build -w apps/web
 
   supabase:
     name: Supabase integration tests
