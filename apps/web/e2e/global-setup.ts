@@ -67,14 +67,6 @@ export default async function globalSetup(config: FullConfig) {
   for (const user of Object.values(E2E_USERS)) {
     const match = existing.users.find((u) => u.email === user.email);
     if (match) {
-      // player_games' ringer-shape check requires added_by IS NOT NULL for
-      // ringer rows, but its FK is ON DELETE SET NULL — deleting a user who
-      // ever added a ringer via a previous run otherwise fails with a
-      // generic "Database error deleting user". Clear those rows first.
-      // (This is a real product bug, tracked separately — not specific to
-      // these tests.)
-      await admin.from('player_games').delete().eq('added_by', match.id).eq('is_ringer', true);
-
       const { error } = await admin.auth.admin.deleteUser(match.id);
       if (error) throw new Error(`Failed to delete stale E2E user ${user.email}: ${error.message}`);
     }
