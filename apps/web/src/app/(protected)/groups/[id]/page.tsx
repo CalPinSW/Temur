@@ -48,12 +48,20 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
       />
 
       {isAdmin && (
-        <Link
-          href={`/groups/${groupId}/invite`}
-          className="rounded-lg border border-primary px-4 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-primary/10"
-        >
-          Invite Player
-        </Link>
+        <div className="flex gap-3">
+          <Link
+            href={`/groups/${groupId}/invite`}
+            className="flex-1 rounded-lg border border-primary px-4 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+          >
+            Invite Player
+          </Link>
+          <Link
+            href={`/games/new?group=${groupId}`}
+            className="flex-1 rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+          >
+            Create Game
+          </Link>
+        </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">
