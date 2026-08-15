@@ -128,6 +128,8 @@ cp supabase/.env.example supabase/.env
    supabase functions deploy
    ```
 
+   If you want email notifications working, also set the Resend secrets — see "Email Notifications Setup" below.
+
 6. **Run the apps** — see "Run the mobile app" / "Run the web app" above.
 
 #### Authentication Redirect Setup
@@ -248,6 +250,22 @@ supabase functions deploy                              # deploy all
 ```
 
 > **Note:** Make sure `supabase/.env` contains any secrets the functions need before deploying.
+
+#### Email Notifications Setup
+
+`send-notification` and `sweep-visible-games` send email (via [Resend](https://resend.com)) alongside push — web's only out-of-band channel, since it has no push registration. Without these, email is skipped silently and push is unaffected.
+
+1. Create a free Resend account and API key.
+2. (Optional, recommended for production) verify a sending domain in the Resend dashboard — without one, email sends from Resend's shared `onboarding@resend.dev` sandbox address, which works but is less deliverable at scale.
+3. Set the secrets on your Supabase project (matches how `EDGE_FUNCTION_SECRET` is provisioned):
+
+   ```bash
+   supabase secrets set RESEND_API_KEY=your_resend_api_key
+   supabase secrets set RESEND_FROM_EMAIL="Temur <notifications@yourdomain.com>"  # optional, defaults to the sandbox sender
+   supabase secrets set PUBLIC_SITE_URL=https://your-deployed-web-app.vercel.app  # used to build the "Open Temur" link in emails
+   ```
+
+4. For local dev, set the same three in `supabase/.env` instead (see `supabase/.env.example`).
 
 #### Supabase Edge Function Configuration
 
