@@ -18,6 +18,7 @@ import { SignupActions } from './SignupActions';
 import { OpenRingersSection } from './OpenRingersSection';
 import { AddRingerSection } from './AddRingerSection';
 import { RemoveRingerButton } from './RemoveRingerButton';
+import { DeleteGameButton } from './DeleteGameButton';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
@@ -127,6 +128,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const activePlayers = getActivePlayers(players, capacity);
   const waitlistPlayers = getWaitlistPlayers(players, capacity);
   const isSignedUp = players.some((p) => p.user_id === user.id);
+  const isCreator = game.created_by === user.id;
   const resultOutcome = game.result_outcome as GameOutcome | null;
   const hasResult = game.result_team1_score !== null || resultOutcome !== null;
 
@@ -225,6 +227,12 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
               />
             ))}
           </ul>
+        </section>
+      )}
+
+      {isCreator && (
+        <section className="flex flex-col gap-2 self-start">
+          <DeleteGameButton gameId={game.id} />
         </section>
       )}
     </div>

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { getNextSignupOrder } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 
@@ -45,6 +46,21 @@ export async function signUpForGame(
   revalidatePath(`/games/${gameId}`);
   revalidatePath('/games');
   return {};
+}
+
+export async function deleteGame(gameId: string): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: 'You must be signed in.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('delete_game', { p_game_id: gameId });
+
+  if (error) {
+    return { error: 'Failed to delete game. Please try again.' };
+  }
+
+  revalidatePath('/games');
+  redirect('/games');
 }
 
 export async function withdrawFromGame(

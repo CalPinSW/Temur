@@ -7,6 +7,7 @@ import {
   getVisiblePlayers,
   getTeamCounts,
   isGameAdmin,
+  getGameVisibilityStatus,
   getPlayerDisplayName,
   getNextSignupOrder,
 } from '../utils/gameUtils';
@@ -192,6 +193,43 @@ describe('gameUtils', () => {
       const game = { group_id: 'group-1', created_by: 'user-1' };
       expect(isGameAdmin(game, 'user-2', new Set(['group-1']))).toBe(true);
       expect(isGameAdmin(game, 'user-1', new Set())).toBe(false);
+    });
+  });
+
+  describe('getGameVisibilityStatus', () => {
+    const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    it('is visible and not a preview once visible_at has passed, for anyone', () => {
+      const game = { visible_at: past, group_id: null, created_by: 'user-1' };
+      expect(getGameVisibilityStatus(game, 'user-2', new Set())).toEqual({
+        visible: true,
+        isPreview: false,
+      });
+    });
+
+    it('hides a not-yet-visible game from a non-admin', () => {
+      const game = { visible_at: future, group_id: null, created_by: 'user-1' };
+      expect(getGameVisibilityStatus(game, 'user-2', new Set())).toEqual({
+        visible: false,
+        isPreview: false,
+      });
+    });
+
+    it('shows a not-yet-visible game to its admin as a preview', () => {
+      const game = { visible_at: future, group_id: null, created_by: 'user-1' };
+      expect(getGameVisibilityStatus(game, 'user-1', new Set())).toEqual({
+        visible: true,
+        isPreview: true,
+      });
+    });
+
+    it('shows a not-yet-visible group game to a group admin as a preview', () => {
+      const game = { visible_at: future, group_id: 'group-1', created_by: 'user-1' };
+      expect(getGameVisibilityStatus(game, 'user-2', new Set(['group-1']))).toEqual({
+        visible: true,
+        isPreview: true,
+      });
     });
   });
 

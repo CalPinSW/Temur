@@ -5,7 +5,10 @@ import { ThemedCard, ThemedTextBox, ThemedBadge } from '../themed';
 import { useTheme } from '@/theme';
 
 interface GameOverviewCardProps {
-  game: GameWithPlayers;
+  // isPreview is optional so screens without early-admin-visibility
+  // handling (e.g. a group's upcoming-games list) can keep passing a plain
+  // GameWithPlayers.
+  game: GameWithPlayers & { isPreview?: boolean };
   onNavigateToGame: (gameId: string) => void;
 }
 
@@ -13,14 +16,15 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
   const { colors } = useTheme();
 
   const isPast = new Date(game.kickoff_date) < new Date();
-  const isVisible = new Date(game.visible_at) <= new Date();
+  const isPreview = game.isPreview ?? false;
 
   return (
     <TouchableOpacity
       key={game.id}
       onPress={() => onNavigateToGame(game.id)}
+      disabled={isPreview}
       activeOpacity={0.7}
-      style={styles.gameCardTouchable}
+      style={[styles.gameCardTouchable, isPreview && styles.gameCardPreview]}
     >
       <ThemedCard variant="elevated">
         <View style={styles.gameCardHeader}>
@@ -42,7 +46,7 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
           {game.invitation_status === 'pending' ? (
             <ThemedBadge variant="info" text="Invited" />
           ) : (
-            !isVisible && <ThemedBadge variant="warning" text="Not visible yet" />
+            isPreview && <ThemedBadge variant="warning" text="Not visible yet" />
           )}
         </View>
 
@@ -75,6 +79,9 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
 const styles = StyleSheet.create({
   gameCardTouchable: {
     marginBottom: 12,
+  },
+  gameCardPreview: {
+    opacity: 0.5,
   },
   gameCardHeader: {
     flexDirection: 'row',

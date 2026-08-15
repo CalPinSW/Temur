@@ -7,6 +7,7 @@ import { GameWithPlayers, getNextSignupOrder } from '@temur/shared';
 export function useGameActions(gameId: string, userId?: string) {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSignUp = async (game: GameWithPlayers, onSuccess: () => void) => {
     if (!game || !userId) return;
@@ -78,5 +79,35 @@ export function useGameActions(gameId: string, userId?: string) {
     );
   };
 
-  return { isSigningUp, isWithdrawing, handleSignUp, handleWithdraw };
+  const handleDelete = (onSuccess: () => void) => {
+    Alert.alert(
+      'Delete Game',
+      'Are you sure you want to delete this game? This cannot be undone from the app.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+
+              const { error } = await supabase.rpc('delete_game', { p_game_id: gameId });
+
+              if (error) throw error;
+
+              onSuccess();
+            } catch (error) {
+              console.error('Error deleting game:', error);
+              Alert.alert('Error', 'Failed to delete game. Please try again.');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  return { isSigningUp, isWithdrawing, isDeleting, handleSignUp, handleWithdraw, handleDelete };
 }

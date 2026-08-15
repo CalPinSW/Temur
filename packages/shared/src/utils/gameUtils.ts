@@ -97,6 +97,25 @@ export const isGameAdmin = (
   return game.group_id ? adminGroupIds.has(game.group_id) : game.created_by === userId;
 };
 
+export interface GameVisibilityStatus {
+  // Whether this game should appear in a games list at all.
+  visible: boolean;
+  // Admin-only early view: visible to this user via their admin status
+  // alone, not yet visible to everyone via visible_at. List UIs use this to
+  // grey the item out and disable navigating into it.
+  isPreview: boolean;
+}
+
+export const getGameVisibilityStatus = (
+  game: Pick<Game, 'visible_at' | 'group_id' | 'created_by'>,
+  userId: string | undefined,
+  adminGroupIds: Set<string>
+): GameVisibilityStatus => {
+  if (new Date(game.visible_at) <= new Date()) return { visible: true, isPreview: false };
+  const admin = isGameAdmin(game, userId, adminGroupIds);
+  return { visible: admin, isPreview: admin };
+};
+
 export const formatGameResult = (
   team1Name: string,
   team2Name: string,
