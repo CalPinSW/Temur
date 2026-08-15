@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { chromium, type FullConfig } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import WebSocket from 'ws';
 
 interface LocalSupabaseStatus {
   API_URL: string;
@@ -54,6 +55,12 @@ export default async function globalSetup(config: FullConfig) {
 
   const admin = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
+    // supabase-js always constructs a RealtimeClient, which needs a
+    // WebSocket global — present on Node 22+ but not on Node 20 (this
+    // repo's pinned version, per .nvmrc / CI). Provide one explicitly so
+    // this works on the project's actual baseline, not just newer local
+    // Node installs.
+    realtime: { transport: WebSocket as unknown as typeof globalThis.WebSocket },
   });
 
   const { data: existing, error: listError } = await admin.auth.admin.listUsers({
