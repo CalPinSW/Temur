@@ -76,6 +76,7 @@ maestro test .maestro/
 npm run dev -w apps/web      # next dev
 npm run build -w apps/web    # next build
 npm run lint -w apps/web     # eslint
+npm test -w apps/web         # jest (unit tests for pure logic, e.g. team-assignment state/geometry)
 ```
 
 Needs `apps/web/.env.local` (copy from `.env.local.example`) pointing at the **same** Supabase project as mobile's `apps/mobile/.env`.
