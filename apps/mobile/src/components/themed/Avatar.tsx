@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
+import { getInitials } from '@temur/shared';
 import { useTheme } from '@/theme';
 
 interface ThemedAvatarProps {
@@ -7,18 +8,6 @@ interface ThemedAvatarProps {
   displayName?: string | null;
   username?: string | null;
   size?: number;
-}
-
-function getInitials(displayName?: string | null, username?: string | null) {
-  if (displayName) {
-    return displayName
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }
-  return username?.slice(0, 2).toUpperCase() || '??';
 }
 
 export function ThemedAvatar({ avatarUrl, displayName, username, size = 36 }: ThemedAvatarProps) {
