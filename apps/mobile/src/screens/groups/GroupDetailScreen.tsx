@@ -15,7 +15,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { useGroupUpcomingGames } from '@/hooks/useGroupUpcomingGames';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
-import { updateGroup, leaveGroup } from '@/services/groupService';
+import { updateGroup, leaveGroup, deleteGroup } from '@/services/groupService';
 import { formatDate, formatTime } from '@temur/shared';
 
 interface GroupDetailScreenProps {
@@ -47,6 +47,7 @@ export function GroupDetailScreen({
   const [editDescription, setEditDescription] = useState('');
   const [editMessageTemplate, setEditMessageTemplate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const myMembership = members.find((m) => m.user_id === user?.id);
   const isAdmin = myMembership?.role === 'admin';
@@ -127,6 +128,33 @@ export function GroupDetailScreen({
         },
       },
     ]);
+  };
+
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      'Delete Group',
+      'Are you sure you want to delete this group? This will also delete all of its games. This cannot be undone from the app.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              await deleteGroup(groupId);
+              onGoBack();
+            } catch (error) {
+              console.error('Error deleting group:', error);
+              Sentry.captureException(error);
+              Alert.alert('Error', 'Failed to delete group');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleUpcomingGamesPress = () => {
@@ -272,6 +300,17 @@ export function GroupDetailScreen({
         <View style={styles.leaveSection}>
           <ThemedButton title="Leave Group" variant="ghost" onPress={handleLeaveGroup} />
         </View>
+
+        {isAdmin && (
+          <View style={styles.leaveSection}>
+            <ThemedButton
+              title={isDeleting ? 'Deleting...' : 'Delete Group'}
+              variant="danger"
+              onPress={handleDeleteGroup}
+              disabled={isDeleting}
+            />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

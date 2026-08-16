@@ -17,6 +17,7 @@ import {
   updateMemberRole,
   removeMember,
   leaveGroup,
+  deleteGroup,
 } from '@/services/groupService';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
@@ -294,6 +295,20 @@ describe('groupService', () => {
 
       await expect(leaveGroup('group-1', 'user-1')).rejects.toThrow('boom');
       expect(membersBuilder.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteGroup', () => {
+    it('calls delete_group with the group id', async () => {
+      await deleteGroup('group-1');
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('delete_group', { p_group_id: 'group-1' });
+    });
+
+    it('throws on error', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({ data: null, error: new Error('not authorized') });
+
+      await expect(deleteGroup('group-1')).rejects.toThrow('not authorized');
     });
   });
 });
