@@ -116,12 +116,21 @@ jobs:
         with:
           version: 2.114.0
 
-      # EDGE_FUNCTION_SECRET must exist before `supabase start` — the local
-      # edge runtime reads supabase/.env (via [edge_runtime.secrets] in
-      # config.toml) at boot, not on later writes. A fixed test-only value;
-      # nothing here needs to match any real secret.
-      - name: Configure edge function test secret
-        run: echo "EDGE_FUNCTION_SECRET=ci-test-secret" > .env
+      # Must exist before `supabase start` — the local edge runtime reads
+      # supabase/.env (via [edge_runtime.secrets] in config.toml) at boot,
+      # not on later writes. Fixed test-only values; nothing here needs to
+      # match any real secret. Without SUPPORT_EMAIL, send-bug-report skips
+      # its email attempt entirely and returns email: null — which used to
+      # be masked by the (now-fixed) gateway JWT bug rejecting the request
+      # before it ever reached that code, so send-bug-report.test.ts's
+      # `assertExists(data.email)` never actually ran against a real
+      # response until that bug was fixed. No RESEND_API_KEY is set, so the
+      # email attempt itself still exercises sendEmail()'s own graceful
+      # no-key skip path (see email.test.ts).
+      - name: Configure edge function test secrets
+        run: |
+          echo "EDGE_FUNCTION_SECRET=ci-test-secret" > .env
+          echo "SUPPORT_EMAIL=ci-test@example.com" >> .env
 
       - name: Start local Supabase stack
         run: supabase start
