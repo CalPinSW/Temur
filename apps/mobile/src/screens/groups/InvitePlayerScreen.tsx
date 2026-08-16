@@ -7,6 +7,7 @@ import { Profile } from '@temur/shared';
 import { inviteToGroup } from '@/services/groupService';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox, ThemedInput } from '@/components/themed';
+import * as Sentry from '@sentry/react-native';
 
 interface InvitePlayerScreenProps {
   groupId: string;
@@ -51,6 +52,7 @@ export function InvitePlayerScreen({
         setResults(filtered);
       } catch (error) {
         console.error('Search error:', error);
+        Sentry.captureException(error);
       } finally {
         setIsSearching(false);
       }
@@ -83,6 +85,7 @@ export function InvitePlayerScreen({
       Alert.alert('Success', 'Invite sent!');
     } catch (error) {
       console.error('Send invite error:', error);
+      Sentry.captureException(error);
       if ((error as { code?: string }).code === '23505') {
         Alert.alert('Already Sent', 'You already invited this player to the group.');
       } else {

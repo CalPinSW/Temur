@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, ThemeColors } from './colors';
+import * as Sentry from '@sentry/react-native';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -28,6 +29,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to load theme preference:', error);
+      Sentry.captureException(error);
     }
   };
 
@@ -43,6 +45,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setThemeModeState(mode);
     } catch (error) {
       console.error('Failed to save theme preference:', error);
+      Sentry.captureException(error);
     }
   };
 

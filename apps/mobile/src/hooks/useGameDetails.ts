@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/services/supabase';
 import { Game, GameWithPlayers, PlayerGameWithProfile } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 interface RawPlayerGame {
   id: string;
@@ -123,6 +124,7 @@ export function useGameDetails(gameId: string, userId?: string) {
       setGame(processedGame);
     } catch (error) {
       console.error('Error fetching game details:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to load game details');
     } finally {
       setIsLoading(false);

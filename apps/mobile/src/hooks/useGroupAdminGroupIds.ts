@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
+import * as Sentry from '@sentry/react-native';
 
 export function useGroupAdminGroupIds(userId?: string) {
   const [adminGroupIds, setAdminGroupIds] = useState<Set<string>>(new Set());
@@ -24,6 +25,7 @@ export function useGroupAdminGroupIds(userId?: string) {
       setAdminGroupIds(new Set((data || []).map((row) => row.group_id)));
     } catch (error) {
       console.error('Error fetching admin group ids:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

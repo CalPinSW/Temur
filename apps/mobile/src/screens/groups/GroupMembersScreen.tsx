@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { updateMemberRole, removeMember } from '@/services/groupService';
 import { GroupMemberWithProfile } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 interface GroupMembersScreenProps {
   groupId: string;
@@ -50,6 +51,7 @@ export function GroupMembersScreen({ groupId, onGoBack }: GroupMembersScreenProp
       refetch();
     } catch (error) {
       console.error('Error updating role:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to update role');
     }
   };
@@ -69,6 +71,7 @@ export function GroupMembersScreen({ groupId, onGoBack }: GroupMembersScreenProp
               refetch();
             } catch (error) {
               console.error('Error removing member:', error);
+              Sentry.captureException(error);
               Alert.alert('Error', 'Failed to remove member');
             }
           },

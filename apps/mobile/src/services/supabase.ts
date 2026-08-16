@@ -1,6 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
+import * as Sentry from '@sentry/react-native';
 
 // SecureStore has a 2048 byte limit, so we need to chunk large values
 const CHUNK_SIZE = 1800; // Leave some headroom
@@ -31,6 +32,7 @@ const ExpoSecureStoreAdapter = {
       return value;
     } catch (error) {
       console.error(`[SecureStore] Error getting item ${key}:`, error);
+      Sentry.captureException(error);
       return null;
     }
   },
@@ -73,6 +75,7 @@ const ExpoSecureStoreAdapter = {
       }
     } catch (error) {
       console.error(`[SecureStore] Error setting item ${key}:`, error);
+      Sentry.captureException(error);
       throw error;
     }
   },
@@ -95,6 +98,7 @@ const ExpoSecureStoreAdapter = {
       console.log(`[SecureStore] Removed ${key}`);
     } catch (error) {
       console.error(`[SecureStore] Error removing item ${key}:`, error);
+      Sentry.captureException(error);
       throw error;
     }
   },

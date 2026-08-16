@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   View,
   Text,
@@ -109,6 +110,7 @@ export function FriendsScreen({
       setFriends(uniqueFriends as Friendship[]);
     } catch (error) {
       console.error('Error fetching friends:', error);
+      Sentry.captureException(error);
     }
   }, [user]);
 
@@ -126,6 +128,7 @@ export function FriendsScreen({
       setPendingCount(count || 0);
     } catch (error) {
       console.error('Error fetching pending count:', error);
+      Sentry.captureException(error);
     }
   }, [user]);
 
@@ -150,6 +153,7 @@ export function FriendsScreen({
               setFriends((prev) => prev.filter((f) => f.id !== friendship.id));
             } catch (error) {
               console.error('Error removing friend:', error);
+              Sentry.captureException(error);
               Alert.alert('Error', 'Failed to remove friend. Please try again.');
             }
           },

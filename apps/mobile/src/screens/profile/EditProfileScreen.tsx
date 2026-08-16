@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   View,
   Text,
@@ -119,6 +120,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
       setAvatarUrl(urlData.publicUrl);
     } catch (error) {
       console.error('Upload error:', error);
+      Sentry.captureException(error);
       Alert.alert(
         'Upload Failed',
         error instanceof Error ? getAvatarUploadErrorMessage(error) : 'Failed to upload image'

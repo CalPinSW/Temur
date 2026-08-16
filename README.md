@@ -284,6 +284,15 @@ Provided the function still performs authentication internally, this is still se
 supabase functions deploy {function-name} --no-verify-jwt
 ```
 
+### Error Monitoring (Sentry)
+
+Both apps report uncaught errors to Sentry (org `softwire-zd`, projects `temur-web`/`temur-mobile`). The DSNs themselves aren't secret and are already committed in `apps/web/.env.local.example`/`apps/mobile/.env.example` — no setup needed for errors to start showing up in the Sentry dashboard. One optional step remains for **readable stack traces** (otherwise Sentry shows minified/bundled code):
+
+- **Web (Vercel)**: create a Sentry auth token (Sentry → Settings → Auth Tokens, scoped to this org) and add it as a `SENTRY_AUTH_TOKEN` environment variable in the Vercel project. `next.config.ts`'s `withSentryConfig` picks it up automatically at build time to upload source maps.
+- **Mobile (EAS)**: add the same token as an EAS secret (`eas secret:create --scope project --name SENTRY_AUTH_TOKEN --value <token>` from `apps/mobile`). The `@sentry/react-native/expo` config plugin uploads source maps during `eas build` when it's present.
+
+Without the token, both apps still build and report errors fine — you just won't get de-minified stack traces in the Sentry UI.
+
 ### Mobile App Builds
 
 For development builds with physical devices:

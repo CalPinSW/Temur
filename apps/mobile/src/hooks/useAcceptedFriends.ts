@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
 import { Profile } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 interface RawFriendship {
   friend: Profile | Profile[];
@@ -46,6 +47,7 @@ export function useAcceptedFriends(userId?: string) {
       setFriends(uniqueFriends);
     } catch (error) {
       console.error('Error fetching friends:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

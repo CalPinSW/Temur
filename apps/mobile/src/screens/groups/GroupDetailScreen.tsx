@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   View,
   StyleSheet,
@@ -100,6 +101,7 @@ export function GroupDetailScreen({
       refetch();
     } catch (error) {
       console.error('Error updating group:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to update group');
     } finally {
       setIsSaving(false);
@@ -119,6 +121,7 @@ export function GroupDetailScreen({
             onGoBack();
           } catch (error) {
             console.error('Error leaving group:', error);
+            Sentry.captureException(error);
             Alert.alert('Error', 'Failed to leave group');
           }
         },
