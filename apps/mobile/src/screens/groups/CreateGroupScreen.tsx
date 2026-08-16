@@ -5,6 +5,7 @@ import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox, ThemedCard, ThemedInput } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { createGroup } from '@/services/groupService';
+import * as Sentry from '@sentry/react-native';
 
 interface CreateGroupScreenProps {
   onGoBack: () => void;
@@ -27,6 +28,7 @@ export function CreateGroupScreen({ onGoBack, onCreated }: CreateGroupScreenProp
       onCreated(group.id);
     } catch (error) {
       console.error('Error creating group:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to create group. Please try again.');
     } finally {
       setIsCreating(false);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
 import { Group, GroupRole, GroupWithRole } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 interface RawGroupMember {
   role: GroupRole;
@@ -30,6 +31,7 @@ export function useGroups(userId?: string) {
       setGroups(groupsWithRole);
     } catch (error) {
       console.error('Error fetching groups:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

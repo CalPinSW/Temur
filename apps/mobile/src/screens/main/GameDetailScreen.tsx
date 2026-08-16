@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   View,
   StyleSheet,
@@ -157,6 +158,7 @@ export function GameDetailScreen({
       refetch();
     } catch (error) {
       console.error('Error accepting invite:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to accept invite');
     } finally {
       setIsRespondingToInvite(false);
@@ -172,6 +174,7 @@ export function GameDetailScreen({
       onGoBack();
     } catch (error) {
       console.error('Error declining invite:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to decline invite');
     } finally {
       setIsRespondingToInvite(false);
@@ -208,6 +211,7 @@ export function GameDetailScreen({
       Alert.alert('Success', 'Invites sent!');
     } catch (error) {
       console.error('Error inviting friends:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to send invites');
     } finally {
       setIsInviting(false);
@@ -224,6 +228,7 @@ export function GameDetailScreen({
         setNotifyMessage((await getGroupMessageTemplate(game.group_id)) || '');
       } catch (error) {
         console.error('Error loading message template:', error);
+        Sentry.captureException(error);
       } finally {
         setIsLoadingTemplate(false);
       }
@@ -244,6 +249,7 @@ export function GameDetailScreen({
       Alert.alert('Success', 'Players notified!');
     } catch (error) {
       console.error('Error notifying players:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to notify players');
     } finally {
       setIsNotifying(false);
@@ -262,6 +268,7 @@ export function GameDetailScreen({
       refetch();
     } catch (error) {
       console.error('Error opening game to ringers:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to open game to ringers');
     } finally {
       setIsOpeningRingers(false);
@@ -278,6 +285,7 @@ export function GameDetailScreen({
         setSavedRingers(await getSavedRingers(user.id));
       } catch (error) {
         console.error('Error loading saved ringers:', error);
+        Sentry.captureException(error);
       } finally {
         setIsLoadingSavedRingers(false);
       }

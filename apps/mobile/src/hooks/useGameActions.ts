@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { GameWithPlayers, getNextSignupOrder } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 export function useGameActions(gameId: string, userId?: string) {
   const [isSigningUp, setIsSigningUp] = useState(false);
@@ -29,6 +30,7 @@ export function useGameActions(gameId: string, userId?: string) {
       onSuccess();
     } catch (error) {
       console.error('Error signing up:', error);
+      Sentry.captureException(error);
       if ((error as PostgrestError).code === '23505') {
         Alert.alert('Error', 'You are already signed up for this game');
       } else {
@@ -69,6 +71,7 @@ export function useGameActions(gameId: string, userId?: string) {
               onSuccess();
             } catch (error) {
               console.error('Error withdrawing:', error);
+              Sentry.captureException(error);
               Alert.alert('Error', 'Failed to withdraw. Please try again.');
             } finally {
               setIsWithdrawing(false);
@@ -99,6 +102,7 @@ export function useGameActions(gameId: string, userId?: string) {
               onSuccess();
             } catch (error) {
               console.error('Error deleting game:', error);
+              Sentry.captureException(error);
               Alert.alert('Error', 'Failed to delete game. Please try again.');
             } finally {
               setIsDeleting(false);

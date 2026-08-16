@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
 import { Game, GameWithPlayers } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 interface RawGame extends Game {
   player_games:
@@ -64,6 +65,7 @@ export function useGroupUpcomingGames(groupId: string, userId?: string) {
       setUpcomingGames(processedGames);
     } catch (error) {
       console.error('Error fetching group games:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

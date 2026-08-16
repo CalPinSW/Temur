@@ -7,6 +7,7 @@ import { Profile } from '@temur/shared';
 import { NotificationTemplates } from '@/services/notificationService';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox, ThemedInput } from '@/components/themed';
+import * as Sentry from '@sentry/react-native';
 
 interface SearchUsersScreenProps {
   onGoBack: () => void;
@@ -40,6 +41,7 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
         setResults(data as Profile[]);
       } catch (error) {
         console.error('Search error:', error);
+        Sentry.captureException(error);
       } finally {
         setIsSearching(false);
       }
@@ -98,6 +100,7 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
       }
     } catch (error) {
       console.error('Send request error:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to send friend request');
     }
   };

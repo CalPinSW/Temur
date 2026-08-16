@@ -8,6 +8,7 @@ import { acceptGroupInvitation, declineGroupInvitation } from '@/services/groupS
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
 import { GroupInvitationWithDetails } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 interface GroupInvitesScreenProps {
   onGoBack: () => void;
@@ -30,6 +31,7 @@ export function GroupInvitesScreen({ onGoBack }: GroupInvitesScreenProps) {
       onGoBack();
     } catch (error) {
       console.error('Accept invite error:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to accept invite');
     } finally {
       setProcessingId(null);
@@ -43,6 +45,7 @@ export function GroupInvitesScreen({ onGoBack }: GroupInvitesScreenProps) {
       refetch();
     } catch (error) {
       console.error('Decline invite error:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to decline invite');
     } finally {
       setProcessingId(null);

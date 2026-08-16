@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import { setGameResult } from '@/services/gameResultService';
 import { GameOutcome } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 export function useGameResult(gameId: string) {
   const [isSaving, setIsSaving] = useState(false);
@@ -13,6 +14,7 @@ export function useGameResult(gameId: string) {
       onSuccess();
     } catch (error) {
       console.error('Error saving game result:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to save result. Please try again.');
     } finally {
       setIsSaving(false);
@@ -26,6 +28,7 @@ export function useGameResult(gameId: string) {
       onSuccess();
     } catch (error) {
       console.error('Error saving game result:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to save result. Please try again.');
     } finally {
       setIsSaving(false);

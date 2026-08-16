@@ -3,6 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { AuthState, Profile, SignUpCredentials, SignInCredentials } from '@temur/shared';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as Sentry from '@sentry/react-native';
 
 function withTimeout<T>(
   promise: Promise<T> | PromiseLike<T>,
@@ -69,6 +70,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           await get().fetchProfile(session.user.id);
         } catch (profileError) {
           console.error('[AuthStore] Profile fetch failed during init:', profileError);
+          Sentry.captureException(profileError);
           // Continue initialization even if profile fetch fails
         }
       }
@@ -83,6 +85,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             await get().fetchProfile(session.user.id);
           } catch (profileError) {
             console.error('[AuthStore] Profile fetch failed on auth change:', profileError);
+            Sentry.captureException(profileError);
           }
         } else if (event === 'SIGNED_OUT' && !session) {
           set({ profile: null });
@@ -90,6 +93,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       });
     } catch (error) {
       console.error('[AuthStore] Error initializing auth:', error);
+      Sentry.captureException(error);
     } finally {
       set({ isLoading: false, isInitialized: true });
     }
@@ -123,6 +127,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return { error: null };
     } catch (error) {
       console.error('Sign up error:', error);
+      Sentry.captureException(error);
       return { error: error as Error };
     } finally {
       set({ isLoading: false });
@@ -143,6 +148,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return { error: null };
     } catch (error) {
       console.error('Sign in error:', error);
+      Sentry.captureException(error);
       return { error: error as Error };
     } finally {
       set({ isLoading: false });
@@ -164,6 +170,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return { error: null };
     } catch (error) {
       console.error('Social sign in error:', error);
+      Sentry.captureException(error);
       return { error: error as Error };
     }
   },
@@ -179,11 +186,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         await withTimeout(supabase.auth.signOut({ scope: 'local' }), 5000, 'signOut');
       } catch (timeoutError) {
         console.error('Sign out timeout, clearing local state:', timeoutError);
+        Sentry.captureException(timeoutError);
       }
 
       set({ user: null, session: null, profile: null });
     } catch (error) {
       console.error('Sign out error:', error);
+      Sentry.captureException(error);
       set({ user: null, session: null, profile: null });
     } finally {
       set({ isLoading: false });
@@ -206,6 +215,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return { error: null };
     } catch (error) {
       console.error('Reset password error:', error);
+      Sentry.captureException(error);
       return { error: error as Error };
     } finally {
       set({ isLoading: false });
@@ -222,12 +232,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       if (error) {
         console.error('Profile fetch error:', error);
+        Sentry.captureException(error);
         throw error;
       }
 
       set({ profile: data as Profile });
     } catch (error) {
       console.error('Fetch profile error:', error instanceof Error ? error.message : error);
+      Sentry.captureException(error);
       set({ profile: null });
     }
   },
@@ -252,6 +264,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return { error: null };
     } catch (error) {
       console.error('Update profile error:', error);
+      Sentry.captureException(error);
       return { error: error as Error };
     } finally {
       set({ isLoading: false });

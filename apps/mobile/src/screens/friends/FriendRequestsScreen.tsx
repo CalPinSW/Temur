@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   View,
   Text,
@@ -66,6 +67,7 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
       setRequests(formattedData as FriendRequest[]);
     } catch (error) {
       console.error('Error fetching requests:', error);
+      Sentry.captureException(error);
     }
   }, [user]);
 
@@ -93,6 +95,7 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
       Alert.alert('Success', 'Friend request accepted!');
     } catch (error) {
       console.error('Accept error:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to accept request');
     }
   };
@@ -106,6 +109,7 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (error) {
       console.error('Decline error:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to decline request');
     }
   };

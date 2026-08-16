@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
 import { Group, GroupMemberWithProfile } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 export function useGroupDetails(groupId: string) {
   const [group, setGroup] = useState<Group | null>(null);
@@ -49,6 +50,7 @@ export function useGroupDetails(groupId: string) {
       setMembers(sortedMembers);
     } catch (error) {
       console.error('Error fetching group details:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

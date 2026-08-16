@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
 import { GroupInvitationWithDetails } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 export function useGroupInvitations(userId?: string) {
   const [invitations, setInvitations] = useState<GroupInvitationWithDetails[]>([]);
@@ -31,6 +32,7 @@ export function useGroupInvitations(userId?: string) {
       setInvitations((data as unknown as GroupInvitationWithDetails[]) || []);
     } catch (error) {
       console.error('Error fetching group invitations:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

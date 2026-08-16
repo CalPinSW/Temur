@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '@/theme';
 import { HomeScreen } from '@/screens/home';
+import * as Sentry from '@sentry/react-native';
 import {
   FriendsScreen,
   SearchUsersScreen,
@@ -283,6 +284,7 @@ export function MainNavigator() {
       setPendingRequestCount(count || 0);
     } catch (error) {
       console.error('Error fetching pending count:', error);
+      Sentry.captureException(error);
     }
   }, [user]);
 
@@ -296,6 +298,7 @@ export function MainNavigator() {
       setPendingGroupInviteCount(count || 0);
     } catch (error) {
       console.error('Error fetching pending group invite count:', error);
+      Sentry.captureException(error);
     }
   }, [user]);
 

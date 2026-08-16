@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSavedRingers } from '@/services/ringerService';
 import { SavedRinger } from '@temur/shared';
+import * as Sentry from '@sentry/react-native';
 
 export function useSavedRingers(userId?: string) {
   const [ringers, setRingers] = useState<SavedRinger[]>([]);
@@ -13,6 +14,7 @@ export function useSavedRingers(userId?: string) {
       setRingers(await getSavedRingers(userId));
     } catch (error) {
       console.error('Error fetching saved ringers:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

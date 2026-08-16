@@ -10,6 +10,7 @@ import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { Game, GameWithPlayers, getGameVisibilityStatus } from '@temur/shared';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GameOverviewCard } from '@/components/game/GameOverviewCard';
+import * as Sentry from '@sentry/react-native';
 
 interface GamesListScreenProps {
   onNavigateToGame: (gameId: string) => void;
@@ -110,6 +111,7 @@ export function GamesListScreen({
       setHistoricGames(historic.reverse());
     } catch (error) {
       console.error('Error fetching games:', error);
+      Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { saveRingerName, deleteSavedRinger } from '@/services/ringerService';
+import * as Sentry from '@sentry/react-native';
 
 export function useSavedRingerActions(userId?: string) {
   const [isAddingRinger, setIsAddingRinger] = useState(false);
@@ -18,6 +19,7 @@ export function useSavedRingerActions(userId?: string) {
       onSuccess();
     } catch (error) {
       console.error('Error saving ringer:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to save ringer. Please try again.');
     } finally {
       setIsAddingRinger(false);
@@ -42,6 +44,7 @@ export function useSavedRingerActions(userId?: string) {
               onSuccess();
             } catch (error) {
               console.error('Error deleting saved ringer:', error);
+              Sentry.captureException(error);
               Alert.alert('Error', 'Failed to remove ringer. Please try again.');
             } finally {
               setIsDeletingRinger(false);

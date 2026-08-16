@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
+import * as Sentry from '@sentry/react-native';
 import {
   ThemedButton,
   ThemedTextBox,
@@ -118,6 +119,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
         setVisibleAt(getSundayBefore(candidateDate));
       } catch (error) {
         console.error('Error loading default dates:', error);
+        Sentry.captureException(error);
       } finally {
         setIsLoadingDefaults(false);
       }
@@ -179,6 +181,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
       Alert.alert('Success', 'Game created successfully!', [{ text: 'OK', onPress: onCreated }]);
     } catch (error) {
       console.error('Error creating game:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to create game. Please try again.');
     } finally {
       setIsCreating(false);

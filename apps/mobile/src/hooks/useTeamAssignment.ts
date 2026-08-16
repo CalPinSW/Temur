@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/services/supabase';
+import * as Sentry from '@sentry/react-native';
 import {
   Game,
   GameWithPlayers,
@@ -105,6 +106,7 @@ export function useTeamAssignment(gameId: string) {
       setIsDirty(false);
     } catch (error) {
       console.error('Error fetching game details:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to load game details');
     } finally {
       setIsLoading(false);
@@ -214,6 +216,7 @@ export function useTeamAssignment(gameId: string) {
       ]);
     } catch (error) {
       console.error('Error saving team assignments:', error);
+      Sentry.captureException(error);
       Alert.alert('Error', 'Failed to save team assignments. Please try again.');
     } finally {
       setIsSaving(false);
