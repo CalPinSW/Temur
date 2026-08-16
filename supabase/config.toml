@@ -309,6 +309,16 @@ max_frequency = "5s"
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
+#
+# Both blocks below are scaffolding: fill in client_id (not secret — safe to
+# commit) and flip enabled to true once you have real values, or `supabase
+# start` will just no-op the provider. Google's OAuth client already needs
+# http://127.0.0.1:54321/auth/v1/callback added as an extra Authorized
+# redirect URI alongside the production one (Google allows localhost/loopback
+# redirect URIs for testing). Apple's Sign in with Apple return URL/domain
+# fields require a real HTTPS domain — 127.0.0.1/localhost isn't accepted —
+# so local Apple sign-in generally can't be tested without an HTTPS tunnel
+# (e.g. ngrok); test Apple against the remote project instead.
 [auth.external.apple]
 enabled = false
 client_id = ""
@@ -322,6 +332,17 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 # If enabled, it will allow the user to successfully authenticate when the provider does not return an email address.
+email_optional = false
+
+[auth.external.google]
+enabled = false
+client_id = ""
+# DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = ""
+url = ""
+# Required for local sign in with Google auth.
+skip_nonce_check = true
 email_optional = false
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
