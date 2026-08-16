@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme';
+import { getAuthErrorMessage } from '@temur/shared';
 import {
   getNotificationsEnabled,
   setNotificationsEnabled as updateNotificationPreference,
@@ -29,9 +30,10 @@ import {
 interface ProfileScreenProps {
   onEditProfile?: () => void;
   onAbout?: () => void;
+  onReportBug?: () => void;
 }
 
-export function ProfileScreen({ onEditProfile, onAbout }: ProfileScreenProps) {
+export function ProfileScreen({ onEditProfile, onAbout, onReportBug }: ProfileScreenProps) {
   const profile = useAuthStore((state) => state.profile);
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
@@ -76,7 +78,10 @@ export function ProfileScreen({ onEditProfile, onAbout }: ProfileScreenProps) {
       setConfirmPassword('');
       Alert.alert('Success', 'Your password has been changed');
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to change password');
+      Alert.alert(
+        'Error',
+        error instanceof Error ? getAuthErrorMessage(error) : 'Failed to change password'
+      );
     } finally {
       setIsChangingPassword(false);
     }
@@ -187,6 +192,8 @@ export function ProfileScreen({ onEditProfile, onAbout }: ProfileScreenProps) {
             title="Contact Support"
             onPress={() => Linking.openURL(`mailto:${process.env.EXPO_PUBLIC_SUPPORT_EMAIL}`)}
           />
+
+          <ThemedListItem title="Report a Bug" onPress={onReportBug} />
 
           <ThemedListItem title="About" onPress={onAbout} />
         </View>

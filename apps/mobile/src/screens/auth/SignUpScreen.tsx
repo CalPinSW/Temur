@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { UsernameInput, validateUsername, DisplayNameInput } from '@/components/form';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
+import { getAuthErrorMessage } from '@temur/shared';
 
 interface SignUpScreenProps {
   onNavigateToSignIn: () => void;
@@ -62,7 +63,7 @@ export function SignUpScreen({ onNavigateToSignIn }: SignUpScreenProps) {
     });
 
     if (error) {
-      Alert.alert('Sign Up Failed', error.message);
+      Alert.alert('Sign Up Failed', getAuthErrorMessage(error));
     } else {
       Alert.alert(
         'Check Your Email',

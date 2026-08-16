@@ -376,6 +376,7 @@ EDGE_FUNCTION_SECRET = "env(EDGE_FUNCTION_SECRET)"
 RESEND_API_KEY = "env(RESEND_API_KEY)"
 RESEND_FROM_EMAIL = "env(RESEND_FROM_EMAIL)"
 PUBLIC_SITE_URL = "env(PUBLIC_SITE_URL)"
+SUPPORT_EMAIL = "env(SUPPORT_EMAIL)"
 
 # Cron has no user JWT to present, so this function authenticates callers
 # itself via a shared secret header instead (see its own source) — matches

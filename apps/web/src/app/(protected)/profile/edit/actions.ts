@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { validateUsername } from '@temur/shared';
+import { validateUsername, validateAvatarFile, getAvatarUploadErrorMessage } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 
 export interface EditProfileState {
@@ -30,6 +30,13 @@ export async function updateProfile(
 
   let avatarUrl: string | null | undefined;
   if (avatarFile instanceof File && avatarFile.size > 0) {
+    // Server-side backstop — the client already checks this for instant
+    // feedback, but never trust client-only validation.
+    const fileValidationError = validateAvatarFile(avatarFile.size, avatarFile.type);
+    if (fileValidationError) {
+      return { error: fileValidationError };
+    }
+
     const fileExt = avatarFile.name.split('.').pop()?.toLowerCase() || 'jpg';
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
     const contentType = avatarFile.type || `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
@@ -39,7 +46,7 @@ export async function updateProfile(
       .upload(fileName, avatarFile, { contentType, upsert: true });
 
     if (uploadError) {
-      return { error: 'Failed to upload avatar. Please try again.' };
+      return { error: getAvatarUploadErrorMessage(uploadError) };
     }
 
     avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileName).data.publicUrl;

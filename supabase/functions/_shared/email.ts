@@ -12,7 +12,7 @@ export type NotificationType =
   | 'ringers_open'
   | 'game_visible';
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -71,13 +71,53 @@ export function buildNotificationEmail(
   return { subject: title, html };
 }
 
+export function buildBugReportEmail(
+  description: string,
+  context: Record<string, unknown> | undefined,
+  reporterEmail: string,
+  reporterUsername: string | undefined
+): { subject: string; html: string } {
+  const subject = `Bug report from ${reporterUsername ?? reporterEmail}`;
+
+  const contextRows = context
+    ? Object.entries(context)
+        .map(([key, value]) => {
+          const displayValue = typeof value === 'string' ? value : JSON.stringify(value);
+          return `<tr><td style="padding:4px 12px 4px 0;color:#586158;vertical-align:top;white-space:nowrap;">${escapeHtml(key)}</td><td style="padding:4px 0;">${escapeHtml(displayValue)}</td></tr>`;
+        })
+        .join('')
+    : '';
+
+  const html = `
+    <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; color: #12231c;">
+      <h2 style="color: #146b45; margin-bottom: 8px;">Bug report</h2>
+      <p style="font-size: 15px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(description)}</p>
+      <p style="font-size: 13px; color: #586158;">
+        From: ${escapeHtml(reporterEmail)}${reporterUsername ? ` (@${escapeHtml(reporterUsername)})` : ''}
+      </p>
+      ${
+        contextRows
+          ? `<table style="font-size: 13px; border-top: 1px solid #ded7c7; margin-top: 16px; padding-top: 8px; border-collapse: collapse;">${contextRows}</table>`
+          : ''
+      }
+    </div>
+  `;
+
+  return { subject, html };
+}
+
 export interface SendEmailResult {
   attempted: boolean;
   ok: boolean;
   error?: string;
 }
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<SendEmailResult> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  options?: { replyTo?: string }
+): Promise<SendEmailResult> {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   if (!apiKey) {
     return { attempted: false, ok: false, error: 'RESEND_API_KEY not configured' };
@@ -92,7 +132,13 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({
+        from,
+        to,
+        subject,
+        html,
+        ...(options?.replyTo ? { reply_to: options.replyTo } : {}),
+      }),
     });
 
     if (!response.ok) {

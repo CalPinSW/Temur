@@ -1,6 +1,6 @@
 'use server';
 
-import { validateUsername } from '@temur/shared';
+import { validateUsername, getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
 
 export interface SignUpFormState {
@@ -38,7 +38,7 @@ export async function signUp(
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: getAuthErrorMessage(error) };
   }
 
   if (data?.user?.identities?.length === 0) {

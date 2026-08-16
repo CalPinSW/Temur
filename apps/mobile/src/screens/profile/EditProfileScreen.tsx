@@ -19,6 +19,7 @@ import { decode } from 'base64-arraybuffer';
 import { UsernameInput, validateUsername, DisplayNameInput } from '@/components/form';
 import { useTheme } from '@/theme';
 import { ThemedButton } from '@/components/themed';
+import { validateAvatarFile, getAvatarUploadErrorMessage } from '@temur/shared';
 
 interface EditProfileScreenProps {
   onGoBack: () => void;
@@ -79,18 +80,30 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
     }
   };
 
-  const uploadAvatar = async (uri: string) => {
+  const uploadAvatar = async (asset: ImagePicker.ImagePickerAsset) => {
     if (!profile?.id) return;
+
+    const fileExt = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
+    const contentType = asset.mimeType || `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
+
+    // fileSize isn't always populated by expo-image-picker (platform-
+    // dependent) — when it's missing we can't validate client-side, so
+    // fall through to the server-side check instead of blocking the user.
+    if (asset.fileSize !== undefined) {
+      const validationError = validateAvatarFile(asset.fileSize, contentType);
+      if (validationError) {
+        Alert.alert('Upload Failed', validationError);
+        return;
+      }
+    }
 
     setIsUploading(true);
     try {
-      const base64 = await FileSystem.readAsStringAsync(uri, {
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
         encoding: 'base64',
       });
 
-      const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${profile.id}/${Date.now()}.${fileExt}`;
-      const contentType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -108,7 +121,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
       console.error('Upload error:', error);
       Alert.alert(
         'Upload Failed',
-        error instanceof Error ? error.message : 'Failed to upload image'
+        error instanceof Error ? getAvatarUploadErrorMessage(error) : 'Failed to upload image'
       );
     } finally {
       setIsUploading(false);
@@ -142,7 +155,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
         });
 
     if (!result.canceled && result.assets[0]) {
-      await uploadAvatar(result.assets[0].uri);
+      await uploadAvatar(result.assets[0]);
     }
   };
 

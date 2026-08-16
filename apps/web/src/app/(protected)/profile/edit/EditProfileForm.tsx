@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useRef, useState } from 'react';
-import { formatUsername, getInitials } from '@temur/shared';
+import { formatUsername, getInitials, validateAvatarFile } from '@temur/shared';
 import { updateProfile, type EditProfileState } from './actions';
 
 const initialState: EditProfileState = {};
@@ -19,6 +19,7 @@ export function EditProfileForm({
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [previewUrl, setPreviewUrl] = useState(initialAvatarUrl);
   const [removeAvatar, setRemoveAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const initials = getInitials(displayName, username);
@@ -64,13 +65,22 @@ export function EditProfileForm({
           className="hidden"
           onChange={(e) => {
             const file = e.currentTarget.files?.[0];
-            if (file) {
-              setRemoveAvatar(false);
-              setPreviewUrl(URL.createObjectURL(file));
+            if (!file) return;
+
+            const validationError = validateAvatarFile(file.size, file.type);
+            if (validationError) {
+              setAvatarError(validationError);
+              e.currentTarget.value = '';
+              return;
             }
+
+            setAvatarError(null);
+            setRemoveAvatar(false);
+            setPreviewUrl(URL.createObjectURL(file));
           }}
         />
         <input type="hidden" name="removeAvatar" value={removeAvatar ? 'true' : 'false'} />
+        {avatarError && <p className="text-sm text-error">{avatarError}</p>}
       </div>
 
       <div className="flex flex-col gap-1">
