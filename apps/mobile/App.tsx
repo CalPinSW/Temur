@@ -8,17 +8,9 @@ import { RootNavigator } from '@/navigation';
 import { ThemeProvider, useTheme } from '@/theme';
 import { initErrorCapture } from '@/services/errorCaptureService';
 
-Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 0,
-  // Only report from real builds (EAS preview/production) — never from
-  // Expo Go / a dev client connected to Metro, so local work doesn't eat
-  // into the free-tier event quota.
-  enabled: !__DEV__,
-});
-
-// Must run after Sentry.init() so it chains onto Sentry's own global
-// handler (itself chained to the original) rather than replacing it.
+// Sentry itself is initialized even earlier, in index.ts (imported before
+// App) — see src/services/sentryInit.ts for why. This just chains our own
+// error-capture ring buffer onto the handler Sentry already installed.
 initErrorCapture();
 
 function AppContent() {
