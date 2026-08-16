@@ -2,6 +2,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
 import { AuthProvider } from '@/components/AuthProvider';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ToastHost } from '@/components/ToastHost';
 import { RootNavigator } from '@/navigation';
 import { ThemeProvider, useTheme } from '@/theme';
 import { initErrorCapture } from '@/services/errorCaptureService';
@@ -33,8 +35,11 @@ function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
+        <ToastHost />
         <AuthProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <AppContent />
+          </ErrorBoundary>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
