@@ -237,8 +237,8 @@ export function CreateGameForm({
           </select>
         </div>
 
-        <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
             <label htmlFor="team1Name" className="text-sm font-medium text-text-secondary">
               Team 1 Name
             </label>
@@ -250,7 +250,7 @@ export function CreateGameForm({
               className="rounded-lg border border-input-border bg-input px-3 py-2 text-text outline-none focus:border-primary"
             />
           </div>
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex flex-col gap-1">
             <label htmlFor="team2Name" className="text-sm font-medium text-text-secondary">
               Team 2 Name
             </label>

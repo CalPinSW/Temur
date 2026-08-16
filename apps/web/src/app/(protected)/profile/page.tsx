@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getInitials } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { getThemeMode } from '@/lib/theme';
+import { signOut } from '../actions';
 import { ThemeToggle } from './ThemeToggle';
 
 export default async function ProfilePage() {
@@ -88,6 +89,15 @@ export default async function ProfilePage() {
           </Link>
         </nav>
       </section>
+
+      <form action={signOut}>
+        <button
+          type="submit"
+          className="w-full rounded-lg border border-error px-4 py-2 text-center font-medium text-error transition-colors hover:bg-error-background"
+        >
+          Sign Out
+        </button>
+      </form>
     </div>
   );
 }
