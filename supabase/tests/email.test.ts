@@ -3,6 +3,13 @@ import { buildNotificationEmail, buildBugReportEmail, buildAuthEmail, sendEmail 
 
 const SITE_URL = "http://localhost:3000";
 
+Deno.test("buildNotificationEmail - includes a centered logo", () => {
+  const { html } = buildNotificationEmail("friend_request", "t", "b", undefined, SITE_URL);
+  assertStringIncludes(html, "text-align: center");
+  assertStringIncludes(html, "email-logo.png");
+  assertStringIncludes(html, "<img src=");
+});
+
 Deno.test("buildNotificationEmail - subject matches the given title", () => {
   const { subject } = buildNotificationEmail(
     "friend_request",
@@ -121,10 +128,27 @@ Deno.test("buildAuthEmail - reauthentication shows the code but has no link CTA"
   assertEquals(html.includes('href="https://example.com/verify"'), false);
 });
 
+Deno.test("buildAuthEmail - includes a centered logo", () => {
+  const { html } = buildAuthEmail("recovery", "https://example.com/verify", "123456");
+  assertStringIncludes(html, "text-align: center");
+  assertStringIncludes(html, "email-logo.png");
+});
+
 Deno.test("buildAuthEmail - escapes HTML in the token", () => {
   const { html } = buildAuthEmail("magiclink", "https://example.com/verify", "<script>alert(1)</script>");
   assertEquals(html.includes("<script>alert(1)</script>"), false);
   assertStringIncludes(html, "&lt;script&gt;");
+});
+
+Deno.test("buildBugReportEmail - centers the page but keeps the context table left-aligned", () => {
+  const { html } = buildBugReportEmail(
+    "it broke",
+    { platform: "web" },
+    "user@example.com",
+    undefined,
+  );
+  assertStringIncludes(html, "text-align: center");
+  assertStringIncludes(html, "<table style=\"text-align: left;");
 });
 
 Deno.test("buildBugReportEmail - omits the context table entirely when there's no context", () => {
