@@ -1,6 +1,7 @@
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from './supabase';
+import { parseAuthCallbackUrl } from '@/utils/authCallbackUrl';
 import * as Sentry from '@sentry/react-native';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -34,14 +35,12 @@ export async function signInWithProvider(provider: Provider) {
 
     if (result.type === 'success') {
       const { url } = result;
-
-      // Extract tokens from the URL fragment or query params
-      const hashParams = url.includes('#') ? url.split('#')[1] : '';
-      const queryParamsStr = url.includes('?') ? url.split('?')[1]?.split('#')[0] : '';
-
-      const params = new URLSearchParams(hashParams || queryParamsStr);
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
+      const {
+        accessToken,
+        refreshToken,
+        error: errorParam,
+        errorDescription,
+      } = parseAuthCallbackUrl(url);
 
       if (accessToken) {
         const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
@@ -57,8 +56,6 @@ export async function signInWithProvider(provider: Provider) {
       }
 
       // Check for error in URL
-      const errorParam = params.get('error');
-      const errorDescription = params.get('error_description');
       if (errorParam) {
         console.error(`[SocialAuth] OAuth error in callback: ${errorParam} - ${errorDescription}`);
         throw new Error(errorDescription || errorParam);
