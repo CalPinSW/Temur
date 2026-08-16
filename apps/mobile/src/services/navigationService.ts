@@ -14,11 +14,7 @@ export function navigateToGame(gameId: string) {
 }
 
 export type NotificationScreen =
-  | 'FriendRequests'
-  | 'Friends'
-  | 'Home'
-  | 'GroupInvites'
-  | 'GameDetail';
+  'FriendRequests' | 'Friends' | 'Home' | 'GroupInvites' | 'GameDetail';
 
 export function navigateFromNotification(
   screen: NotificationScreen,
