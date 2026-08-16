@@ -36,7 +36,8 @@ test.describe('Forgot / reset password', () => {
       await page.getByRole('button', { name: 'Set New Password' }).click();
       await page.waitForURL('**/games');
 
-      await page.getByRole('button', { name: 'Sign out' }).click();
+      await page.goto('/profile');
+      await page.getByRole('button', { name: 'Sign Out' }).click();
       await page.waitForURL('**/login');
 
       await page.getByLabel('Email').fill(email);
