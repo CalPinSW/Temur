@@ -78,3 +78,18 @@ export async function leaveGroup(groupId: string): Promise<{ error?: string }> {
 
   redirect('/groups');
 }
+
+export async function deleteGroup(groupId: string): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: 'You must be signed in.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('delete_group', { p_group_id: groupId });
+
+  if (error) {
+    return { error: 'Failed to delete group. Please try again.' };
+  }
+
+  revalidatePath('/groups');
+  redirect('/groups');
+}

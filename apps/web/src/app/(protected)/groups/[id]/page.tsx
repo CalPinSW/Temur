@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { formatDate, formatTime, type Group, type GroupMemberWithProfile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { DeleteGroupButton } from './DeleteGroupButton';
 import { EditGroupCard } from './EditGroupCard';
 import { LeaveGroupButton } from './LeaveGroupButton';
 
@@ -102,6 +103,12 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
       <div className="flex justify-center">
         <LeaveGroupButton groupId={groupId} groupName={(group as Group).name} />
       </div>
+
+      {isAdmin && (
+        <div className="flex justify-center">
+          <DeleteGroupButton groupId={groupId} />
+        </div>
+      )}
     </div>
   );
 }

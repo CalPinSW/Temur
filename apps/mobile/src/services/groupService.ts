@@ -140,3 +140,8 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 
   if (error) throw error;
 }
+
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_group', { p_group_id: groupId });
+  if (error) throw error;
+}

@@ -95,4 +95,28 @@ test.describe('Groups', () => {
     await page.waitForURL('**/groups');
     await expect(page.getByRole('link', { name: groupName })).not.toBeVisible();
   });
+
+  test('deletes a group, which also removes its games', async ({ page }) => {
+    const deletableGroupName = `E2E Deletable Group ${Date.now()}`;
+
+    await page.goto('/groups/new');
+    await page.getByLabel('Group Name').fill(deletableGroupName);
+    await page.getByRole('button', { name: 'Create Group' }).click();
+    await page.waitForURL(/\/groups\/[0-9a-f-]+$/);
+
+    await page.getByRole('link', { name: 'Create Game' }).click();
+    await page.getByRole('button', { name: 'Create Game' }).click();
+    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+    const gameUrl = page.url();
+
+    await page.goto('/groups');
+    await page.getByRole('link', { name: deletableGroupName }).click();
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Delete Group' }).click();
+    await page.waitForURL('**/groups');
+    await expect(page.getByRole('link', { name: deletableGroupName })).not.toBeVisible();
+
+    await page.goto(gameUrl);
+    await expect(page.getByText(/could not be found/i)).toBeVisible();
+  });
 });
