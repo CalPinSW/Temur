@@ -2,12 +2,10 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
-import { login, type AuthFormState } from './actions';
+import { login } from './actions';
 
-const initialState: AuthFormState = {};
-
-export function LoginForm() {
-  const [state, formAction, isPending] = useActionState(login, initialState);
+export function LoginForm({ initialError }: { initialError?: string }) {
+  const [state, formAction, isPending] = useActionState(login, { error: initialError });
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">

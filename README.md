@@ -147,6 +147,18 @@ Configure redirect URLs in **Supabase Dashboard → Authentication → URL Confi
 
 **Site URL** (used to build email confirmation / password reset links) should point at whichever app you consider primary, or be updated per environment — for mobile deep links it must be a scheme your app can handle (e.g. `temur://auth/callback`); for web it's a plain `https://` URL.
 
+#### Social Sign-In (Google / Apple) Setup
+
+Both apps already call `supabase.auth.signInWithOAuth({ provider: 'google' | 'apple' })` — this is purely a provider-configuration task in **Supabase Dashboard → Authentication → Providers**, not a code change. The callback URL both providers need registered is `https://<project-ref>.supabase.co/auth/v1/callback` (Supabase's own hosted endpoint — distinct from the app-level redirect URLs in "Authentication Redirect Setup" above, which is where Supabase redirects back to *after* this).
+
+- **Google**: Google Cloud Console → Credentials → OAuth client ID → type **Web application** (the only type needed — the browser-redirect flow doesn't use a native SDK on any platform) → add the callback URL as an Authorized redirect URI → paste the Client ID/Secret into Supabase.
+- **Apple**: needs a paid Apple Developer account. Create a **Services ID** (separate from the app's Bundle ID `com.calpin.temur`) with "Sign in with Apple" enabled, registering the callback URL as its Return URL. The Services ID becomes Supabase's Client ID. For the **Secret Key (for OAuth)** field, Supabase generates the required signed JWT for you from a Sign in with Apple key (Keys → + → download the `.p8` once, it can't be re-downloaded) — this generated secret **expires in ≤6 months** and needs regenerating/re-pasting before then, or Apple sign-in silently starts failing with no warning.
+- If a sign-in attempt just bounces back to `/login` with nothing shown, check the server logs / the `?error=` query param `apps/web/src/app/auth/callback/route.ts` now surfaces on failure — it used to swallow the Supabase error silently.
+
+**Local stack**: `supabase/config.toml` has `[auth.external.google]`/`[auth.external.apple]` blocks (disabled by default) with secrets read from `supabase/.env`'s `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`/`SUPABASE_AUTH_EXTERNAL_APPLE_SECRET` (gitignored, never commit real values). To actually use them locally:
+- **Google** works fine locally — Google allows loopback redirect URIs for testing, so just add `http://127.0.0.1:54321/auth/v1/callback` as an *additional* Authorized redirect URI on the same OAuth client used for production, fill in `client_id`/the env secret, and set `enabled = true`.
+- **Apple generally doesn't work locally** — Apple's Services ID Return URL/Domain fields require a real HTTPS domain, and reject `127.0.0.1`/`localhost`. Short of standing up an HTTPS tunnel (e.g. ngrok) and registering that domain too, test Apple sign-in against the remote project instead.
+
 ### Running Against a Local Supabase Stack
 
 Instead of a remote project, you can point either app at a local Supabase stack (`supabase start`, requires Docker):
