@@ -6,12 +6,13 @@ import { createClient } from '@supabase/supabase-js';
 
 interface LocalSupabaseStatus {
   API_URL: string;
+  ANON_KEY: string;
   SERVICE_ROLE_KEY: string;
 }
 
 const LOCAL_URL_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)/;
 
-function getLocalSupabaseStatus(): LocalSupabaseStatus {
+export function getLocalSupabaseStatus(): LocalSupabaseStatus {
   const repoRoot = path.resolve(__dirname, '../../..');
   const output = execSync('supabase status -o json', { cwd: repoRoot, encoding: 'utf-8' });
   return JSON.parse(output);
