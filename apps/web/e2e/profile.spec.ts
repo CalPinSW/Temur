@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { E2E_USERS, primaryStorageState } from './helpers';
+import { E2E_USERS, primaryStorageState, createDisposableUser, deleteUser } from './helpers';
 
 test.use({ storageState: primaryStorageState });
 
@@ -76,5 +76,46 @@ test.describe('Profile', () => {
 
     await expect(page.getByRole('main').getByText('Temur', { exact: true })).toBeVisible();
     await expect(page.getByText('Version')).toBeVisible();
+  });
+});
+
+test.describe('Account deletion', () => {
+  // Starts unauthenticated (overriding the file-level primaryStorageState
+  // above) since this test signs in as its own disposable user rather than
+  // reusing the shared primary/secondary accounts — there's no "restore
+  // afterward" for a deleted account the way the password test above
+  // restores the password it temporarily changed.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('deletes the account, signing the user out and preventing further sign-in', async ({
+    page,
+  }) => {
+    const password = 'delete-account-e2e-initial-password';
+    const { email, userId } = await createDisposableUser('delete-account-e2e');
+
+    try {
+      await page.goto('/login');
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Password').fill(password);
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await page.waitForURL('**/games');
+
+      await page.goto('/profile/delete-account');
+      await page.getByLabel(/Type ".*" or your email to confirm/).fill(email);
+
+      page.once('dialog', (dialog) => dialog.accept());
+      await page.getByRole('button', { name: 'Permanently Delete Account' }).click();
+      await page.waitForURL('**/login');
+
+      // Black-box confirmation the account is really gone, rather than
+      // reaching into admin internals: the same credentials that just
+      // signed in successfully above no longer authenticate at all.
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Password').fill(password);
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await expect(page.getByText('Incorrect email or password.')).toBeVisible();
+    } finally {
+      await deleteUser(userId);
+    }
   });
 });

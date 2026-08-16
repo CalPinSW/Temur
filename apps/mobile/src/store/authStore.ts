@@ -38,6 +38,7 @@ interface AuthStore extends AuthState {
   signIn: (credentials: SignInCredentials) => Promise<{ error: Error | null }>;
   signInWithSocial: (provider: 'google' | 'apple') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePasswordAfterRecovery: (newPassword: string) => Promise<{ error: Error | null }>;
   fetchProfile: (userId: string) => Promise<void>;
@@ -206,6 +207,31 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.error('Sign out error:', error);
       Sentry.captureException(error);
       set({ user: null, session: null, profile: null, isPasswordRecovery: false });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  deleteAccount: async () => {
+    try {
+      set({ isLoading: true });
+
+      const { error } = await supabase.functions.invoke('delete-account');
+      if (error) throw error;
+
+      try {
+        await withTimeout(supabase.auth.signOut({ scope: 'local' }), 5000, 'signOut');
+      } catch (timeoutError) {
+        console.error('Sign out after account deletion timed out:', timeoutError);
+        Sentry.captureException(timeoutError);
+      }
+
+      set({ user: null, session: null, profile: null, isPasswordRecovery: false });
+      return { error: null };
+    } catch (error) {
+      console.error('Delete account error:', error);
+      Sentry.captureException(error);
+      return { error: error as Error };
     } finally {
       set({ isLoading: false });
     }

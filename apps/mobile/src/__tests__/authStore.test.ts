@@ -197,6 +197,55 @@ describe('authStore', () => {
     });
   });
 
+  describe('deleteAccount', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('invokes delete-account, signs out locally, and clears state', async () => {
+      mockSupabase.functions.invoke.mockResolvedValue({ data: { success: true }, error: null });
+      mockSupabase.auth.signOut.mockResolvedValue({ error: null });
+      useAuthStore.setState({
+        user: fakeUser('user-1'),
+        session: {} as unknown as Session,
+        profile: fakeProfile('user-1'),
+      });
+
+      const { error } = await useAuthStore.getState().deleteAccount();
+
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('delete-account');
+      expect(mockSupabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(error).toBeNull();
+      const state = useAuthStore.getState();
+      expect(state.user).toBeNull();
+      expect(state.session).toBeNull();
+      expect(state.profile).toBeNull();
+      expect(state.isLoading).toBe(false);
+    });
+
+    it('returns an error and leaves state untouched when the function call fails', async () => {
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: new Error('not authorized'),
+      });
+      useAuthStore.setState({
+        user: fakeUser('user-1'),
+        session: {} as unknown as Session,
+        profile: fakeProfile('user-1'),
+      });
+
+      const { error } = await useAuthStore.getState().deleteAccount();
+
+      expect(error).toBeInstanceOf(Error);
+      expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
+      expect(useAuthStore.getState().user).not.toBeNull();
+    });
+  });
+
   describe('resetPassword', () => {
     it('requests a password reset email with a reset-password redirect', async () => {
       mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: null });

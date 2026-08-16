@@ -14,7 +14,13 @@ import {
   FriendRequestsScreen,
   RingersScreen,
 } from '@/screens/friends';
-import { ProfileScreen, EditProfileScreen, AboutScreen, ReportBugScreen } from '@/screens/profile';
+import {
+  ProfileScreen,
+  EditProfileScreen,
+  AboutScreen,
+  ReportBugScreen,
+  DeleteAccountScreen,
+} from '@/screens/profile';
 import { MainFunctionalityScreen, CreateGameScreen } from '@/screens/main';
 import {
   GroupsListScreen,
@@ -198,7 +204,9 @@ function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invite
 }
 
 function ProfileStack() {
-  const [screen, setScreen] = useState<'profile' | 'edit' | 'about' | 'report-bug'>('profile');
+  const [screen, setScreen] = useState<
+    'profile' | 'edit' | 'about' | 'report-bug' | 'delete-account'
+  >('profile');
 
   if (screen === 'edit') {
     return <EditProfileScreen onGoBack={() => setScreen('profile')} />;
@@ -212,11 +220,16 @@ function ProfileStack() {
     return <ReportBugScreen onGoBack={() => setScreen('profile')} />;
   }
 
+  if (screen === 'delete-account') {
+    return <DeleteAccountScreen onGoBack={() => setScreen('profile')} />;
+  }
+
   return (
     <ProfileScreen
       onEditProfile={() => setScreen('edit')}
       onAbout={() => setScreen('about')}
       onReportBug={() => setScreen('report-bug')}
+      onDeleteAccount={() => setScreen('delete-account')}
     />
   );
 }
