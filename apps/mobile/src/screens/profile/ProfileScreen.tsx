@@ -31,9 +31,15 @@ interface ProfileScreenProps {
   onEditProfile?: () => void;
   onAbout?: () => void;
   onReportBug?: () => void;
+  onDeleteAccount?: () => void;
 }
 
-export function ProfileScreen({ onEditProfile, onAbout, onReportBug }: ProfileScreenProps) {
+export function ProfileScreen({
+  onEditProfile,
+  onAbout,
+  onReportBug,
+  onDeleteAccount,
+}: ProfileScreenProps) {
   const profile = useAuthStore((state) => state.profile);
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
@@ -176,6 +182,8 @@ export function ProfileScreen({ onEditProfile, onAbout, onReportBug }: ProfileSc
             title="Privacy Policy"
             onPress={() => Linking.openURL(process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL)}
           />
+
+          <ThemedListItem title="Delete Account" onPress={onDeleteAccount} />
         </View>
 
         <View style={styles.section}>

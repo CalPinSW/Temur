@@ -64,6 +64,12 @@ export default async function ProfilePage() {
               Privacy Policy
             </a>
           )}
+          <Link
+            href="/profile/delete-account"
+            className="px-4 py-3 text-text hover:bg-background-secondary"
+          >
+            Delete Account
+          </Link>
         </nav>
       </section>
 
