@@ -1,11 +1,11 @@
 import path from 'node:path';
 import type { Page } from '@playwright/test';
-import { AUTH_DIR, E2E_USERS, getLocalSupabaseStatus } from './global-setup';
+import { AUTH_DIR, E2E_USERS } from './global-setup';
 
 export const primaryStorageState = path.join(AUTH_DIR, 'primary.json');
 export const secondaryStorageState = path.join(AUTH_DIR, 'secondary.json');
 
-export { E2E_USERS, getLocalSupabaseStatus };
+export { E2E_USERS };
 
 // Creates a fresh group (the signed-in page's user becomes its admin) and a
 // game scoped to it, via the real UI. Returns the group id and the game's

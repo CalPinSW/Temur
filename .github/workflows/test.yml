@@ -50,15 +50,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Pinned (not "latest"): a newer local Postgres bootstrap image was
-      # found to not grant `authenticated` default SELECT/INSERT/etc.
-      # privileges on public tables the same way this version does, which
-      # broke every E2E test exercising a real signed-in session (service-role-based
-      # tests elsewhere don't hit this since service_role bypasses grants).
-      # Bump deliberately, verifying grants survive a fresh `supabase db reset`.
+      # Pinned (not "latest"): older CLI versions issue ES256-signed local
+      # JWTs that their own bundled edge-runtime can't verify, breaking every
+      # authenticated Edge Function call (`{"msg":"Invalid JWT"}` at the
+      # gateway) — see the README's "Invalid JWT" troubleshooting note.
+      # A prior pin to 2.72.7 worked around a *different* bug (a newer
+      # Postgres bootstrap image not granting `authenticated` default
+      # privileges), now fixed at the schema level by
+      # supabase/migrations/20260823000000_restore_default_schema_grants.sql
+      # regardless of CLI/bootstrap-image version. Bump deliberately,
+      # verifying both grants and authenticated Edge Function calls survive
+      # a fresh `supabase db reset`.
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.72.7
+          version: 2.114.0
 
       - name: Start local Supabase stack
         run: supabase start
@@ -109,7 +114,7 @@ jobs:
       # Kept in sync with the e2e job's pin above — see the comment there.
       - uses: supabase/setup-cli@v1
         with:
-          version: 2.72.7
+          version: 2.114.0
 
       # EDGE_FUNCTION_SECRET must exist before `supabase start` — the local
       # edge runtime reads supabase/.env (via [edge_runtime.secrets] in
