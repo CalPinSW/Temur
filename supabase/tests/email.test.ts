@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { buildNotificationEmail, buildBugReportEmail, sendEmail } from "../functions/_shared/email.ts";
+import { buildNotificationEmail, buildBugReportEmail, buildAuthEmail, sendEmail } from "../functions/_shared/email.ts";
 
 const SITE_URL = "http://localhost:3000";
 
@@ -85,6 +85,46 @@ Deno.test("buildBugReportEmail - renders context entries as a table", () => {
   assertStringIncludes(html, "web");
   assertStringIncludes(html, "appVersion");
   assertStringIncludes(html, "0.1.0");
+});
+
+const AUTH_ACTION_TYPES = [
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "reauthentication",
+] as const;
+
+Deno.test("buildAuthEmail - produces a non-empty subject and HTML for every action type", () => {
+  for (const actionType of AUTH_ACTION_TYPES) {
+    const { subject, html } = buildAuthEmail(actionType, "https://example.com/verify", "123456");
+    assertStringIncludes(subject, "Temur");
+    assertEquals(html.length > 0, true);
+  }
+});
+
+Deno.test("buildAuthEmail - recovery links to the verify URL with a Reset password CTA", () => {
+  const { html } = buildAuthEmail("recovery", "https://example.com/verify?token=abc", "123456");
+  assertStringIncludes(html, 'href="https://example.com/verify?token=abc"');
+  assertStringIncludes(html, "Reset password");
+});
+
+Deno.test("buildAuthEmail - magiclink includes the OTP token as a fallback to the link", () => {
+  const { html } = buildAuthEmail("magiclink", "https://example.com/verify", "654321");
+  assertStringIncludes(html, "654321");
+});
+
+Deno.test("buildAuthEmail - reauthentication shows the code but has no link CTA", () => {
+  const { html } = buildAuthEmail("reauthentication", "https://example.com/verify", "999999");
+  assertStringIncludes(html, "999999");
+  assertEquals(html.includes('href="https://example.com/verify"'), false);
+});
+
+Deno.test("buildAuthEmail - escapes HTML in the token", () => {
+  const { html } = buildAuthEmail("magiclink", "https://example.com/verify", "<script>alert(1)</script>");
+  assertEquals(html.includes("<script>alert(1)</script>"), false);
+  assertStringIncludes(html, "&lt;script&gt;");
 });
 
 Deno.test("buildBugReportEmail - omits the context table entirely when there's no context", () => {
