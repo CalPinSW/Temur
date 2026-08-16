@@ -13,7 +13,7 @@ import {
   FriendRequestsScreen,
   RingersScreen,
 } from '@/screens/friends';
-import { ProfileScreen, EditProfileScreen, AboutScreen } from '@/screens/profile';
+import { ProfileScreen, EditProfileScreen, AboutScreen, ReportBugScreen } from '@/screens/profile';
 import { MainFunctionalityScreen, CreateGameScreen } from '@/screens/main';
 import {
   GroupsListScreen,
@@ -197,7 +197,7 @@ function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invite
 }
 
 function ProfileStack() {
-  const [screen, setScreen] = useState<'profile' | 'edit' | 'about'>('profile');
+  const [screen, setScreen] = useState<'profile' | 'edit' | 'about' | 'report-bug'>('profile');
 
   if (screen === 'edit') {
     return <EditProfileScreen onGoBack={() => setScreen('profile')} />;
@@ -207,8 +207,16 @@ function ProfileStack() {
     return <AboutScreen onGoBack={() => setScreen('profile')} />;
   }
 
+  if (screen === 'report-bug') {
+    return <ReportBugScreen onGoBack={() => setScreen('profile')} />;
+  }
+
   return (
-    <ProfileScreen onEditProfile={() => setScreen('edit')} onAbout={() => setScreen('about')} />
+    <ProfileScreen
+      onEditProfile={() => setScreen('edit')}
+      onAbout={() => setScreen('about')}
+      onReportBug={() => setScreen('report-bug')}
+    />
   );
 }
 

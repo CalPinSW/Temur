@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
 
 export interface ChangePasswordState {
@@ -25,7 +26,7 @@ export async function changePassword(
   const { error } = await supabase.auth.updateUser({ password: newPassword });
 
   if (error) {
-    return { error: error.message };
+    return { error: getAuthErrorMessage(error) };
   }
 
   redirect('/profile');

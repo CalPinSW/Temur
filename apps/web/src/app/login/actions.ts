@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
 
 export interface AuthFormState {
@@ -15,7 +16,7 @@ export async function login(_prevState: AuthFormState, formData: FormData): Prom
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { error: error.message };
+    return { error: getAuthErrorMessage(error) };
   }
 
   redirect('/games');

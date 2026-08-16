@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.208.0/assert/mod.ts";
-import { buildNotificationEmail, sendEmail } from "../functions/_shared/email.ts";
+import { buildNotificationEmail, buildBugReportEmail, sendEmail } from "../functions/_shared/email.ts";
 
 const SITE_URL = "http://localhost:3000";
 
@@ -54,4 +54,40 @@ Deno.test("sendEmail - skips gracefully when RESEND_API_KEY is not configured", 
   assertEquals(result.attempted, false);
   assertEquals(result.ok, false);
   assertEquals(result.error, "RESEND_API_KEY not configured");
+});
+
+Deno.test("buildBugReportEmail - subject prefers username over email", () => {
+  const { subject } = buildBugReportEmail("it broke", undefined, "user@example.com", "someuser");
+  assertEquals(subject, "Bug report from someuser");
+});
+
+Deno.test("buildBugReportEmail - subject falls back to email when there's no username", () => {
+  const { subject } = buildBugReportEmail("it broke", undefined, "user@example.com", undefined);
+  assertEquals(subject, "Bug report from user@example.com");
+});
+
+Deno.test("buildBugReportEmail - escapes the description and includes the reporter's email", () => {
+  const { html } = buildBugReportEmail("<script>alert(1)</script>", undefined, "user@example.com", "someuser");
+  assertEquals(html.includes("<script>alert(1)</script>"), false);
+  assertStringIncludes(html, "&lt;script&gt;");
+  assertStringIncludes(html, "user@example.com");
+  assertStringIncludes(html, "@someuser");
+});
+
+Deno.test("buildBugReportEmail - renders context entries as a table", () => {
+  const { html } = buildBugReportEmail(
+    "it broke",
+    { platform: "web", appVersion: "0.1.0" },
+    "user@example.com",
+    undefined,
+  );
+  assertStringIncludes(html, "platform");
+  assertStringIncludes(html, "web");
+  assertStringIncludes(html, "appVersion");
+  assertStringIncludes(html, "0.1.0");
+});
+
+Deno.test("buildBugReportEmail - omits the context table entirely when there's no context", () => {
+  const { html } = buildBugReportEmail("it broke", undefined, "user@example.com", undefined);
+  assertEquals(html.includes("<table"), false);
 });

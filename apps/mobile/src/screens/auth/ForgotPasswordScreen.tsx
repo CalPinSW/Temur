@@ -3,6 +3,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } f
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedInput, ThemedTextBox } from '@/components/themed';
+import { getAuthErrorMessage } from '@temur/shared';
 
 interface ForgotPasswordScreenProps {
   onNavigateToSignIn: () => void;
@@ -25,7 +26,7 @@ export function ForgotPasswordScreen({ onNavigateToSignIn }: ForgotPasswordScree
     const { error } = await resetPassword(email);
 
     if (error) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Error', getAuthErrorMessage(error));
     } else {
       setEmailSent(true);
     }

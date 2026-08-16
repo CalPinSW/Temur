@@ -77,6 +77,12 @@ export default async function ProfilePage() {
               Contact Support
             </a>
           )}
+          <Link
+            href="/profile/report-bug"
+            className="px-4 py-3 text-text hover:bg-background-secondary"
+          >
+            Report a Bug
+          </Link>
           <Link href="/profile/about" className="px-4 py-3 text-text hover:bg-background-secondary">
             About
           </Link>

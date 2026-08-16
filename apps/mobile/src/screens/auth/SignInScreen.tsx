@@ -12,6 +12,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
+import { getAuthErrorMessage } from '@temur/shared';
 
 interface SignInScreenProps {
   onNavigateToSignUp: () => void;
@@ -40,7 +41,7 @@ export function SignInScreen({
     const { error } = await signIn({ email, password });
 
     if (error) {
-      Alert.alert('Sign In Failed', error.message);
+      Alert.alert('Sign In Failed', getAuthErrorMessage(error));
     }
   };
 

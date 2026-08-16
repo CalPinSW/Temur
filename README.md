@@ -154,6 +154,10 @@ Instead of a remote project, you can point either app at a local Supabase stack 
 
 Signup email confirmation is already disabled for local dev (`auth.email.enable_confirmations = false` in `supabase/config.toml`), so signing up through the app logs you in immediately without needing Inbucket at all.
 
+#### Troubleshooting: authenticated Edge Function calls return `{"msg":"Invalid JWT"}`
+
+If every authenticated call to an Edge Function (`supabase.functions.invoke(...)`) fails at the gateway with `Invalid JWT` — even though the same JWT works fine against `/rest/v1` — the local stack's Auth service is issuing ES256-signed tokens that an older Supabase CLI's bundled edge-runtime can't verify (`Key for the ES256 algorithm must be of type CryptoKey`, visible via `docker logs supabase_edge_runtime_<project>`). Upgrade the CLI (`brew upgrade supabase` or equivalent) and run `supabase stop && supabase start` — the newer CLI issues HS256 tokens locally instead, which resolves it. `supabase start` will need to pull several new image versions after an upgrade, which can take a few minutes; let it finish rather than assuming it's hung if `docker ps` briefly shows no containers.
+
 ## Testing
 
 ### Unit Tests (Jest)

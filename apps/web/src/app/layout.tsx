@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { getThemeMode } from '@/lib/theme';
+import { ErrorCapture } from './ErrorCapture';
 import './globals.css';
 
 const geistSans = Geist({
@@ -27,7 +28,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
       data-theme={themeMode === 'system' ? undefined : themeMode}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <ErrorCapture />
+        {children}
+      </body>
     </html>
   );
 }
