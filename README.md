@@ -255,21 +255,29 @@ supabase functions deploy                              # deploy all
 
 > **Note:** Make sure `supabase/.env` contains any secrets the functions need before deploying.
 
+#### Troubleshooting: `supabase secrets set` silently overwrites unrelated secrets
+
+Running `supabase secrets set KEY=VALUE` from this directory — even without `--env-file` — also silently re-pushes **every other key already in `supabase/.env`**, not just the one you passed. Confirmed by temporarily removing `supabase/.env` and re-running a single-key `set`: only that key's `updated_at` moved on the remote project: with the file present, every key in it moves together on every call.
+
+This means `supabase/.env` must never contain a value that's only correct for local dev if it differs from what should be live remotely — any later `secrets set` call, for any unrelated secret, will silently push the local value over the remote one. `RESEND_FROM_EMAIL` and `PUBLIC_SITE_URL` are the two that bit us: keep them set to their real production values in `supabase/.env` even though they're inert for local dev (no `RESEND_API_KEY` means email is never actually sent locally, so the values are never observed). If you ever need a genuinely different value locally vs. remotely for some future secret, use `--env-file` pointed at an explicit, separate file instead of relying on the bare `KEY=VALUE` form.
+
 #### Email Notifications Setup
 
 `send-notification` and `sweep-visible-games` send email (via [Resend](https://resend.com)) alongside push — web's only out-of-band channel, since it has no push registration. Without these, email is skipped silently and push is unaffected.
 
 1. Create a free Resend account and API key.
-2. (Optional, recommended for production) verify a sending domain in the Resend dashboard — without one, email sends from Resend's shared `onboarding@resend.dev` sandbox address, which works but is less deliverable at scale.
+2. (Optional, recommended for production) verify a sending domain in the Resend dashboard — without one, email sends from Resend's shared `onboarding@resend.dev` sandbox address, which works but is less deliverable at scale. `temur.app` is already verified this way (DKIM/SPF records added via the Vercel-managed DNS, since the domain was bought through Vercel).
 3. Set the secrets on your Supabase project (matches how `EDGE_FUNCTION_SECRET` is provisioned):
 
    ```bash
    supabase secrets set RESEND_API_KEY=your_resend_api_key
-   supabase secrets set RESEND_FROM_EMAIL="Temur <notifications@yourdomain.com>"  # optional, defaults to the sandbox sender
-   supabase secrets set PUBLIC_SITE_URL=https://your-deployed-web-app.vercel.app  # used to build the "Open Temur" link in emails
+   supabase secrets set RESEND_FROM_EMAIL="Temur <notifications@temur.app>"
+   supabase secrets set PUBLIC_SITE_URL=https://www.temur.app  # used to build the "Open Temur" link in emails
    ```
 
-4. For local dev, set the same three in `supabase/.env` instead (see `supabase/.env.example`).
+   Prefer scoping the API key to `sending_access` on just this domain (Resend → API Keys → Create), rather than reusing a full-access key, in case it ever leaks.
+
+4. For local dev, `supabase/.env` already has `RESEND_FROM_EMAIL`/`PUBLIC_SITE_URL` set to these same production values (see `supabase/.env.example`) — see the troubleshooting note above for why that matters even though they're inert locally. `RESEND_API_KEY` stays unset locally on purpose.
 
 #### Auth Emails (Resend)
 
