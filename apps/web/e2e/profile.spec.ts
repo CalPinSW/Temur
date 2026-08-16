@@ -6,8 +6,6 @@ test.use({ storageState: primaryStorageState });
 test.describe('Profile', () => {
   test('views the profile page', async ({ page }) => {
     await page.goto('/profile');
-    // The display name also appears in the nav link — scope to the page
-    // body so this doesn't hit a strict-mode "resolved to 2 elements".
     await expect(page.getByRole('main').getByText(E2E_USERS.primary.displayName)).toBeVisible();
     await expect(page.getByText(`@${E2E_USERS.primary.username}`)).toBeVisible();
   });

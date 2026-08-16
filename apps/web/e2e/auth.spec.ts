@@ -18,7 +18,8 @@ test.describe('Authentication', () => {
     await page.waitForURL('**/games');
     await expect(page.getByRole('heading', { name: 'Games', level: 1 })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Sign out' }).click();
+    await page.goto('/profile');
+    await page.getByRole('button', { name: 'Sign Out' }).click();
     await page.waitForURL('**/login');
   });
 
