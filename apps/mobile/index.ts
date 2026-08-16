@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import '@/services/sentryInit';
 import { registerRootComponent } from 'expo';
 
 import App from './App';
