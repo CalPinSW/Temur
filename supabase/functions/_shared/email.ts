@@ -106,6 +106,97 @@ export function buildBugReportEmail(
   return { subject, html };
 }
 
+export type AuthEmailActionType =
+  | 'signup'
+  | 'invite'
+  | 'magiclink'
+  | 'recovery'
+  | 'email_change'
+  | 'reauthentication';
+
+function buildAuthEmailCopy(
+  actionType: AuthEmailActionType,
+  token: string
+): { subject: string; heading: string; body: string; cta: string } {
+  switch (actionType) {
+    case 'signup':
+      return {
+        subject: 'Confirm your email for Temur',
+        heading: 'Confirm your email',
+        body: 'Welcome to Temur! Click below to confirm your email address and finish setting up your account.',
+        cta: 'Confirm email',
+      };
+    case 'recovery':
+      return {
+        subject: 'Reset your Temur password',
+        heading: 'Reset your password',
+        body: "We received a request to reset the password for your Temur account. Click below to choose a new one. If you didn't request this, you can safely ignore this email.",
+        cta: 'Reset password',
+      };
+    case 'invite':
+      return {
+        subject: "You've been invited to Temur",
+        heading: "You're invited",
+        body: "You've been invited to join Temur. Click below to accept and set up your account.",
+        cta: 'Accept invite',
+      };
+    case 'magiclink':
+      return {
+        subject: 'Your Temur sign-in link',
+        heading: 'Sign in to Temur',
+        body: `Click below to sign in. You can also enter this code instead: ${token}`,
+        cta: 'Sign in',
+      };
+    case 'email_change':
+      return {
+        subject: 'Confirm your new email for Temur',
+        heading: 'Confirm your new email',
+        body: 'Click below to confirm this address as the new email for your Temur account.',
+        cta: 'Confirm email change',
+      };
+    case 'reauthentication':
+      return {
+        subject: 'Your Temur confirmation code',
+        heading: 'Confirm this was you',
+        body: `Enter this code to continue: ${token}`,
+        cta: '',
+      };
+  }
+}
+
+// Renders the Supabase Auth "Send Email" hook's payload (see
+// supabase/functions/send-auth-email) with the same branding as
+// buildNotificationEmail/buildBugReportEmail, instead of Supabase's plain
+// default templates.
+export function buildAuthEmail(
+  actionType: AuthEmailActionType,
+  verifyUrl: string,
+  token: string
+): { subject: string; html: string } {
+  const { subject, heading, body, cta } = buildAuthEmailCopy(actionType, token);
+
+  const html = `
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #12231c;">
+      <h2 style="color: #146b45; margin-bottom: 8px;">${escapeHtml(heading)}</h2>
+      <p style="font-size: 15px; line-height: 1.5;">${escapeHtml(body)}</p>
+      ${
+        cta
+          ? `<p style="margin-top: 24px;">
+        <a href="${verifyUrl}" style="display: inline-block; padding: 10px 20px; background: #146b45; color: #ffffff; border-radius: 8px; text-decoration: none; font-weight: 600;">
+          ${escapeHtml(cta)}
+        </a>
+      </p>`
+          : ''
+      }
+      <p style="margin-top: 24px; font-size: 13px; color: #586158;">
+        If you didn't request this, you can safely ignore this email.
+      </p>
+    </div>
+  `;
+
+  return { subject, html };
+}
+
 export interface SendEmailResult {
   attempted: boolean;
   ok: boolean;

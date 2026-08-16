@@ -271,6 +271,32 @@ supabase functions deploy                              # deploy all
 
 4. For local dev, set the same three in `supabase/.env` instead (see `supabase/.env.example`).
 
+#### Auth Emails (Resend)
+
+By default, Supabase Auth sends its own transactional emails (password reset, signup confirmation, etc.) through its built-in mailer, styled with Supabase's plain default templates. `send-auth-email` (`supabase/functions/send-auth-email`) replaces that entirely via Supabase Auth's [Send Email Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook): Supabase Auth calls this function instead, and it sends a branded email through the same Resend integration used above (`buildAuthEmail` in `supabase/functions/_shared/email.ts`). Today the app only actually triggers the `recovery` (forgot password, mobile-only for now) flow, but the hook takes over *every* auth email type once enabled, so it handles all of them (signup, invite, magic link, email change, reauthentication) generically.
+
+This is only configured on the **remote** Supabase project, not local dev — the same "deployed-only" split used for [Sentry](#error-monitoring-sentry): local dev keeps using Supabase's default local mailer (viewable at Inbucket, `http://127.0.0.1:54324` when running `supabase start`), so testing the password-reset flow locally doesn't require a Resend key or burn any send quota. `supabase/config.toml` deliberately has no `[auth.hook.send_email]` entry for this reason.
+
+To enable it on the remote project:
+
+1. Make sure `RESEND_API_KEY` (and optionally `RESEND_FROM_EMAIL`) are already set as described above.
+2. Deploy the function with JWT verification disabled — Supabase Auth calls it without a user JWT, authenticating instead via a webhook signature:
+
+   ```bash
+   supabase functions deploy send-auth-email --no-verify-jwt
+   ```
+
+3. In the Supabase dashboard, go to **Authentication → Hooks**, create a **Send Email hook**, select **HTTPS**, and paste the deployed function's URL.
+4. Click **Generate Secret** to get a webhook secret (format `v1,whsec_...`), then set it:
+
+   ```bash
+   supabase secrets set SEND_EMAIL_HOOK_SECRET="v1,whsec_your_generated_secret"
+   ```
+
+5. Click **Create** to save the hook.
+
+From then on, every Supabase Auth email on the remote project routes through Resend with Temur's own branding instead of Supabase's default templates.
+
 #### Supabase Edge Function Configuration
 
 Sometimes Edge Functions need to be configured to disable gateway-level JWT verification because:

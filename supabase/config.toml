@@ -384,6 +384,17 @@ SUPPORT_EMAIL = "env(SUPPORT_EMAIL)"
 [functions.sweep-visible-games]
 verify_jwt = false
 
+# Supabase Auth's Send Email hook has no user JWT either — it authenticates
+# via a Standard Webhooks signature instead (see the function's own source).
+# Deliberately NOT registered under [auth.hook.send_email] here: that hook
+# replaces Supabase's built-in auth email sending entirely, and this repo's
+# convention (see Sentry's `enabled: !__DEV__`/`NODE_ENV === 'production'`
+# gating) is to keep local dev on the free, quota-free default (Inbucket)
+# and only turn on the branded Resend-backed version on the remote project,
+# via the dashboard — see README's "Auth Emails (Resend)" section.
+[functions.send-auth-email]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
