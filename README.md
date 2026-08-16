@@ -138,10 +138,12 @@ Configure redirect URLs in **Supabase Dashboard → Authentication → URL Confi
 
 - **Mobile** (deep link, custom scheme `temur`):
   - `temur://auth/callback` (dev builds / production)
+  - `temur://reset-password` (forgot-password flow — handled client-side via `useAuthDeepLinks`, not routed through `auth/callback`)
   - `exp://YOUR_LOCAL_IP:8081/--/auth/callback` (Expo Go development — replace `YOUR_LOCAL_IP` with your machine's local IP)
 - **Web**:
   - `http://localhost:3000/auth/callback` (local dev)
-  - `https://<your-vercel-domain>/auth/callback` (once deployed — add this once you have a Vercel domain; also update `NEXT_PUBLIC_SITE_URL` in `apps/web`'s production env)
+  - `http://localhost:3000/reset-password` (forgot-password flow — recovery links deliver tokens as a URL hash fragment rather than a `?code=` param, so this bypasses `/auth/callback`'s server-side exchange entirely and is handled client-side in `ResetPasswordForm`)
+  - `https://<your-vercel-domain>/auth/callback` and `https://<your-vercel-domain>/reset-password` (once deployed — add both once you have a Vercel domain; also update `NEXT_PUBLIC_SITE_URL` in `apps/web`'s production env)
 
 **Site URL** (used to build email confirmation / password reset links) should point at whichever app you consider primary, or be updated per environment — for mobile deep links it must be a scheme your app can handle (e.g. `temur://auth/callback`); for web it's a plain `https://` URL.
 

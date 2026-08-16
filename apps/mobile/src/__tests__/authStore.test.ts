@@ -15,6 +15,7 @@ jest.mock('@/services/socialAuthService', () => ({
 }));
 
 import { Session, User } from '@supabase/supabase-js';
+import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '@/services/supabase';
 import { createQueryBuilder, mockFromTables, SupabaseMock } from './testUtils/supabaseMock';
 import { signInWithProvider } from '@/services/socialAuthService';
@@ -23,6 +24,7 @@ import { useAuthStore } from '@/store/authStore';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
 const mockSignInWithProvider = signInWithProvider as jest.Mock;
+const mockMakeRedirectUri = makeRedirectUri as jest.Mock;
 
 const initialState = useAuthStore.getState();
 
@@ -196,16 +198,57 @@ describe('authStore', () => {
   });
 
   describe('resetPassword', () => {
-    it('requests a password reset email', async () => {
+    it('requests a password reset email with a reset-password redirect', async () => {
       mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: null });
 
       const result = await useAuthStore.getState().resetPassword('a@b.com');
 
       expect(result.error).toBeNull();
+      expect(mockMakeRedirectUri).toHaveBeenCalledWith({
+        scheme: 'temur',
+        path: 'reset-password',
+      });
       expect(mockSupabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
         'a@b.com',
         expect.objectContaining({ redirectTo: 'temur://auth/callback' })
       );
+      expect(useAuthStore.getState().isLoading).toBe(false);
+    });
+
+    it('returns the supabase error on failure', async () => {
+      mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({
+        error: new Error('rate limited'),
+      });
+
+      const result = await useAuthStore.getState().resetPassword('a@b.com');
+
+      expect(result.error?.message).toBe('rate limited');
+    });
+  });
+
+  describe('updatePasswordAfterRecovery', () => {
+    it('sets the new password and clears isPasswordRecovery', async () => {
+      mockSupabase.auth.updateUser.mockResolvedValue({ error: null });
+      useAuthStore.setState({ isPasswordRecovery: true });
+
+      const result = await useAuthStore.getState().updatePasswordAfterRecovery('new-password-123');
+
+      expect(result.error).toBeNull();
+      expect(mockSupabase.auth.updateUser).toHaveBeenCalledWith({
+        password: 'new-password-123',
+      });
+      expect(useAuthStore.getState().isPasswordRecovery).toBe(false);
+      expect(useAuthStore.getState().isLoading).toBe(false);
+    });
+
+    it('leaves isPasswordRecovery set on failure', async () => {
+      mockSupabase.auth.updateUser.mockResolvedValue({ error: new Error('weak password') });
+      useAuthStore.setState({ isPasswordRecovery: true });
+
+      const result = await useAuthStore.getState().updatePasswordAfterRecovery('123');
+
+      expect(result.error?.message).toBe('weak password');
+      expect(useAuthStore.getState().isPasswordRecovery).toBe(true);
     });
   });
 

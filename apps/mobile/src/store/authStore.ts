@@ -19,17 +19,27 @@ function withTimeout<T>(
 }
 
 interface AuthStore extends AuthState {
+  // True from the moment a password-recovery deep link establishes a
+  // session (see useAuthDeepLinks) until the user sets a new password —
+  // distinguishes "recovery session, show ResetPasswordScreen" from a
+  // normal logged-in session in RootNavigator, since Supabase's own
+  // PASSWORD_RECOVERY auth event isn't emitted here (detectSessionInUrl is
+  // false on the mobile client, so the session is established manually via
+  // setSession() rather than the SDK's own URL-detection code path).
+  isPasswordRecovery: boolean;
   setUser: (user: User | null) => void;
   setSession: (session: Session | null) => void;
   setProfile: (profile: Profile | null) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsInitialized: (isInitialized: boolean) => void;
+  setIsPasswordRecovery: (isPasswordRecovery: boolean) => void;
   initialize: () => Promise<void>;
   signUp: (credentials: SignUpCredentials) => Promise<{ error: Error | null }>;
   signIn: (credentials: SignInCredentials) => Promise<{ error: Error | null }>;
   signInWithSocial: (provider: 'google' | 'apple') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePasswordAfterRecovery: (newPassword: string) => Promise<{ error: Error | null }>;
   fetchProfile: (userId: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
 }
@@ -40,12 +50,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   profile: null,
   isLoading: true,
   isInitialized: false,
+  isPasswordRecovery: false,
 
   setUser: (user) => set({ user }),
   setSession: (session) => set({ session }),
   setProfile: (profile) => set({ profile }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setIsInitialized: (isInitialized) => set({ isInitialized }),
+  setIsPasswordRecovery: (isPasswordRecovery) => set({ isPasswordRecovery }),
 
   initialize: async () => {
     try {
@@ -88,7 +100,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             Sentry.captureException(profileError);
           }
         } else if (event === 'SIGNED_OUT' && !session) {
-          set({ profile: null });
+          set({ profile: null, isPasswordRecovery: false });
         }
       });
     } catch (error) {
@@ -189,11 +201,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         Sentry.captureException(timeoutError);
       }
 
-      set({ user: null, session: null, profile: null });
+      set({ user: null, session: null, profile: null, isPasswordRecovery: false });
     } catch (error) {
       console.error('Sign out error:', error);
       Sentry.captureException(error);
-      set({ user: null, session: null, profile: null });
+      set({ user: null, session: null, profile: null, isPasswordRecovery: false });
     } finally {
       set({ isLoading: false });
     }
@@ -215,6 +227,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       return { error: null };
     } catch (error) {
       console.error('Reset password error:', error);
+      Sentry.captureException(error);
+      return { error: error as Error };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updatePasswordAfterRecovery: async (newPassword) => {
+    try {
+      set({ isLoading: true });
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+      if (error) throw error;
+
+      set({ isPasswordRecovery: false });
+      return { error: null };
+    } catch (error) {
+      console.error('Update password after recovery error:', error);
       Sentry.captureException(error);
       return { error: error as Error };
     } finally {

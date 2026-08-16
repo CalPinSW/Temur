@@ -4,14 +4,14 @@ import path from 'node:path';
 import { chromium, type FullConfig } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
-interface LocalSupabaseStatus {
+export interface LocalSupabaseStatus {
   API_URL: string;
   SERVICE_ROLE_KEY: string;
 }
 
 const LOCAL_URL_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)/;
 
-function getLocalSupabaseStatus(): LocalSupabaseStatus {
+export function getLocalSupabaseStatus(): LocalSupabaseStatus {
   const repoRoot = path.resolve(__dirname, '../../..');
   const output = execSync('supabase status -o json', { cwd: repoRoot, encoding: 'utf-8' });
   return JSON.parse(output);

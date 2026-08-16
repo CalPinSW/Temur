@@ -80,6 +80,7 @@ export function createSupabaseMock() {
       onAuthStateChange: jest.fn(),
       signInWithOAuth: jest.fn(),
       setSession: jest.fn(),
+      updateUser: jest.fn(),
     },
   };
 }
