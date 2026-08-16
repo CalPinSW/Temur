@@ -9,6 +9,10 @@ import { initErrorCapture } from '@/services/errorCaptureService';
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 0,
+  // Only report from real builds (EAS preview/production) — never from
+  // Expo Go / a dev client connected to Metro, so local work doesn't eat
+  // into the free-tier event quota.
+  enabled: !__DEV__,
 });
 
 // Must run after Sentry.init() so it chains onto Sentry's own global
