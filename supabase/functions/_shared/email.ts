@@ -21,6 +21,24 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+// apps/web/public/email-logo.png — a 128x128 (2x) render of the app icon,
+// resized down from the 1024x1024 source so emails don't ship a ~1.2MB
+// image. Only reachable once apps/web is deployed with that asset present,
+// which is why this is only actually used remotely (see send-auth-email
+// and README's "Auth Emails (Resend)" section for the local/remote split).
+const LOGO_URL = `${Deno.env.get('PUBLIC_SITE_URL') ?? 'https://www.temur.app'}/email-logo.png`;
+
+// Shared visual wrapper for every outgoing email (notifications, bug
+// reports, auth) — centered logo + text, matching Temur's green branding.
+function wrapEmailHtml(innerHtml: string, maxWidth: number): string {
+  return `
+    <div style="font-family: -apple-system, sans-serif; max-width: ${maxWidth}px; margin: 0 auto; color: #12231c; text-align: center;">
+      <img src="${LOGO_URL}" width="56" height="56" alt="Temur" style="display: block; margin: 0 auto 16px; border-radius: 12px;" />
+      ${innerHtml}
+    </div>
+  `;
+}
+
 // Reuses the title/body copy already built by each call site (mobile's
 // NotificationTemplates, or web's inline equivalents) rather than
 // maintaining a third parallel set of per-type templates just for email.
@@ -56,8 +74,8 @@ export function buildNotificationEmail(
 ): { subject: string; html: string } {
   const link = buildNotificationLink(type, data, siteUrl);
 
-  const html = `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #12231c;">
+  const html = wrapEmailHtml(
+    `
       <h2 style="color: #146b45; margin-bottom: 8px;">${escapeHtml(title)}</h2>
       <p style="font-size: 15px; line-height: 1.5;">${escapeHtml(body)}</p>
       <p style="margin-top: 24px;">
@@ -65,8 +83,9 @@ export function buildNotificationEmail(
           Open Temur
         </a>
       </p>
-    </div>
-  `;
+    `,
+    480
+  );
 
   return { subject: title, html };
 }
@@ -88,8 +107,8 @@ export function buildBugReportEmail(
         .join('')
     : '';
 
-  const html = `
-    <div style="font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; color: #12231c;">
+  const html = wrapEmailHtml(
+    `
       <h2 style="color: #146b45; margin-bottom: 8px;">Bug report</h2>
       <p style="font-size: 15px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(description)}</p>
       <p style="font-size: 13px; color: #586158;">
@@ -97,11 +116,12 @@ export function buildBugReportEmail(
       </p>
       ${
         contextRows
-          ? `<table style="font-size: 13px; border-top: 1px solid #ded7c7; margin-top: 16px; padding-top: 8px; border-collapse: collapse;">${contextRows}</table>`
+          ? `<table style="text-align: left; font-size: 13px; border-top: 1px solid #ded7c7; margin: 16px auto 0; padding-top: 8px; border-collapse: collapse;">${contextRows}</table>`
           : ''
       }
-    </div>
-  `;
+    `,
+    600
+  );
 
   return { subject, html };
 }
@@ -175,8 +195,8 @@ export function buildAuthEmail(
 ): { subject: string; html: string } {
   const { subject, heading, body, cta } = buildAuthEmailCopy(actionType, token);
 
-  const html = `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #12231c;">
+  const html = wrapEmailHtml(
+    `
       <h2 style="color: #146b45; margin-bottom: 8px;">${escapeHtml(heading)}</h2>
       <p style="font-size: 15px; line-height: 1.5;">${escapeHtml(body)}</p>
       ${
@@ -191,8 +211,9 @@ export function buildAuthEmail(
       <p style="margin-top: 24px; font-size: 13px; color: #586158;">
         If you didn't request this, you can safely ignore this email.
       </p>
-    </div>
-  `;
+    `,
+    480
+  );
 
   return { subject, html };
 }
