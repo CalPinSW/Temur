@@ -4,6 +4,7 @@ import { GameDetailScreen } from './GameDetailScreen';
 import { TeamAssignmentScreen } from './TeamAssignmentScreen';
 import { CreateGameScreen } from './CreateGameScreen';
 import { GameResultScreen } from './GameResultScreen';
+import { EditGameScreen } from './EditGameScreen';
 
 interface MainFunctionalityScreenProps {
   route?: { params?: { screen?: 'detail'; gameId?: string } };
@@ -11,7 +12,7 @@ interface MainFunctionalityScreenProps {
 
 export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps) {
   const [currentScreen, setCurrentScreen] = useState<
-    'list' | 'detail' | 'teamAssignment' | 'create' | 'result'
+    'list' | 'detail' | 'teamAssignment' | 'create' | 'result' | 'edit'
   >('list');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
@@ -56,8 +57,23 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     setCurrentScreen('list');
   };
 
+  const handleNavigateToEditGame = (gameId: string) => {
+    setSelectedGameId(gameId);
+    setCurrentScreen('edit');
+  };
+
   if (currentScreen === 'create') {
     return <CreateGameScreen onGoBack={handleGoBack} onCreated={handleGameCreated} />;
+  }
+
+  if (currentScreen === 'edit' && selectedGameId) {
+    return (
+      <EditGameScreen
+        gameId={selectedGameId}
+        onGoBack={handleBackToDetail}
+        onSaved={handleBackToDetail}
+      />
+    );
   }
 
   if (currentScreen === 'teamAssignment' && selectedGameId) {
@@ -75,6 +91,7 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
         onGoBack={handleGoBack}
         onNavigateToTeamAssignment={handleNavigateToTeamAssignment}
         onNavigateToGameResult={handleNavigateToGameResult}
+        onNavigateToEditGame={handleNavigateToEditGame}
       />
     );
   }

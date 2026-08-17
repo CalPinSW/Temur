@@ -132,6 +132,13 @@ export const formatGameResult = (
   return null;
 };
 
+// Also added independently by the "Validate visibleAt against kickoff
+// date" branch/PR — this codebase's game-creation/edit forms both need it
+// and the two pieces of work were built in parallel off main. Whichever
+// PR merges second should drop this duplicate rather than keep both.
+export const isVisibleAtBeforeKickoff = (kickoffDate: Date, visibleAt: Date): boolean =>
+  visibleAt.getTime() <= kickoffDate.getTime();
+
 export const getTeamCounts = (teamAssignments: Record<string, number | null>) => {
   const counts = { team1: 0, team2: 0, unassigned: 0 };
   Object.values(teamAssignments).forEach((team) => {

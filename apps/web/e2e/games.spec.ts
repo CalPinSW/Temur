@@ -53,7 +53,7 @@ test.describe('Games', () => {
     await expect(page.getByText(/^Signed up \(0\//)).toBeVisible();
   });
 
-  test('shows a not-yet-visible game to its creator greyed out and non-clickable', async ({
+  test('shows a not-yet-visible game to its creator as a reachable preview, with edit/publish controls', async ({
     page,
   }) => {
     const suffix = Date.now();
@@ -61,24 +61,59 @@ test.describe('Games', () => {
     const previewTeam2 = `E2E-Preview-T2-${suffix}`;
 
     await page.goto('/games/new');
+    // Kickoff must stay on/after Visible From (visibleAt <= kickoff_date is
+    // enforced both client- and server-side).
+    await page.getByLabel('Kickoff Date & Time').fill('2099-01-02T10:00');
     await page.getByLabel('Visible From').fill('2099-01-01T10:00');
     await page.getByLabel('Team 1 Name').fill(previewTeam1);
     await page.getByLabel('Team 2 Name').fill(previewTeam2);
     await page.getByRole('button', { name: 'Create Game' }).click();
 
-    // Not yet visible to anyone else (including the detail page, which has
-    // no visibility gating of its own) — creation redirects to the games
-    // list instead of walking the creator straight into it.
+    // Not yet visible to anyone else — creation redirects to the games list
+    // instead of walking the creator straight into it.
     await page.waitForURL('**/games');
     const heading = `${previewTeam1} vs ${previewTeam2}`;
-    await expect(page.getByRole('link', { name: heading })).not.toBeVisible();
-    const card = page.locator('div[aria-disabled="true"]', { hasText: previewTeam1 });
+    const card = page.getByRole('link', { name: new RegExp(heading) });
     await expect(card).toBeVisible();
     await expect(card.getByText('Not visible yet')).toBeVisible();
-    // aria-disabled is decorative here — assert it's genuinely inert by
-    // confirming the click doesn't navigate anywhere.
+
+    // Unlike a fully-hidden game, the creator's preview IS reachable.
     await card.click();
-    await expect(page).toHaveURL(/\/games$/);
+    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    await expect(page.getByText('Not visible yet')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign up' })).not.toBeVisible();
+    await expect(page.getByRole('link', { name: 'Edit Game' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Make Visible Now' }).click();
+    await expect(page.getByText('Not visible yet')).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign up' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Make Visible Now' })).not.toBeVisible();
+  });
+
+  test('edits a game', async ({ page }) => {
+    const suffix = Date.now();
+    const editTeam1 = `E2E-Edit-T1-${suffix}`;
+    const editTeam2 = `E2E-Edit-T2-${suffix}`;
+    const renamedTeam1 = `E2E-Edited-T1-${suffix}`;
+
+    await page.goto('/games/new');
+    const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+    await page.getByLabel('Visible From').fill(recentPast);
+    await page.getByLabel('Team 1 Name').fill(editTeam1);
+    await page.getByLabel('Team 2 Name').fill(editTeam2);
+    await page.getByRole('button', { name: 'Create Game' }).click();
+    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+
+    await page.getByRole('link', { name: 'Edit Game' }).click();
+    await page.waitForURL(/\/games\/[0-9a-f-]+\/edit$/);
+    await page.getByLabel('Team 1 Name').fill(renamedTeam1);
+    await page.getByRole('button', { name: 'Save Changes' }).click();
+
+    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+    await expect(
+      page.getByRole('heading', { name: `${renamedTeam1} vs ${editTeam2}` })
+    ).toBeVisible();
   });
 
   test('creator deletes a game', async ({ page }) => {

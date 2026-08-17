@@ -22,7 +22,6 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
     <TouchableOpacity
       key={game.id}
       onPress={() => onNavigateToGame(game.id)}
-      disabled={isPreview}
       activeOpacity={0.7}
       style={[styles.gameCardTouchable, isPreview && styles.gameCardPreview]}
     >

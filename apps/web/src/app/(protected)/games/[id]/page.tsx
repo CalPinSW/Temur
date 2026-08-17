@@ -12,6 +12,7 @@ import {
   getWaitlistPlayers,
   getPlayerDisplayName,
   isGameAdmin,
+  getGameVisibilityStatus,
 } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { SignupActions } from './SignupActions';
@@ -19,6 +20,7 @@ import { OpenRingersSection } from './OpenRingersSection';
 import { AddRingerSection } from './AddRingerSection';
 import { RemoveRingerButton } from './RemoveRingerButton';
 import { DeleteGameButton } from './DeleteGameButton';
+import { PublishGameButton } from './PublishGameButton';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
@@ -101,6 +103,16 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const game = data as RawGame;
   const adminGroupIds = new Set((adminGroups ?? []).map((row) => row.group_id));
   const isAdmin = isGameAdmin(game, user.id, adminGroupIds);
+
+  // Not yet visible and this user isn't an admin who gets an early preview
+  // — can_view_game's RLS doesn't consider visible_at at all (only group
+  // membership/creator/invite), so without this check a group member could
+  // still reach this page directly even though every list view hides it.
+  const visibility = getGameVisibilityStatus(game, user.id, adminGroupIds);
+  if (!visibility.visible) {
+    notFound();
+  }
+
   const isPast = new Date(game.kickoff_date) < new Date();
   let players = (game.player_games ?? []).slice().sort((a, b) => a.signup_order - b.signup_order);
 
@@ -135,15 +147,34 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-text">
-          {game.team1_name} vs {game.team2_name}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-text">
+            {game.team1_name} vs {game.team2_name}
+          </h1>
+          {visibility.isPreview && (
+            <span className="rounded-full bg-background-secondary px-2 py-0.5 text-xs font-medium text-text-tertiary">
+              Not visible yet
+            </span>
+          )}
+        </div>
         <p className="text-sm text-text-secondary">
           {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
         </p>
       </div>
 
-      <SignupActions gameId={game.id} isSignedUp={isSignedUp} />
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-light px-3 py-2">
+          <Link
+            href={`/games/${game.id}/edit`}
+            className="text-sm font-medium text-primary hover:text-primary-hover"
+          >
+            Edit Game
+          </Link>
+          {visibility.isPreview && <PublishGameButton gameId={game.id} />}
+        </div>
+      )}
+
+      {!visibility.isPreview && <SignupActions gameId={game.id} isSignedUp={isSignedUp} />}
 
       {isAdmin && players.length > 0 && (
         <Link
@@ -192,11 +223,11 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </ul>
       </section>
 
-      {!!game.group_id && !!game.ringers_opened_at && !isPast && (
+      {!!game.group_id && !!game.ringers_opened_at && !isPast && !visibility.isPreview && (
         <AddRingerSection gameId={game.id} />
       )}
 
-      {isAdmin && !!game.group_id && (
+      {isAdmin && !!game.group_id && !visibility.isPreview && (
         <>
           {game.ringers_opened_at ? (
             <p className="text-sm text-text-secondary">

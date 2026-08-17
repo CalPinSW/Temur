@@ -79,6 +79,9 @@ test.describe('Groups', () => {
       await secondaryPage.getByRole('button', { name: 'Accept' }).click();
 
       await page.goto(`/games/new?group=${groupId}`);
+      // Kickoff must stay on/after Visible From (visibleAt <= kickoff_date
+      // is enforced both client- and server-side).
+      await page.getByLabel('Kickoff Date & Time').fill('2099-01-02T10:00');
       await page.getByLabel('Visible From').fill('2099-01-01T10:00');
       await page.getByLabel('Team 1 Name').fill(previewTeam1);
       await page.getByLabel('Team 2 Name').fill(previewTeam2);
@@ -89,24 +92,27 @@ test.describe('Groups', () => {
 
       const heading = `${previewTeam1} vs ${previewTeam2}`;
 
-      // Admin/creator: shown on the group's own games list as a
-      // non-clickable preview, same treatment as the main games list.
+      // Admin/creator: shown on the group's own games list as a reachable
+      // preview, same treatment as the main games list.
       await page.goto(`/groups/${groupId}/games`);
-      await expect(page.getByRole('link', { name: heading })).not.toBeVisible();
-      const card = page.locator('div[aria-disabled="true"]', { hasText: previewTeam1 });
+      const card = page.getByRole('link', { name: new RegExp(heading) });
       await expect(card).toBeVisible();
       await expect(card.getByText('Not visible yet')).toBeVisible();
       await card.click();
-      await expect(page).toHaveURL(new RegExp(`/groups/${groupId}/games$`));
+      await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+      const gameUrl = page.url();
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
 
       // Regular member: the game doesn't appear on this list at all, even
-      // though can_view_game's RLS would let them read the row directly.
+      // though can_view_game's RLS would let them read the row directly...
       await secondaryPage.goto(`/groups/${groupId}/games`);
       await expect(secondaryPage.getByRole('link', { name: heading })).not.toBeVisible();
-      await expect(
-        secondaryPage.locator('div[aria-disabled="true"]', { hasText: previewTeam1 })
-      ).not.toBeVisible();
       await expect(secondaryPage.getByText(/scheduled yet/)).toBeVisible();
+
+      // ...and can't reach it directly by URL either — the detail page
+      // itself now enforces the same visible_at gate as the list.
+      await secondaryPage.goto(gameUrl);
+      await expect(secondaryPage.getByText(/could not be found/i)).toBeVisible();
     } finally {
       await secondaryContext.close();
     }

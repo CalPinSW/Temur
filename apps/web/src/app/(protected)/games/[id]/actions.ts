@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getNextSignupOrder, getGameCapacity } from '@temur/shared';
+import { getNextSignupOrder, getGameCapacity, isVisibleAtBeforeKickoff } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
@@ -70,6 +70,68 @@ export async function deleteGame(gameId: string): Promise<{ error?: string }> {
 
   revalidatePath('/games');
   redirect('/games');
+}
+
+export interface UpdateGameInput {
+  gameDescription: string;
+  kickoffDate: string;
+  visibleAt: string;
+  team1Name: string;
+  team2Name: string;
+  playersPerTeam: number;
+}
+
+export async function updateGame(
+  gameId: string,
+  input: UpdateGameInput
+): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: 'You must be signed in.' };
+
+  if (!isVisibleAtBeforeKickoff(new Date(input.kickoffDate), new Date(input.visibleAt))) {
+    return { error: '"Visible From" must be before the kickoff time.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('games')
+    .update({
+      game_description: input.gameDescription || null,
+      kickoff_date: input.kickoffDate,
+      visible_at: input.visibleAt,
+      team1_name: input.team1Name,
+      team2_name: input.team2Name,
+      players_per_team: input.playersPerTeam,
+    })
+    .eq('id', gameId);
+
+  if (error) return { error: 'Failed to save changes. Please try again.' };
+
+  revalidatePath(`/games/${gameId}`);
+  revalidatePath('/games');
+  redirect(`/games/${gameId}`);
+}
+
+export async function publishGameNow(gameId: string): Promise<{ error?: string }> {
+  const user = await getUser();
+  if (!user) return { error: 'You must be signed in.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('games')
+    .update({ visible_at: new Date().toISOString() })
+    .eq('id', gameId);
+
+  if (error) {
+    return {
+      error:
+        "Failed to publish game. If its kickoff time has already passed, edit that first — visible date can't be after kickoff.",
+    };
+  }
+
+  revalidatePath(`/games/${gameId}`);
+  revalidatePath('/games');
+  return {};
 }
 
 export async function withdrawFromGame(

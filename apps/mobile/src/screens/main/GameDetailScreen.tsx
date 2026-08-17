@@ -46,6 +46,7 @@ import {
   getVisiblePlayers,
   getNextSignupOrder,
   isGameAdmin,
+  getGameVisibilityStatus,
   formatGameResult,
 } from '@temur/shared';
 import {
@@ -62,6 +63,7 @@ interface GameDetailScreenProps {
   onGoBack: () => void;
   onNavigateToTeamAssignment?: (gameId: string) => void;
   onNavigateToGameResult?: (gameId: string) => void;
+  onNavigateToEditGame?: (gameId: string) => void;
 }
 
 export function GameDetailScreen({
@@ -69,6 +71,7 @@ export function GameDetailScreen({
   onGoBack,
   onNavigateToTeamAssignment,
   onNavigateToGameResult,
+  onNavigateToEditGame,
 }: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -90,6 +93,7 @@ export function GameDetailScreen({
   const [ringerNameInput, setRingerNameInput] = useState('');
   const [savedRingers, setSavedRingers] = useState<SavedRinger[]>([]);
   const [isLoadingSavedRingers, setIsLoadingSavedRingers] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
   const { isSigningUp, isWithdrawing, isDeleting, handleSignUp, handleWithdraw, handleDelete } =
@@ -132,6 +136,28 @@ export function GameDetailScreen({
   }
 
   const isAdmin = isGameAdmin(game, user?.id, adminGroupIds);
+
+  // Not yet visible and this user isn't an admin who gets an early preview
+  // — RLS doesn't consider visible_at at all (only group membership,
+  // creator, or an explicit invite), so without this check a group member
+  // could still reach this screen even though every list screen hides it.
+  const pageVisibility = getGameVisibilityStatus(game, user?.id, adminGroupIds);
+  if (!pageVisibility.visible) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']}
+      >
+        <View style={styles.errorContainer}>
+          <ThemedTextBox variant="body" color="secondary">
+            This game isn&apos;t visible yet
+          </ThemedTextBox>
+          <ThemedButton title="Go Back" variant="primary" onPress={onGoBack} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const isCreator = !!user && game.created_by === user.id;
   const isPast = new Date(game.kickoff_date) < new Date();
   const isVisible = new Date(game.visible_at) <= new Date();
@@ -215,6 +241,29 @@ export function GameDetailScreen({
       Alert.alert('Error', 'Failed to send invites');
     } finally {
       setIsInviting(false);
+    }
+  };
+
+  const handlePublishNow = async () => {
+    try {
+      setIsPublishing(true);
+      const { error } = await supabase
+        .from('games')
+        .update({ visible_at: new Date().toISOString() })
+        .eq('id', gameId);
+
+      if (error) throw error;
+
+      refetch();
+    } catch (error) {
+      console.error('Error publishing game:', error);
+      Sentry.captureException(error);
+      Alert.alert(
+        'Error',
+        "Failed to publish game. If its kickoff time has already passed, edit that first — visible date can't be after kickoff."
+      );
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -344,6 +393,30 @@ export function GameDetailScreen({
                 disabled={isRespondingToInvite}
                 style={styles.inviteBannerButton}
               />
+            </View>
+          </ThemedCard>
+        )}
+
+        {isAdmin && (
+          <ThemedCard variant="elevated">
+            <View style={styles.adminControlsRow}>
+              {onNavigateToEditGame && (
+                <ThemedButton
+                  title="Edit Game"
+                  variant="outline"
+                  size="small"
+                  onPress={() => onNavigateToEditGame(gameId)}
+                />
+              )}
+              {pageVisibility.isPreview && (
+                <ThemedButton
+                  title={isPublishing ? 'Publishing...' : 'Make Visible Now'}
+                  variant="primary"
+                  size="small"
+                  onPress={handlePublishNow}
+                  disabled={isPublishing}
+                />
+              )}
             </View>
           </ThemedCard>
         )}
@@ -609,6 +682,11 @@ export function GameDetailScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  adminControlsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
   },
   headerBar: {
     paddingHorizontal: 8,
