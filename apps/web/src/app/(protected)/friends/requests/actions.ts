@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface RequestActionResult {
   error?: string;
@@ -19,6 +20,8 @@ export async function acceptRequest(requestId: string): Promise<RequestActionRes
     .eq('friend_id', user.id);
 
   if (error) return { error: 'Failed to accept request. Please try again.' };
+
+  await trackEvent(AnalyticsEvent.FriendRequestAccepted);
 
   revalidatePath('/friends/requests');
   revalidatePath('/friends');

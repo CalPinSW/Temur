@@ -2,6 +2,7 @@
 
 import { validateUsername, getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface SignUpFormState {
   error?: string;
@@ -46,6 +47,8 @@ export async function signUp(
       error: 'An account with this email already exists. Please sign in instead.',
     };
   }
+
+  await trackEvent(AnalyticsEvent.SignedUp);
 
   return { success: true };
 }

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface ReportBugState {
   error?: string;
@@ -35,6 +36,8 @@ export async function submitBugReport(
   if (error) {
     return { error: 'Failed to submit bug report. Please try again, or email support directly.' };
   }
+
+  await trackEvent(AnalyticsEvent.BugReportSubmitted);
 
   return { success: true };
 }

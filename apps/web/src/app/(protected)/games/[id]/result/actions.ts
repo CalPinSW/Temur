@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { type GameOutcome } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface ResultActionResult {
   error?: string;
@@ -23,6 +24,8 @@ export async function setGameResultScore(
 
   if (error) return { error: 'Failed to save result. Please try again.' };
 
+  await trackEvent(AnalyticsEvent.GameResultSubmitted, { method: 'score' });
+
   revalidatePath(`/games/${gameId}`);
   revalidatePath(`/games/${gameId}/result`);
   return {};
@@ -41,6 +44,8 @@ export async function setGameResultOutcome(
   });
 
   if (error) return { error: 'Failed to save result. Please try again.' };
+
+  await trackEvent(AnalyticsEvent.GameResultSubmitted, { method: 'outcome' });
 
   revalidatePath(`/games/${gameId}`);
   revalidatePath(`/games/${gameId}/result`);
@@ -67,6 +72,8 @@ export async function submitRatings(
   );
 
   if (error) return { error: 'Failed to save ratings. Please try again.' };
+
+  await trackEvent(AnalyticsEvent.PlayerRated, { count: ratings.length });
 
   revalidatePath(`/games/${gameId}/result`);
   return {};

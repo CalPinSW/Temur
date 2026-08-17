@@ -345,6 +345,12 @@ Both apps report uncaught errors to Sentry (org `softwire-zd`, projects `temur-w
 
 Without the token, both apps still build and report errors fine — you just won't get de-minified stack traces in the Sentry UI.
 
+### Web Analytics (Vercel)
+
+`apps/web` uses [Vercel Web Analytics](https://vercel.com/docs/analytics) (`@vercel/analytics`) — web-only, since it's a Vercel-specific product with no mobile equivalent. The `<Analytics />` component in `apps/web/src/app/layout.tsx` tracks page views automatically; no setup is needed beyond enabling Web Analytics for the project in the Vercel dashboard (Project → Analytics). Like Sentry, it only reports in deployed/production builds — locally it just logs to the console instead of sending events (`@vercel/analytics/server`'s own `NODE_ENV` check), so local dev doesn't consume any quota.
+
+On top of automatic page views, `apps/web/src/lib/analytics.ts` defines a small set of custom events (`AnalyticsEvent`) tracked from Server Actions via `@vercel/analytics/server`'s `track()`, covering the core funnel: `Signed Up`, `Game Created`, `Signed Up For Game` (with a `waitlisted` property), `Withdrew From Game`, `Group Created`, `Friend Request Sent`, `Friend Request Accepted`, `Game Result Submitted`, `Player Rated`, and `Bug Report Submitted`. Add new ones to the `AnalyticsEvent` map rather than passing raw strings to `track()`, to keep event names consistent and avoid typos. Custom events on Hobby-tier Vercel projects are capped at 2,500/month — keep the event list focused on funnel/engagement milestones rather than every possible interaction. View both page views and custom events in the Vercel dashboard's Analytics tab.
+
 ### Mobile App Builds
 
 For development builds with physical devices:
