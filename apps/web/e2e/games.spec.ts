@@ -65,9 +65,11 @@ test.describe('Games', () => {
     await page.getByLabel('Team 1 Name').fill(previewTeam1);
     await page.getByLabel('Team 2 Name').fill(previewTeam2);
     await page.getByRole('button', { name: 'Create Game' }).click();
-    await page.waitForURL(/\/games\/[0-9a-f-]+$/);
 
-    await page.goto('/games');
+    // Not yet visible to anyone else (including the detail page, which has
+    // no visibility gating of its own) — creation redirects to the games
+    // list instead of walking the creator straight into it.
+    await page.waitForURL('**/games');
     const heading = `${previewTeam1} vs ${previewTeam2}`;
     await expect(page.getByRole('link', { name: heading })).not.toBeVisible();
     const card = page.locator('div[aria-disabled="true"]', { hasText: previewTeam1 });
@@ -85,6 +87,8 @@ test.describe('Games', () => {
     const deleteTeam2 = `E2E-Delete-T2-${suffix}`;
 
     await page.goto('/games/new');
+    const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+    await page.getByLabel('Visible From').fill(recentPast);
     await page.getByLabel('Team 1 Name').fill(deleteTeam1);
     await page.getByLabel('Team 2 Name').fill(deleteTeam2);
     await page.getByRole('button', { name: 'Create Game' }).click();

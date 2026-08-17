@@ -84,5 +84,14 @@ export async function createGame(input: CreateGameInput): Promise<CreateGameStat
     invitedFriendCount: input.friendIds.length,
   });
 
+  // A game visible_at in the future still shows the creator a working
+  // signup form on the detail page (visibility gating only exists on the
+  // games list, which greys these out as non-clickable) — land back on the
+  // list instead of walking straight into a page you shouldn't be able to
+  // reach yet.
+  if (new Date(input.visibleAt) > new Date()) {
+    redirect('/games');
+  }
+
   redirect(`/games/${data.id}`);
 }

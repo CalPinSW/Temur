@@ -71,8 +71,11 @@ export async function deleteUser(userId: string): Promise<void> {
 
 // Creates a fresh group (the signed-in page's user becomes its admin) and a
 // game scoped to it, via the real UI. Returns the group id and the game's
-// team names so callers can navigate straight to either. Kickoff/visible-at
-// dates are left at their defaults (next Saturday) unless overridden.
+// team names so callers can navigate straight to either. Kickoff defaults to
+// next Saturday unless overridden. Visible From is always forced into the
+// (recent) past — its own default can land in the future depending on what
+// day the suite runs, and a not-yet-visible game redirects creation to the
+// games list instead of the detail page every other caller here expects.
 export async function createGroupAndGame(
   page: Page,
   namePrefix: string,
@@ -93,6 +96,8 @@ export async function createGroupAndGame(
   if (options.kickoffDate) {
     await page.getByLabel('Kickoff Date & Time').fill(options.kickoffDate);
   }
+  const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+  await page.getByLabel('Visible From').fill(recentPast);
   await page.getByLabel('Team 1 Name').fill(team1);
   await page.getByLabel('Team 2 Name').fill(team2);
   await page.getByRole('button', { name: 'Create Game' }).click();

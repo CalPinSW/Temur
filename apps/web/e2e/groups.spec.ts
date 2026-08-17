@@ -42,6 +42,11 @@ test.describe('Groups', () => {
     // "resolved to 2 elements" failure on an unscoped getByText.
     await expect(page.getByRole('main').getByText(groupName)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Friends' })).not.toBeVisible();
+    // Visible From's default can land in the future depending on what day
+    // the suite runs, which would redirect creation to the games list
+    // instead of the detail page this test asserts against.
+    const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+    await page.getByLabel('Visible From').fill(recentPast);
     await page.getByRole('button', { name: 'Create Game' }).click();
     await page.waitForURL(/\/games\/[0-9a-f-]+$/);
   });
@@ -105,6 +110,11 @@ test.describe('Groups', () => {
     await page.waitForURL(/\/groups\/[0-9a-f-]+$/);
 
     await page.getByRole('link', { name: 'Create Game' }).click();
+    // Visible From's default can land in the future depending on what day
+    // the suite runs, which would redirect creation to the games list
+    // instead of the detail page this test needs the URL of.
+    const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+    await page.getByLabel('Visible From').fill(recentPast);
     await page.getByRole('button', { name: 'Create Game' }).click();
     await page.waitForURL(/\/games\/[0-9a-f-]+$/);
     const gameUrl = page.url();
