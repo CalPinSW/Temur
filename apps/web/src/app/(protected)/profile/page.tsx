@@ -54,6 +54,12 @@ export default async function ProfilePage() {
             </Link>
           )}
           <ThemeToggle currentMode={themeMode} />
+          <Link
+            href="/profile/notifications"
+            className="px-4 py-3 text-text hover:bg-background-secondary"
+          >
+            Notifications
+          </Link>
           {process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL && (
             <a
               href={process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL}

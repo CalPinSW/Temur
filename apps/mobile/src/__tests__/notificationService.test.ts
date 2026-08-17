@@ -26,11 +26,13 @@ import {
   registerForPushNotifications,
   savePushToken,
   removePushToken,
-  getNotificationsEnabled,
-  setNotificationsEnabled,
+  getNotificationPreferences,
+  setNotificationPreference,
+  setAllNotificationPreferences,
   sendLocalNotification,
   NotificationTemplates,
 } from '@/services/notificationService';
+import { getDefaultNotificationPreferences } from '@temur/shared';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
 const mockDevice = Device as unknown as { isDevice: boolean };
@@ -129,72 +131,116 @@ describe('notificationService', () => {
     });
   });
 
-  describe('getNotificationsEnabled', () => {
-    it('returns false when there is no logged-in user', async () => {
+  describe('getNotificationPreferences', () => {
+    it('returns defaults when there is no logged-in user', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
 
-      const result = await getNotificationsEnabled();
+      const result = await getNotificationPreferences();
 
-      expect(result).toBe(false);
+      expect(result).toEqual(getDefaultNotificationPreferences());
     });
 
-    it("returns the user's stored preference", async () => {
+    it('merges stored rows onto the defaults', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
-      const builder = createQueryBuilder({ data: { notifications_enabled: false }, error: null });
-      mockFromTables(mockSupabase, { profiles: builder });
+      const builder = createQueryBuilder({
+        data: [{ notification_type: 'friend_request', push_enabled: false, email_enabled: true }],
+        error: null,
+      });
+      mockFromTables(mockSupabase, { notification_preferences: builder });
 
-      const result = await getNotificationsEnabled();
+      const result = await getNotificationPreferences();
 
-      expect(result).toBe(false);
+      expect(result.friend_request).toEqual({ push_enabled: false, email_enabled: true });
+      expect(result.group_invite).toEqual({ push_enabled: true, email_enabled: true });
     });
 
-    it('defaults to true when no preference is stored', async () => {
+    it('returns defaults when the query errors', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
-      const builder = createQueryBuilder({ data: null, error: null });
-      mockFromTables(mockSupabase, { profiles: builder });
+      const builder = createQueryBuilder({ data: null, error: { message: 'boom' } });
+      mockFromTables(mockSupabase, { notification_preferences: builder });
 
-      const result = await getNotificationsEnabled();
+      const result = await getNotificationPreferences();
 
-      expect(result).toBe(true);
+      expect(result).toEqual(getDefaultNotificationPreferences());
     });
   });
 
-  describe('setNotificationsEnabled', () => {
-    it('registers for push and saves the token when enabling', async () => {
+  describe('setNotificationPreference', () => {
+    it('upserts both channels, flipping only the changed one', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
       const builder = createQueryBuilder({ data: null, error: null });
-      mockFromTables(mockSupabase, { profiles: builder });
-      mockNotifications.getPermissionsAsync.mockResolvedValue(permissionResponse('granted'));
-      mockNotifications.getExpoPushTokenAsync.mockResolvedValue(pushToken('new-token'));
+      mockFromTables(mockSupabase, { notification_preferences: builder });
 
-      await setNotificationsEnabled(true);
+      await setNotificationPreference(
+        'friend_request',
+        { push_enabled: true, email_enabled: true },
+        'push_enabled',
+        false
+      );
 
-      expect(builder.update).toHaveBeenCalledWith({
-        notifications_enabled: true,
-        push_token: 'new-token',
-      });
+      expect(builder.upsert).toHaveBeenCalledWith(
+        {
+          user_id: 'user-1',
+          notification_type: 'friend_request',
+          push_enabled: false,
+          email_enabled: true,
+        },
+        { onConflict: 'user_id,notification_type' }
+      );
     });
 
-    it('still flips the preference on when push registration fails', async () => {
+    it('clears the badge when disabling push', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
       const builder = createQueryBuilder({ data: null, error: null });
-      mockFromTables(mockSupabase, { profiles: builder });
-      mockDevice.isDevice = false;
+      mockFromTables(mockSupabase, { notification_preferences: builder });
 
-      await setNotificationsEnabled(true);
-
-      expect(builder.update).toHaveBeenCalledWith({ notifications_enabled: true });
-    });
-
-    it('clears the badge and disables the preference when disabling', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
-      const builder = createQueryBuilder({ data: null, error: null });
-      mockFromTables(mockSupabase, { profiles: builder });
-
-      await setNotificationsEnabled(false);
+      await setNotificationPreference(
+        'friend_request',
+        { push_enabled: true, email_enabled: true },
+        'push_enabled',
+        false
+      );
 
       expect(mockNotifications.setBadgeCountAsync).toHaveBeenCalledWith(0);
-      expect(builder.update).toHaveBeenCalledWith({ notifications_enabled: false });
+    });
+
+    it('does not touch the badge when disabling email', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+      const builder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { notification_preferences: builder });
+
+      await setNotificationPreference(
+        'friend_request',
+        { push_enabled: true, email_enabled: true },
+        'email_enabled',
+        false
+      );
+
+      expect(mockNotifications.setBadgeCountAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setAllNotificationPreferences', () => {
+    it('upserts every notification type with the new channel value', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+      const builder = createQueryBuilder({ data: null, error: null });
+      mockFromTables(mockSupabase, { notification_preferences: builder });
+
+      await setAllNotificationPreferences(
+        getDefaultNotificationPreferences(),
+        'email_enabled',
+        false
+      );
+
+      const rows = builder.upsert.mock.calls[0][0] as {
+        notification_type: string;
+        push_enabled: boolean;
+        email_enabled: boolean;
+      }[];
+      expect(rows).toHaveLength(7);
+      expect(rows.every((row) => row.email_enabled === false && row.push_enabled === true)).toBe(
+        true
+      );
     });
   });
 

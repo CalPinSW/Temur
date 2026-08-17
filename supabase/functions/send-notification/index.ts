@@ -120,8 +120,9 @@ async function isAuthorized(
 
 ///*** Sends a push notification to a user's device, authorizing the caller
 // against the relationship implied by `type` (see isAuthorized above) before
-// sending. Requires a Supabase profiles table with push_token and
-// notifications_enabled columns. ***///
+// sending. Requires a Supabase profiles table with a push_token column and a
+// notification_preferences table (see the notification_preferences
+// migration) governing per-type push/email delivery. ***///
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -158,7 +159,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('push_token, notifications_enabled')
+      .select('push_token')
       .eq('id', userId)
       .single();
 
@@ -169,18 +170,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (profile.notifications_enabled === false) {
-      return new Response(
-        JSON.stringify({ error: 'User has notifications disabled' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const { data: preference } = await supabase
+      .from('notification_preferences')
+      .select('push_enabled, email_enabled')
+      .eq('user_id', userId)
+      .eq('notification_type', type)
+      .maybeSingle();
 
-    // Push and email are independent delivery paths: a user with no
-    // push_token (every web-only user, since web has no push registration)
-    // should still get an email, so neither path gates the other.
+    // No row means the recipient hasn't overridden this type — both
+    // channels default to enabled (see the notification_preferences
+    // migration).
+    const pushEnabled = preference?.push_enabled ?? true;
+    const emailEnabled = preference?.email_enabled ?? true;
+
+    // Push and email are independent delivery paths, each gated by its own
+    // preference: a user with no push_token (every web-only user, since web
+    // has no push registration) should still get an email when email is
+    // enabled, and vice versa.
     let push: unknown = null;
-    if (profile.push_token) {
+    if (pushEnabled && profile.push_token) {
       const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
         headers: {
@@ -200,11 +208,13 @@ Deno.serve(async (req) => {
     }
 
     let email: unknown = null;
-    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
-    if (authUser?.user?.email) {
-      const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
-      const { subject, html } = buildNotificationEmail(type, title, body, data, siteUrl);
-      email = await sendEmail(authUser.user.email, subject, html);
+    if (emailEnabled) {
+      const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+      if (authUser?.user?.email) {
+        const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
+        const { subject, html } = buildNotificationEmail(type, title, body, data, siteUrl);
+        email = await sendEmail(authUser.user.email, subject, html);
+      }
     }
 
     return new Response(

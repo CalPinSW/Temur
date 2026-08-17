@@ -20,6 +20,7 @@ import {
   AboutScreen,
   ReportBugScreen,
   DeleteAccountScreen,
+  NotificationPreferencesScreen,
 } from '@/screens/profile';
 import { MainFunctionalityScreen, CreateGameScreen } from '@/screens/main';
 import {
@@ -205,7 +206,7 @@ function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invite
 
 function ProfileStack() {
   const [screen, setScreen] = useState<
-    'profile' | 'edit' | 'about' | 'report-bug' | 'delete-account'
+    'profile' | 'edit' | 'about' | 'report-bug' | 'delete-account' | 'notifications'
   >('profile');
 
   if (screen === 'edit') {
@@ -224,12 +225,17 @@ function ProfileStack() {
     return <DeleteAccountScreen onGoBack={() => setScreen('profile')} />;
   }
 
+  if (screen === 'notifications') {
+    return <NotificationPreferencesScreen onGoBack={() => setScreen('profile')} />;
+  }
+
   return (
     <ProfileScreen
       onEditProfile={() => setScreen('edit')}
       onAbout={() => setScreen('about')}
       onReportBug={() => setScreen('report-bug')}
       onDeleteAccount={() => setScreen('delete-account')}
+      onNotificationPreferences={() => setScreen('notifications')}
     />
   );
 }

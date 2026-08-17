@@ -1,7 +1,17 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import {
+  NOTIFICATION_TYPES,
+  getDefaultNotificationPreferences,
+  mergeNotificationPreferences,
+  type NotificationType,
+  type NotificationChannel,
+  type NotificationPreferences,
+} from '@temur/shared';
 import { supabase } from './supabase';
+
+export type { NotificationType };
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -70,52 +80,78 @@ export async function removePushToken(): Promise<void> {
 }
 
 /**
- * Get user's notification preference
+ * Get the signed-in user's per-type push/email notification preferences,
+ * merged with defaults (both channels enabled) for any type they haven't
+ * overridden.
  */
-export async function getNotificationsEnabled(): Promise<boolean> {
+export async function getNotificationPreferences(): Promise<NotificationPreferences> {
   const { data: userData } = await supabase.auth.getUser();
-  if (!userData.user) return false;
+  if (!userData.user) return getDefaultNotificationPreferences();
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('notifications_enabled')
-    .eq('id', userData.user.id)
-    .single();
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .select('notification_type, push_enabled, email_enabled')
+    .eq('user_id', userData.user.id);
 
-  return profile?.notifications_enabled ?? true;
+  if (error || !data) return getDefaultNotificationPreferences();
+  return mergeNotificationPreferences(data);
 }
 
 /**
- * Toggle push notifications on/off
- * When disabled, removes push token from profile
- * When enabled, re-registers for push notifications
+ * Set a single channel's preference for one notification type. `current` is
+ * the type's full current state (as returned by getNotificationPreferences)
+ * so the upsert always writes both columns rather than relying on Supabase's
+ * upsert-conflict column semantics for the untouched channel.
  */
-export async function setNotificationsEnabled(enabled: boolean): Promise<void> {
+export async function setNotificationPreference(
+  type: NotificationType,
+  current: NotificationPreferences[NotificationType],
+  channel: NotificationChannel,
+  enabled: boolean
+): Promise<void> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return;
 
-  if (enabled) {
-    // Re-register for push notifications and save token
-    const pushToken = await registerForPushNotifications();
-    if (pushToken) {
-      await supabase
-        .from('profiles')
-        .update({ notifications_enabled: true, push_token: pushToken.token })
-        .eq('id', userData.user.id);
-    } else {
-      // Just update the preference even if token registration fails
-      await supabase
-        .from('profiles')
-        .update({ notifications_enabled: true })
-        .eq('id', userData.user.id);
-    }
-  } else {
-    // Disable notifications and clear badge
+  await supabase.from('notification_preferences').upsert(
+    {
+      user_id: userData.user.id,
+      notification_type: type,
+      push_enabled: channel === 'push_enabled' ? enabled : current.push_enabled,
+      email_enabled: channel === 'email_enabled' ? enabled : current.email_enabled,
+    },
+    { onConflict: 'user_id,notification_type' }
+  );
+
+  if (channel === 'push_enabled' && !enabled) {
     await Notifications.setBadgeCountAsync(0);
-    await supabase
-      .from('profiles')
-      .update({ notifications_enabled: false })
-      .eq('id', userData.user.id);
+  }
+}
+
+/**
+ * Set one channel's preference for every notification type at once (the
+ * "select all" action).
+ */
+export async function setAllNotificationPreferences(
+  current: NotificationPreferences,
+  channel: NotificationChannel,
+  enabled: boolean
+): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return;
+  const userId = userData.user.id;
+
+  await supabase.from('notification_preferences').upsert(
+    NOTIFICATION_TYPES.map((type) => ({
+      user_id: userId,
+      notification_type: type,
+      push_enabled: channel === 'push_enabled' ? enabled : current[type].push_enabled,
+      email_enabled: channel === 'email_enabled' ? enabled : current[type].email_enabled,
+    })),
+    { onConflict: 'user_id,notification_type' }
+  );
+
+  if (channel === 'push_enabled' && !enabled) {
+    await Notifications.setBadgeCountAsync(0);
   }
 }
 
@@ -154,15 +190,6 @@ export function addNotificationReceivedListener(
 ): Notifications.EventSubscription {
   return Notifications.addNotificationReceivedListener(callback);
 }
-
-export type NotificationType =
-  | 'friend_request'
-  | 'friend_accepted'
-  | 'group_invite'
-  | 'game_invite'
-  | 'game_visible'
-  | 'team_assigned'
-  | 'ringers_open';
 
 export interface NotificationPayload {
   type: NotificationType;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,23 +15,14 @@ import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/theme';
 import { getAuthErrorMessage } from '@temur/shared';
-import {
-  getNotificationsEnabled,
-  setNotificationsEnabled as updateNotificationPreference,
-} from '@/services/notificationService';
-import {
-  ThemedButton,
-  ThemedTextBox,
-  ThemedInput,
-  ThemedToggle,
-  ThemedListItem,
-} from '@/components/themed';
+import { ThemedButton, ThemedTextBox, ThemedInput, ThemedListItem } from '@/components/themed';
 
 interface ProfileScreenProps {
   onEditProfile?: () => void;
   onAbout?: () => void;
   onReportBug?: () => void;
   onDeleteAccount?: () => void;
+  onNotificationPreferences?: () => void;
 }
 
 export function ProfileScreen({
@@ -39,20 +30,16 @@ export function ProfileScreen({
   onAbout,
   onReportBug,
   onDeleteAccount,
+  onNotificationPreferences,
 }: ProfileScreenProps) {
   const profile = useAuthStore((state) => state.profile);
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const { colors, themeMode, setThemeMode } = useTheme();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-
-  useEffect(() => {
-    getNotificationsEnabled().then(setNotificationsEnabled);
-  }, []);
 
   // Check if user signed up with email (not OAuth)
   const isEmailUser = user?.app_metadata?.provider === 'email' || !user?.app_metadata?.provider;
@@ -167,16 +154,7 @@ export function ProfileScreen({
 
           <ThemedListItem title="Appearance" value={getThemeLabel()} onPress={handleThemePress} />
 
-          <ThemedListItem title="Push Notifications" showArrow={false}>
-            <ThemedToggle
-              label="Push Notifications"
-              value={notificationsEnabled}
-              onValueChange={async (value) => {
-                setNotificationsEnabled(value);
-                await updateNotificationPreference(value);
-              }}
-            />
-          </ThemedListItem>
+          <ThemedListItem title="Notifications" onPress={onNotificationPreferences} />
 
           <ThemedListItem
             title="Privacy Policy"
