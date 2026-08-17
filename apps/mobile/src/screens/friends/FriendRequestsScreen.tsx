@@ -17,6 +17,7 @@ import { Profile } from '@temur/shared';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
+import { NotificationTemplates } from '@/services/notificationService';
 
 interface FriendRequest {
   id: string;
@@ -34,6 +35,7 @@ interface FriendRequestsScreenProps {
 export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,6 +85,7 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
   }, [fetchRequests]);
 
   const acceptRequest = async (requestId: string) => {
+    const request = requests.find((r) => r.id === requestId);
     try {
       const { error } = await supabase
         .from('friendships')
@@ -93,6 +96,20 @@ export function FriendRequestsScreen({ onGoBack }: FriendRequestsScreenProps) {
 
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
       Alert.alert('Success', 'Friend request accepted!');
+
+      if (request) {
+        const accepterName = profile?.display_name || profile?.username || 'Someone';
+        const notification = NotificationTemplates.friendAccepted(accepterName);
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            userId: request.user_id,
+            type: notification.type,
+            title: notification.title,
+            body: notification.body,
+            data: notification.data,
+          },
+        });
+      }
     } catch (error) {
       console.error('Accept error:', error);
       Sentry.captureException(error);

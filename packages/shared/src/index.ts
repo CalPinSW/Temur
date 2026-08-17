@@ -3,6 +3,7 @@ export * from './types/auth';
 export * from './types/group';
 export * from './types/notification';
 export * from './utils/gameUtils';
+export * from './utils/friendshipUtils';
 export * from './utils/validation';
 export * from './utils/errorMessages';
 export * from './utils/errorCapture';

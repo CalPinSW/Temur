@@ -1,10 +1,14 @@
 'use server';
 
-import { type Profile } from '@temur/shared';
+import { type Profile, type FriendshipStatus, getFriendshipStatuses } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
-export async function searchUsers(query: string): Promise<Profile[]> {
+export interface SearchResult extends Profile {
+  friendshipStatus: FriendshipStatus;
+}
+
+export async function searchUsers(query: string): Promise<SearchResult[]> {
   const user = await getUser();
   if (!user || query.trim().length < 2) return [];
 
@@ -17,7 +21,23 @@ export async function searchUsers(query: string): Promise<Profile[]> {
     .limit(20);
 
   if (error) return [];
-  return data as Profile[];
+  const profiles = data as Profile[];
+  if (profiles.length === 0) return [];
+
+  const ids = profiles.map((p) => p.id);
+  const { data: friendships } = await supabase
+    .from('friendships')
+    .select('user_id, friend_id, status')
+    .or(
+      `and(user_id.eq.${user.id},friend_id.in.(${ids.join(',')})),` +
+        `and(friend_id.eq.${user.id},user_id.in.(${ids.join(',')}))`
+    );
+
+  const statuses = getFriendshipStatuses(friendships ?? [], user.id);
+  return profiles.map((profile) => ({
+    ...profile,
+    friendshipStatus: statuses.get(profile.id) ?? 'none',
+  }));
 }
 
 export interface SendRequestResult {
@@ -37,7 +57,7 @@ export async function sendFriendRequest(friendId: string): Promise<SendRequestRe
 
   if (error) {
     if (error.code === '23505') {
-      return { error: 'You already sent a friend request to this user.' };
+      return { error: "You're already friends, or a request is already pending." };
     }
     return { error: 'Failed to send friend request. Please try again.' };
   }
