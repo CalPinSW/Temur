@@ -1,42 +1,15 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { type Profile } from '@temur/shared';
+import {
+  type Profile,
+  getDefaultKickoffDate,
+  getDefaultVisibleAt,
+  isVisibleAtBeforeKickoff,
+} from '@temur/shared';
 import { createGame } from './actions';
 
 const PLAYERS_PER_TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11];
-
-function getNextSaturday(fromDate: Date): Date {
-  const date = new Date(fromDate);
-  date.setHours(10, 45, 0, 0);
-  const dayOfWeek = date.getDay();
-  const daysUntilSaturday = dayOfWeek === 6 ? 7 : (6 - dayOfWeek + 7) % 7;
-  date.setDate(date.getDate() + daysUntilSaturday);
-  return date;
-}
-
-function getSundayBefore(saturday: Date): Date {
-  const sunday = new Date(saturday);
-  sunday.setDate(sunday.getDate() - 6);
-  sunday.setHours(15, 0, 0, 0);
-  return sunday;
-}
-
-function isSameDay(date1: Date, date2: Date): boolean {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-}
-
-function getDefaultKickoff(existingDates: Date[]): Date {
-  let candidate = getNextSaturday(new Date());
-  while (existingDates.some((d) => isSameDay(d, candidate))) {
-    candidate = getNextSaturday(new Date(candidate.getTime() + 7 * 24 * 60 * 60 * 1000));
-  }
-  return candidate;
-}
 
 function toDatetimeLocal(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -61,9 +34,22 @@ export function CreateGameForm({
     selectedGroupId ?? (!presetGroupId && mode === 'group' ? (adminGroups[0]?.id ?? null) : null);
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
 
-  const defaultKickoff = getDefaultKickoff(existingKickoffDates.map((d) => new Date(d)));
+  const defaultKickoff = getDefaultKickoffDate(existingKickoffDates.map((d) => new Date(d)));
   const [kickoffDate, setKickoffDate] = useState(toDatetimeLocal(defaultKickoff));
-  const [visibleAt, setVisibleAt] = useState(toDatetimeLocal(getSundayBefore(defaultKickoff)));
+  const [visibleAt, setVisibleAt] = useState(toDatetimeLocal(getDefaultVisibleAt(defaultKickoff)));
+  const [visibleAtTouched, setVisibleAtTouched] = useState(false);
+
+  const handleKickoffChange = (value: string) => {
+    setKickoffDate(value);
+    if (!visibleAtTouched && value) {
+      setVisibleAt(toDatetimeLocal(getDefaultVisibleAt(new Date(value))));
+    }
+  };
+
+  const handleVisibleAtChange = (value: string) => {
+    setVisibleAtTouched(true);
+    setVisibleAt(value);
+  };
   const [team1Name, setTeam1Name] = useState('Black');
   const [team2Name, setTeam2Name] = useState('White');
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
@@ -84,6 +70,11 @@ export function CreateGameForm({
 
     if (mode === 'group' && !effectiveGroupId) {
       setError('Choose which group this game is for.');
+      return;
+    }
+
+    if (!isVisibleAtBeforeKickoff(new Date(kickoffDate), new Date(visibleAt))) {
+      setError('"Visible From" must be before the kickoff time.');
       return;
     }
 
@@ -198,7 +189,7 @@ export function CreateGameForm({
             id="kickoffDate"
             type="datetime-local"
             value={kickoffDate}
-            onChange={(e) => setKickoffDate(e.target.value)}
+            onChange={(e) => handleKickoffChange(e.target.value)}
             className="rounded-lg border border-input-border bg-input px-3 py-2 text-text outline-none focus:border-primary"
           />
         </div>
@@ -214,7 +205,7 @@ export function CreateGameForm({
             id="visibleAt"
             type="datetime-local"
             value={visibleAt}
-            onChange={(e) => setVisibleAt(e.target.value)}
+            onChange={(e) => handleVisibleAtChange(e.target.value)}
             className="rounded-lg border border-input-border bg-input px-3 py-2 text-text outline-none focus:border-primary"
           />
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
@@ -13,36 +13,18 @@ import {
   ThemedToggle,
   DropdownOption,
 } from '@/components/themed';
+import {
+  getNextSaturday,
+  getDefaultKickoffDate,
+  getDefaultVisibleAt,
+  isVisibleAtBeforeKickoff,
+} from '@temur/shared';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useGroups } from '@/hooks/useGroups';
 import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
 import { useAcceptedFriends } from '@/hooks/useAcceptedFriends';
 import { inviteFriendsToGame } from '@/services/gameInvitationService';
-
-const getNextSaturday = (fromDate: Date): Date => {
-  const date = new Date(fromDate);
-  date.setHours(10, 45, 0, 0);
-  const dayOfWeek = date.getDay();
-  const daysUntilSaturday = dayOfWeek === 6 ? 7 : (6 - dayOfWeek + 7) % 7;
-  date.setDate(date.getDate() + daysUntilSaturday);
-  return date;
-};
-
-const getSundayBefore = (saturday: Date): Date => {
-  const sunday = new Date(saturday);
-  sunday.setDate(sunday.getDate() - 6);
-  sunday.setHours(15, 0, 0, 0);
-  return sunday;
-};
-
-const isSameDay = (date1: Date, date2: Date): boolean => {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-};
 
 interface CreateGameScreenProps {
   presetGroupId?: string;
@@ -70,7 +52,12 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
 
   const [kickoffDate, setKickoffDate] = useState<Date>(getNextSaturday(new Date()));
-  const [visibleAt, setVisibleAt] = useState<Date>(getSundayBefore(getNextSaturday(new Date())));
+  const [visibleAt, setVisibleAt] = useState<Date>(
+    getDefaultVisibleAt(getNextSaturday(new Date()))
+  );
+  // A ref (not state) so the mount-time effect below always reads the
+  // latest value rather than a stale closure from when it was scheduled.
+  const visibleAtTouchedRef = useRef(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
   const [team1Name, setTeam1Name] = useState('Black');
@@ -106,17 +93,12 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
         if (error) throw error;
 
         const existingGameDates = (existingGames || []).map((game) => new Date(game.kickoff_date));
-
-        let candidateDate = getNextSaturday(new Date());
-
-        while (existingGameDates.some((gameDate) => isSameDay(gameDate, candidateDate))) {
-          candidateDate = getNextSaturday(
-            new Date(candidateDate.getTime() + 7 * 24 * 60 * 60 * 1000)
-          );
-        }
+        const candidateDate = getDefaultKickoffDate(existingGameDates);
 
         setKickoffDate(candidateDate);
-        setVisibleAt(getSundayBefore(candidateDate));
+        if (!visibleAtTouchedRef.current) {
+          setVisibleAt(getDefaultVisibleAt(candidateDate));
+        }
       } catch (error) {
         console.error('Error loading default dates:', error);
         Sentry.captureException(error);
@@ -127,6 +109,18 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
 
     loadDefaultDates();
   }, []);
+
+  const handleKickoffChange = (date: Date) => {
+    setKickoffDate(date);
+    if (!visibleAtTouchedRef.current) {
+      setVisibleAt(getDefaultVisibleAt(date));
+    }
+  };
+
+  const handleVisibleAtChange = (date: Date) => {
+    visibleAtTouchedRef.current = true;
+    setVisibleAt(date);
+  };
 
   const toggleFriend = (friendId: string) => {
     setSelectedFriendIds((prev) => {
@@ -145,6 +139,11 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
 
     if (mode === 'group' && !effectiveGroupId) {
       Alert.alert('Select a Group', 'Choose which group this game is for.');
+      return;
+    }
+
+    if (!isVisibleAtBeforeKickoff(kickoffDate, visibleAt)) {
+      Alert.alert('Invalid Dates', '"Visible From" must be before the kickoff time.');
       return;
     }
 
@@ -290,7 +289,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
             label="Kickoff Date & Time"
             value={kickoffDate}
             mode="datetime"
-            onChange={setKickoffDate}
+            onChange={handleKickoffChange}
           />
 
           <View style={styles.formSection}>
@@ -301,7 +300,7 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
               label="Visible From"
               value={visibleAt}
               mode="datetime"
-              onChange={setVisibleAt}
+              onChange={handleVisibleAtChange}
             />
           </View>
 

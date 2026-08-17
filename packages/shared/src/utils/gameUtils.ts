@@ -132,6 +132,42 @@ export const formatGameResult = (
   return null;
 };
 
+const VISIBLE_AT_LEAD_DAYS = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const isSameDay = (date1: Date, date2: Date): boolean =>
+  date1.getFullYear() === date2.getFullYear() &&
+  date1.getMonth() === date2.getMonth() &&
+  date1.getDate() === date2.getDate();
+
+export const getNextSaturday = (fromDate: Date): Date => {
+  const date = new Date(fromDate);
+  date.setHours(10, 45, 0, 0);
+  const dayOfWeek = date.getDay();
+  const daysUntilSaturday = dayOfWeek === 6 ? 7 : (6 - dayOfWeek + 7) % 7;
+  date.setDate(date.getDate() + daysUntilSaturday);
+  return date;
+};
+
+// Picks the next Saturday kickoff that doesn't collide with an existing
+// game, stepping forward a week at a time until it finds a free slot.
+export const getDefaultKickoffDate = (existingKickoffDates: Date[]): Date => {
+  let candidate = getNextSaturday(new Date());
+  while (existingKickoffDates.some((d) => isSameDay(d, candidate))) {
+    candidate = getNextSaturday(new Date(candidate.getTime() + 7 * MS_PER_DAY));
+  }
+  return candidate;
+};
+
+// visible_at's default always tracks kickoff_date: exactly 7 days earlier,
+// at the same time of day. Re-run this whenever kickoff changes, unless the
+// admin has manually edited visible_at themselves.
+export const getDefaultVisibleAt = (kickoffDate: Date): Date =>
+  new Date(kickoffDate.getTime() - VISIBLE_AT_LEAD_DAYS * MS_PER_DAY);
+
+export const isVisibleAtBeforeKickoff = (kickoffDate: Date, visibleAt: Date): boolean =>
+  visibleAt.getTime() <= kickoffDate.getTime();
+
 export const getTeamCounts = (teamAssignments: Record<string, number | null>) => {
   const counts = { team1: 0, team2: 0, unassigned: 0 };
   Object.values(teamAssignments).forEach((team) => {

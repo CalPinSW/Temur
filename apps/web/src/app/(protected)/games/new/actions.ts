@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { isVisibleAtBeforeKickoff } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
@@ -25,6 +26,10 @@ export async function createGame(input: CreateGameInput): Promise<CreateGameStat
 
   if (input.mode === 'group' && !input.groupId) {
     return { error: 'Choose which group this game is for.' };
+  }
+
+  if (!isVisibleAtBeforeKickoff(new Date(input.kickoffDate), new Date(input.visibleAt))) {
+    return { error: '"Visible From" must be before the kickoff time.' };
   }
 
   const supabase = await createClient();
