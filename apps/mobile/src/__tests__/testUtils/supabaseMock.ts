@@ -78,7 +78,7 @@ export function createSupabaseMock() {
       signOut: jest.fn(),
       resetPasswordForEmail: jest.fn(),
       onAuthStateChange: jest.fn(),
-      signInWithOAuth: jest.fn(),
+      signInWithIdToken: jest.fn(),
       setSession: jest.fn(),
       updateUser: jest.fn(),
     },

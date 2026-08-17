@@ -149,15 +149,36 @@ Configure redirect URLs in **Supabase Dashboard → Authentication → URL Confi
 
 #### Social Sign-In (Google / Apple) Setup
 
-Both apps already call `supabase.auth.signInWithOAuth({ provider: 'google' | 'apple' })` — this is purely a provider-configuration task in **Supabase Dashboard → Authentication → Providers**, not a code change. The callback URL both providers need registered is `https://<project-ref>.supabase.co/auth/v1/callback` (Supabase's own hosted endpoint — distinct from the app-level redirect URLs in "Authentication Redirect Setup" above, which is where Supabase redirects back to *after* this).
+Both apps sign in via Supabase's **native ID token flow** (`supabase.auth.signInWithIdToken({ provider, token, nonce })`) rather than the browser-redirect `signInWithOAuth` flow. The app talks to Google's/Apple's own SDK directly to get an ID token, then hands it to Supabase via a plain API call — the browser/app never redirects through `https://<project-ref>.supabase.co`, which is the whole reason for this over the redirect flow: Google/Apple's consent screens show *your* domain/app, not the Supabase project's. The tradeoff is more moving parts to configure per platform than the old single "Web application" OAuth client:
 
-- **Google**: Google Cloud Console → Credentials → OAuth client ID → type **Web application** (the only type needed — the browser-redirect flow doesn't use a native SDK on any platform) → add the callback URL as an Authorized redirect URI → paste the Client ID/Secret into Supabase.
-- **Apple**: needs a paid Apple Developer account. Create a **Services ID** (separate from the app's Bundle ID `com.calpin.temur`) with "Sign in with Apple" enabled, registering the callback URL as its Return URL. The Services ID becomes Supabase's Client ID. For the **Secret Key (for OAuth)** field, Supabase generates the required signed JWT for you from a Sign in with Apple key (Keys → + → download the `.p8` once, it can't be re-downloaded) — this generated secret **expires in ≤6 months** and needs regenerating/re-pasting before then, or Apple sign-in silently starts failing with no warning.
-- If a sign-in attempt just bounces back to `/login` with nothing shown, check the server logs / the `?error=` query param `apps/web/src/app/auth/callback/route.ts` now surfaces on failure — it used to swallow the Supabase error silently.
+| | Web | Mobile (iOS) | Mobile (Android) |
+|---|---|---|---|
+| Google | Google Identity Services (`SocialSignInButtons.tsx`) | `@react-native-google-signin/google-signin` (`socialAuthService.ts`) | same package |
+| Apple | Sign in with Apple JS (same component) | `expo-apple-authentication` (already installed/configured — Apple sign-in was already iOS-only in the UI) | not offered (unchanged — Apple has no native Android SDK) |
 
-**Local stack**: `supabase/config.toml` has `[auth.external.google]`/`[auth.external.apple]` blocks (disabled by default) with secrets read from `supabase/.env`'s `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`/`SUPABASE_AUTH_EXTERNAL_APPLE_SECRET` (gitignored, never commit real values). To actually use them locally:
-- **Google** works fine locally — Google allows loopback redirect URIs for testing, so just add `http://127.0.0.1:54321/auth/v1/callback` as an *additional* Authorized redirect URI on the same OAuth client used for production, fill in `client_id`/the env secret, and set `enabled = true`.
-- **Apple generally doesn't work locally** — Apple's Services ID Return URL/Domain fields require a real HTTPS domain, and reject `127.0.0.1`/`localhost`. Short of standing up an HTTPS tunnel (e.g. ngrok) and registering that domain too, test Apple sign-in against the remote project instead.
+**Google Cloud Console** (Credentials page):
+
+1. The existing **Web application** OAuth client (already configured for the old flow) is reused as-is for two things: web's `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (passed to Google Identity Services' `client_id`) and mobile's `EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID` (passed as `webClientId` to `GoogleSignin.configure()` — required even on native, since that's what the ID token's audience needs to match). Make sure its **Authorized JavaScript origins** includes your web origin(s) (`https://www.temur.app`, `http://localhost:3000` for local dev) — it previously only needed an *Authorized redirect URI*, which this flow doesn't use.
+2. Create a new **iOS** OAuth client ID (Application type: iOS, Bundle ID: `com.calpin.temur`). Google gives you both the Client ID and its reversed form (the iOS URL scheme):
+   - Client ID → `EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID` (in `apps/mobile/.env` and every EAS environment — `development`/`preview`/`production`, same as the existing `EXPO_PUBLIC_GOOGLE_AUTH_WEB_CLIENT_ID`).
+   - Reversed Client ID (`com.googleusercontent.apps.…`) → replace the placeholder in `apps/mobile/app.json`'s `@react-native-google-signin/google-signin` plugin config (`iosUrlScheme`).
+3. Create a new **Android** OAuth client ID (Application type: Android, Package name: `com.calpin.temur`, SHA-1 certificate fingerprint). Get the SHA-1 for your EAS-managed keystore via `eas credentials` (select Android → your build profile → "Keystore: Manage everything needed to build your project" shows it). Repeat for every signing config you build with (debug/preview/production can have different keystores → different SHA-1s → separate Android OAuth clients, one per fingerprint). No app.json change needed — Android matches by package name + SHA-1 automatically, not by an explicit client ID passed in code.
+4. **Supabase Dashboard → Authentication → Providers → Google**: update the **Client IDs** field to a comma-separated list with the **Web client first**: `<web client id>,<ios client id>,<android client id>`. Also enable **Skip nonce check** — `@react-native-google-signin`'s iOS SDK doesn't support passing Supabase's nonce through, so this is required for native iOS Google sign-in specifically (per Supabase's own docs), even though web and Android both do send a nonce.
+
+**Apple Developer**:
+
+1. The app's **App ID** (`com.calpin.temur`) needs the "Sign In with Apple" capability enabled — check Certificates, Identifiers & Profiles → Identifiers → the app's App ID. (`apps/mobile/app.json` already has `usesAppleSignIn: true` and the `expo-apple-authentication` config plugin from earlier scaffolding, so no app.json change needed here — just confirm the capability is actually turned on for the App ID itself.)
+2. Native iOS doesn't need a separate Services ID — it authenticates directly against the Bundle ID.
+3. The existing **Services ID** (used for the old web redirect flow) is reused for web's Sign in with Apple JS. Update its **Return URLs** to your actual site (e.g. `https://www.temur.app/login`) — the popup-mode JS flow only falls back to a real redirect in edge cases, but Apple still validates the registered URL, and the old value (`https://<project-ref>.supabase.co/auth/v1/callback`) no longer applies. Also double check its associated **Domains and Subdomains** covers `temur.app`.
+4. **Supabase Dashboard → Authentication → Providers → Apple**: update **Client IDs** to a comma-separated list with the **Services ID first**: `<services id>,com.calpin.temur`.
+
+**Env vars to set** (see `apps/web/.env.local.example` / `apps/mobile/.env.example` for placeholders):
+- Web: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (= the Web client ID above), `NEXT_PUBLIC_APPLE_CLIENT_ID` (= the Services ID) — in `.env.local` and Vercel's project env vars.
+- Mobile: `EXPO_PUBLIC_GOOGLE_AUTH_IOS_CLIENT_ID` (new) — in `apps/mobile/.env` and every EAS environment.
+
+**Rebuild required on mobile**: `@react-native-google-signin/google-signin` uses native code, so Expo Go can no longer run the app — use a development or preview build (`npm run build:ios:dev` / `npm run build:ios:preview`, or `expo run:ios`/`expo run:android` locally) after `npx expo prebuild --clean` picks up the new config plugins.
+
+**Local stack**: testing this flow against the local Supabase stack needs the same Client IDs/Skip-nonce-check config as above applied to `[auth.external.google]`/`[auth.external.apple]` in `supabase/config.toml` (`client_id` there only takes one value — for local testing, use just the Web client ID; native mobile against local Supabase is a much bigger lift, so it's more practical to test native flows against the remote project and reserve local for the web flow only). Apple's web flow additionally needs `http://localhost:3000` accepted, which — same as before — Apple doesn't allow, so Apple sign-in still isn't testable locally short of an HTTPS tunnel (e.g. ngrok).
 
 ### Running Against a Local Supabase Stack
 

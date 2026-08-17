@@ -53,10 +53,15 @@
     "plugins": [
       "expo-secure-store",
       "expo-notifications",
-      "expo-web-browser",
       "expo-font",
       "@react-native-community/datetimepicker",
       "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_IOS_CLIENT_ID"
+        }
+      ],
       [
         "@sentry/react-native/expo",
         {
