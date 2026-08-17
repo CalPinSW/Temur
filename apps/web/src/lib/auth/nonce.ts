@@ -1,8 +1,8 @@
-// Google's Identity Services flow wants the SHA-256 hash of the nonce (it
-// checks the hash embedded in the ID token against what it was given), while
-// Supabase's signInWithIdToken verifies against the original, unhashed
-// value — so callers need both. Apple's flow uses the raw nonce everywhere,
-// no hashing.
+// Every provider we use here (Google Identity Services, Apple JS) wants the
+// SHA-256 hash of the nonce — it echoes that value back verbatim in the ID
+// token's nonce claim. Supabase's signInWithIdToken then hashes the raw
+// nonce itself and compares against that claim, so it needs the *unhashed*
+// value — callers need both.
 export async function generateNonce(): Promise<{ nonce: string; hashedNonce: string }> {
   const nonce = crypto.randomUUID();
   const encoded = new TextEncoder().encode(nonce);

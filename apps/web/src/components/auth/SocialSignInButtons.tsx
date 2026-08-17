@@ -97,7 +97,13 @@ export function SocialSignInButtons() {
       scope: 'name email',
       redirectURI: `${window.location.origin}/login`,
       usePopup: true,
-      nonce: nonce.nonce,
+      // Supabase's signInWithIdToken hashes whatever nonce you send it and
+      // compares that hash to the ID token's nonce claim — so the provider
+      // SDK needs the pre-hashed value (matching Google's flow above), and
+      // signInWithIdToken gets the raw one so it can hash it itself and
+      // compare. Passing the raw nonce here (as Apple's own JS docs seem to
+      // imply) produces a "Nonces mismatch" error from Supabase.
+      nonce: nonce.hashedNonce,
     });
   }, [appleReady, nonce]);
 
