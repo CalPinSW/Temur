@@ -196,6 +196,53 @@ Deno.test("send-notification - returns 400 for a request missing type", async ()
   }
 });
 
+Deno.test("send-notification - suppresses email when the recipient has disabled it for that type", async () => {
+  const caller = await createSignedInTestUser();
+  if (!caller) {
+    console.log("Skipping: could not create a signed-in test user (no service role key?)");
+    return;
+  }
+
+  try {
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NO_BACKGROUND_AUTH);
+    await admin.from("notification_preferences").insert({
+      user_id: caller.userId,
+      notification_type: "friend_accepted",
+      push_enabled: true,
+      email_enabled: false,
+    });
+
+    // Self-notify: callerId === targetUserId auto-authorizes regardless of type.
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${caller.accessToken}`,
+        "apikey": SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({
+        userId: caller.userId,
+        type: "friend_accepted",
+        title: "Test Notification",
+        body: "This is a test",
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 401) {
+      console.log("Skipping assertion: gateway rejected the request", data);
+      return;
+    }
+
+    assertEquals(response.status, 200);
+    assertEquals(data.success, true);
+    assertEquals(data.email, null);
+  } finally {
+    await deleteTestUser(caller.userId);
+  }
+});
+
 Deno.test("send-notification - returns 403 when caller has no relationship to the target", async () => {
   const caller = await createSignedInTestUser();
   const target = await createSignedInTestUser();

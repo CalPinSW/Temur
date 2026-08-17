@@ -69,6 +69,35 @@ test.describe('Profile', () => {
     await expect(page.locator('html')).not.toHaveAttribute('data-theme');
   });
 
+  test('toggles a notification preference and select-all, persisting after reload', async ({
+    page,
+  }) => {
+    await page.goto('/profile/notifications');
+
+    const friendRequestEmail = page.getByLabel('Friend requests — Email');
+    const friendRequestPush = page.getByLabel('Friend requests — Push');
+    const selectAllEmail = page.getByLabel('Select all Email');
+
+    await expect(friendRequestEmail).toBeChecked();
+    await expect(selectAllEmail).toBeChecked();
+
+    // Flip a single cell — its column's "select all" should reflect the
+    // resulting mixed state, and untouched cells stay put.
+    await friendRequestEmail.uncheck();
+    await expect(friendRequestEmail).not.toBeChecked();
+    await expect(selectAllEmail).not.toBeChecked();
+    await expect(friendRequestPush).toBeChecked();
+
+    // The DB write persists across a reload, not just in-memory state.
+    await page.reload();
+    await expect(friendRequestEmail).not.toBeChecked();
+
+    // Select-all restores every row in that column at once.
+    await selectAllEmail.check();
+    await expect(friendRequestEmail).toBeChecked();
+    await expect(page.getByLabel('New games available — Email')).toBeChecked();
+  });
+
   test('views the about page', async ({ page }) => {
     await page.goto('/profile');
     await page.getByRole('link', { name: 'About' }).click();

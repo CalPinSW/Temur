@@ -12,7 +12,13 @@ const EXPO_TICKET_BATCH_SIZE = 100; // Expo push API cap per request
 
 interface MemberRow {
   user_id: string;
-  profile: { push_token: string | null; notifications_enabled: boolean | null } | null;
+  profile: { push_token: string | null } | null;
+}
+
+interface PreferenceRow {
+  user_id: string;
+  push_enabled: boolean;
+  email_enabled: boolean;
 }
 
 ///*** Periodically swept by the pg_cron job "sweep-visible-games" (see
@@ -63,12 +69,38 @@ Deno.serve(async (req) => {
 
       const { data: members, error: membersError } = await supabase
         .from('group_members')
-        .select('user_id, profile:profiles(push_token, notifications_enabled)')
+        .select('user_id, profile:profiles(push_token)')
         .eq('group_id', game.group_id);
 
       if (membersError) {
         console.error(`sweep: failed to load members for game ${game.id}`, membersError);
         continue; // leave visibility_notified_at null; next sweep retries
+      }
+
+      const memberRows = (members as MemberRow[]) || [];
+
+      let preferenceByUserId = new Map<string, PreferenceRow>();
+      if (memberRows.length > 0) {
+        const { data: preferences, error: preferencesError } = await supabase
+          .from('notification_preferences')
+          .select('user_id, push_enabled, email_enabled')
+          .eq('notification_type', 'game_visible')
+          .in(
+            'user_id',
+            memberRows.map((m) => m.user_id)
+          );
+
+        if (preferencesError) {
+          console.error(
+            `sweep: failed to load notification preferences for game ${game.id}`,
+            preferencesError
+          );
+          continue; // leave visibility_notified_at null; next sweep retries
+        }
+
+        preferenceByUserId = new Map(
+          ((preferences as PreferenceRow[]) || []).map((p) => [p.user_id, p])
+        );
       }
 
       // Keep in sync with NotificationTemplates.gameVisible() in
@@ -80,12 +112,11 @@ Deno.serve(async (req) => {
         : 'A new game is open for sign-ups';
       const notifyData = { screen: 'GameDetail', gameId: game.id };
 
-      const eligibleMembers = ((members as MemberRow[]) || []).filter(
-        (m) => m.profile?.notifications_enabled !== false
-      );
-
-      const tickets = eligibleMembers
-        .filter((m) => m.profile?.push_token)
+      // No row for a member means they haven't overridden this type — both
+      // channels default to enabled (see the notification_preferences
+      // migration).
+      const tickets = memberRows
+        .filter((m) => (preferenceByUserId.get(m.user_id)?.push_enabled ?? true) && m.profile?.push_token)
         .map((m) => ({
           to: m.profile!.push_token,
           title,
@@ -113,10 +144,14 @@ Deno.serve(async (req) => {
       // Email — independent of push_token, same reasoning as
       // send-notification: this is the only out-of-band channel web-only
       // members have.
+      const emailEligibleMembers = memberRows.filter(
+        (m) => preferenceByUserId.get(m.user_id)?.email_enabled ?? true
+      );
+
       const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
       const { subject, html } = buildNotificationEmail('game_visible', title, body, notifyData, siteUrl);
       await Promise.all(
-        eligibleMembers.map(async (m) => {
+        emailEligibleMembers.map(async (m) => {
           const { data: authUser } = await supabase.auth.admin.getUserById(m.user_id);
           if (!authUser?.user?.email) return;
           const result = await sendEmail(authUser.user.email, subject, html);
