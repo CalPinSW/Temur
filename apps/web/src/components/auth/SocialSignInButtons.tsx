@@ -134,7 +134,7 @@ export function SocialSignInButtons() {
         onReady={() => setGoogleReady(true)}
       />
       <Script
-        src="https://appleid.cdn-apple.com/appleauth/page/signin.js"
+        src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"
         strategy="afterInteractive"
         onReady={() => setAppleReady(true)}
       />
