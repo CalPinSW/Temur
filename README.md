@@ -297,6 +297,17 @@ This means `supabase/.env` must never contain a value that's only correct for lo
 
 4. For local dev, `supabase/.env` already has `RESEND_FROM_EMAIL`/`PUBLIC_SITE_URL` set to these same production values (see `supabase/.env.example`) — see the troubleshooting note above for why that matters even though they're inert locally. `RESEND_API_KEY` stays unset locally on purpose.
 
+#### Visible-Games Sweep (pg_cron → Edge Function) Setup
+
+The `sweep-visible-games` pg_cron job (see `supabase/migrations/20260812090000_add_notification_infra.sql`) doesn't call the edge function directly — its trigger function, `private.trigger_visible_games_sweep()`, reads a shared secret and the project's functions base URL from **Supabase Vault** (`vault.decrypted_secrets`), separate from `supabase secrets set`. If either is missing, the function silently `RAISE WARNING`s and returns without making the HTTP call — the cron job itself still shows as "succeeded" in `cron.job_run_details`, so this failure mode is easy to miss (it went unnoticed on the `temur` project for weeks). A quick way to spot it: those runs complete in a few milliseconds, since `net.http_post` is async and only enqueues on success — check `net._http_response` for actual delivered responses (a `200` with `{"swept":N,"notified":N}` body) to confirm it's really firing.
+
+This isn't provisioned by any migration or `supabase secrets set` call — it has to be set once per environment via the SQL editor (or the Supabase MCP's `execute_sql`), after the `EDGE_FUNCTION_SECRET` Edge Function secret is set (see [Edge Functions](#edge-functions) below — it must match this exact value):
+
+```sql
+select vault.create_secret('<same value as the EDGE_FUNCTION_SECRET edge function secret>', 'edge_function_secret');
+select vault.create_secret('<project's functions base URL, e.g. https://<ref>.supabase.co>', 'project_functions_url');
+```
+
 #### Auth Emails (Resend)
 
 By default, Supabase Auth sends its own transactional emails (password reset, signup confirmation, etc.) through its built-in mailer, styled with Supabase's plain default templates. `send-auth-email` (`supabase/functions/send-auth-email`) replaces that entirely via Supabase Auth's [Send Email Hook](https://supabase.com/docs/guides/auth/auth-hooks/send-email-hook): Supabase Auth calls this function instead, and it sends a branded email through the same Resend integration used above (`buildAuthEmail` in `supabase/functions/_shared/email.ts`). Today the app only actually triggers the `recovery` (forgot password, mobile-only for now) flow, but the hook takes over *every* auth email type once enabled, so it handles all of them (signup, invite, magic link, email change, reauthentication) generically.
