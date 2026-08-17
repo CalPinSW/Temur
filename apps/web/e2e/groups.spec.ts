@@ -51,6 +51,67 @@ test.describe('Groups', () => {
     await page.waitForURL(/\/games\/[0-9a-f-]+$/);
   });
 
+  test('gates a not-yet-visible group game — admin preview only, hidden from other members', async ({
+    page,
+    browser,
+  }) => {
+    const previewGroupName = `E2E Preview Group ${Date.now()}`;
+    const previewTeam1 = `E2E-GroupPreview-T1-${Date.now()}`;
+    const previewTeam2 = `E2E-GroupPreview-T2-${Date.now()}`;
+
+    await page.goto('/groups/new');
+    await page.getByLabel('Group Name').fill(previewGroupName);
+    await page.getByRole('button', { name: 'Create Group' }).click();
+    await page.waitForURL(/\/groups\/[0-9a-f-]+$/);
+    const groupId = new URL(page.url()).pathname.split('/').pop()!;
+
+    await page.getByRole('link', { name: 'Invite Player' }).click();
+    await page.getByPlaceholder('Search by username or name...').fill(E2E_USERS.secondary.username);
+    await expect(page.getByText(E2E_USERS.secondary.displayName)).toBeVisible();
+    await page.getByRole('button', { name: 'Invite' }).click();
+    await expect(page.getByRole('button', { name: 'Sent' })).toBeVisible();
+
+    const secondaryContext = await browser.newContext({ storageState: secondaryStorageState });
+    const secondaryPage = await secondaryContext.newPage();
+    try {
+      await secondaryPage.goto('/groups/invites');
+      await expect(secondaryPage.getByRole('main').getByText(previewGroupName)).toBeVisible();
+      await secondaryPage.getByRole('button', { name: 'Accept' }).click();
+
+      await page.goto(`/games/new?group=${groupId}`);
+      await page.getByLabel('Visible From').fill('2099-01-01T10:00');
+      await page.getByLabel('Team 1 Name').fill(previewTeam1);
+      await page.getByLabel('Team 2 Name').fill(previewTeam2);
+      await page.getByRole('button', { name: 'Create Game' }).click();
+      // Not yet visible — creation redirects to the games list, not into
+      // the game itself (see games.spec.ts's dedicated test for that).
+      await page.waitForURL('**/games');
+
+      const heading = `${previewTeam1} vs ${previewTeam2}`;
+
+      // Admin/creator: shown on the group's own games list as a
+      // non-clickable preview, same treatment as the main games list.
+      await page.goto(`/groups/${groupId}/games`);
+      await expect(page.getByRole('link', { name: heading })).not.toBeVisible();
+      const card = page.locator('div[aria-disabled="true"]', { hasText: previewTeam1 });
+      await expect(card).toBeVisible();
+      await expect(card.getByText('Not visible yet')).toBeVisible();
+      await card.click();
+      await expect(page).toHaveURL(new RegExp(`/groups/${groupId}/games$`));
+
+      // Regular member: the game doesn't appear on this list at all, even
+      // though can_view_game's RLS would let them read the row directly.
+      await secondaryPage.goto(`/groups/${groupId}/games`);
+      await expect(secondaryPage.getByRole('link', { name: heading })).not.toBeVisible();
+      await expect(
+        secondaryPage.locator('div[aria-disabled="true"]', { hasText: previewTeam1 })
+      ).not.toBeVisible();
+      await expect(secondaryPage.getByText(/scheduled yet/)).toBeVisible();
+    } finally {
+      await secondaryContext.close();
+    }
+  });
+
   test('invites a second user who accepts, then gets promoted, demoted, and removed', async ({
     page,
     browser,

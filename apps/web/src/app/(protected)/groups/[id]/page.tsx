@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { formatDate, formatTime, type Group, type GroupMemberWithProfile } from '@temur/shared';
+import {
+  formatDate,
+  formatTime,
+  getGameVisibilityStatus,
+  type Group,
+  type GroupMemberWithProfile,
+} from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { DeleteGroupButton } from './DeleteGroupButton';
 import { EditGroupCard } from './EditGroupCard';
@@ -30,14 +36,22 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
   const myMembership = members.find((m) => m.user_id === user.id);
   const isAdmin = myMembership?.role === 'admin';
 
-  const { data: upcomingGames } = await supabase
+  const { data: upcomingGamesData } = await supabase
     .from('games')
-    .select('id, kickoff_date')
+    .select('id, kickoff_date, visible_at, group_id, created_by')
     .eq('group_id', groupId)
     .gte('kickoff_date', new Date().toISOString())
     .order('kickoff_date', { ascending: true });
 
-  const games = upcomingGames ?? [];
+  // Mirrors the visibility gating on the main games list and the group's
+  // own games list — a game not yet visible to everyone shouldn't be
+  // counted here or, worse, one-click-linked straight into its (ungated)
+  // detail page below.
+  const adminGroupIds = new Set(isAdmin ? [groupId] : []);
+  const games = (upcomingGamesData ?? [])
+    .map((game) => ({ game, status: getGameVisibilityStatus(game, user.id, adminGroupIds) }))
+    .filter(({ status }) => status.visible)
+    .map(({ game, status }) => ({ ...game, isPreview: status.isPreview }));
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
@@ -91,10 +105,14 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
           </span>
           {games.length > 0 && (
             <Link
-              href={games.length === 1 ? `/games/${games[0].id}` : `/groups/${groupId}/games`}
+              href={
+                games.length === 1 && !games[0].isPreview
+                  ? `/games/${games[0].id}`
+                  : `/groups/${groupId}/games`
+              }
               className="text-sm font-medium text-primary hover:text-primary-hover"
             >
-              {games.length === 1 ? 'View Game' : 'View Games'}
+              {games.length === 1 && !games[0].isPreview ? 'View Game' : 'View Games'}
             </Link>
           )}
         </div>
