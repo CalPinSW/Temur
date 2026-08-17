@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 import { getThemeMode } from '@/lib/theme';
 import { ToastProvider } from '@/components/toast/ToastProvider';
 import { ErrorCapture } from './ErrorCapture';
@@ -32,6 +33,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       <body className="min-h-full flex flex-col font-sans">
         <ErrorCapture />
         <ToastProvider>{children}</ToastProvider>
+        <Analytics />
       </body>
     </html>
   );
