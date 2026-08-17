@@ -35,6 +35,10 @@ test.describe('Results & ratings', () => {
       const team2 = `E2E-Results-T2-${Date.now()}`;
       await page.goto(`/games/new?group=${groupId}`);
       await page.getByLabel('Kickoff Date & Time').fill('2020-06-15T10:00');
+      // Visible From's own default isn't tied to the Kickoff Date typed
+      // above (it's computed once from the form's internal default
+      // kickoff), so it can still land in the future unless set explicitly.
+      await page.getByLabel('Visible From').fill('2020-06-08T10:00');
       await page.getByLabel('Team 1 Name').fill(team1);
       await page.getByLabel('Team 2 Name').fill(team2);
       await page.getByRole('button', { name: 'Create Game' }).click();
