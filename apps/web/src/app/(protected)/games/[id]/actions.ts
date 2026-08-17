@@ -2,8 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getNextSignupOrder } from '@temur/shared';
+import { getNextSignupOrder, getGameCapacity } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface GameActionState {
   error?: string;
@@ -19,12 +20,15 @@ export async function signUpForGame(
 
   const supabase = await createClient();
 
-  const { data: existingPlayers, error: fetchError } = await supabase
-    .from('player_games')
-    .select('signup_order')
-    .eq('game_id', gameId);
+  const [
+    { data: existingPlayers, error: fetchError },
+    { data: game, error: gameError },
+  ] = await Promise.all([
+    supabase.from('player_games').select('signup_order').eq('game_id', gameId),
+    supabase.from('games').select('players_per_team').eq('id', gameId).single(),
+  ]);
 
-  if (fetchError) {
+  if (fetchError || gameError) {
     return { error: 'Failed to sign up. Please try again.' };
   }
 
@@ -42,6 +46,11 @@ export async function signUpForGame(
     }
     return { error: 'Failed to sign up. Please try again.' };
   }
+
+  const capacity = getGameCapacity(game.players_per_team);
+  await trackEvent(AnalyticsEvent.SignedUpForGame, {
+    waitlisted: nextSignupOrder > capacity,
+  });
 
   revalidatePath(`/games/${gameId}`);
   revalidatePath('/games');
@@ -81,6 +90,8 @@ export async function withdrawFromGame(
   if (error) {
     return { error: 'Failed to withdraw. Please try again.' };
   }
+
+  await trackEvent(AnalyticsEvent.WithdrewFromGame);
 
   revalidatePath(`/games/${gameId}`);
   revalidatePath('/games');

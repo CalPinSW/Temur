@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface CreateGameState {
   error?: string;
@@ -76,6 +77,12 @@ export async function createGame(input: CreateGameInput): Promise<CreateGameStat
       );
     }
   }
+
+  await trackEvent(AnalyticsEvent.GameCreated, {
+    mode: input.mode,
+    playersPerTeam: input.playersPerTeam,
+    invitedFriendCount: input.friendIds.length,
+  });
 
   redirect(`/games/${data.id}`);
 }

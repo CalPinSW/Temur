@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export interface CreateGroupState {
   error?: string;
@@ -31,6 +32,8 @@ export async function createGroup(
   if (error) {
     return { error: 'Failed to create group. Please try again.' };
   }
+
+  await trackEvent(AnalyticsEvent.GroupCreated);
 
   // The creator's own admin group_members row is inserted by the
   // handle_new_group() DB trigger, not here.

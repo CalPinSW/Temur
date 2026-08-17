@@ -2,6 +2,7 @@
 
 import { type Profile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
+import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
 export async function searchUsers(query: string): Promise<Profile[]> {
   const user = await getUser();
@@ -58,6 +59,8 @@ export async function sendFriendRequest(friendId: string): Promise<SendRequestRe
       data: { screen: 'FriendRequests' },
     },
   });
+
+  await trackEvent(AnalyticsEvent.FriendRequestSent);
 
   return {};
 }
