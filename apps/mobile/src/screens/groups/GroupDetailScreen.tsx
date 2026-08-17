@@ -158,7 +158,7 @@ export function GroupDetailScreen({
   };
 
   const handleUpcomingGamesPress = () => {
-    if (upcomingGames.length === 1) {
+    if (upcomingGames.length === 1 && !upcomingGames[0].isPreview) {
       onNavigateToGame(upcomingGames[0].id);
     } else {
       onNavigateToGames(groupId);
@@ -287,7 +287,11 @@ export function GroupDetailScreen({
                     : `${upcomingGames.length} games scheduled`}
               </ThemedTextBox>
               <ThemedButton
-                title={upcomingGames.length === 1 ? 'View Game' : 'View Games'}
+                title={
+                  upcomingGames.length === 1 && !upcomingGames[0].isPreview
+                    ? 'View Game'
+                    : 'View Games'
+                }
                 variant="outline"
                 size="small"
                 onPress={handleUpcomingGamesPress}

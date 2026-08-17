@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
-import { Game, GameWithPlayers } from '@temur/shared';
+import { Game, GameWithPlayers, getGameVisibilityStatus } from '@temur/shared';
 import * as Sentry from '@sentry/react-native';
+import { useGroupAdminGroupIds } from './useGroupAdminGroupIds';
 
 interface RawGame extends Game {
   player_games:
@@ -20,8 +21,13 @@ interface RawGame extends Game {
     | null;
 }
 
+export interface GroupGameListItem extends GameWithPlayers {
+  isPreview: boolean;
+}
+
 export function useGroupUpcomingGames(groupId: string, userId?: string) {
-  const [upcomingGames, setUpcomingGames] = useState<GameWithPlayers[]>([]);
+  const { adminGroupIds } = useGroupAdminGroupIds(userId);
+  const [upcomingGames, setUpcomingGames] = useState<GroupGameListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchGames = useCallback(async () => {
@@ -62,14 +68,22 @@ export function useGroupUpcomingGames(groupId: string, userId?: string) {
           user_signed_up: game.player_games?.some((pg) => pg.user_id === userId) || false,
         })) as GameWithPlayers[];
 
-      setUpcomingGames(processedGames);
+      // Not-yet-visible games are hidden from non-admins entirely and shown
+      // as a non-interactive preview to admins — same rule the main games
+      // list already enforces (getGameVisibilityStatus).
+      const visibleGames: GroupGameListItem[] = processedGames
+        .map((game) => ({ game, status: getGameVisibilityStatus(game, userId, adminGroupIds) }))
+        .filter(({ status }) => status.visible)
+        .map(({ game, status }) => ({ ...game, isPreview: status.isPreview }));
+
+      setUpcomingGames(visibleGames);
     } catch (error) {
       console.error('Error fetching group games:', error);
       Sentry.captureException(error);
     } finally {
       setIsLoading(false);
     }
-  }, [groupId, userId]);
+  }, [groupId, userId, adminGroupIds]);
 
   useEffect(() => {
     const load = () => fetchGames();
