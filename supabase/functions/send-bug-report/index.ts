@@ -12,6 +12,9 @@ interface BugReportRequest {
   context?: Record<string, unknown>;
 }
 
+const RATE_LIMIT_WINDOW_MINUTES = 60;
+const RATE_LIMIT_MAX_REPORTS = 5;
+
 ///*** Persists the report (bug_reports table survives even if email
 // delivery fails) and emails support via Resend, with reply-to set to the
 // reporter so support can reply directly. ***///
@@ -41,6 +44,20 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { count: recentReportCount, error: rateLimitError } = await supabase
+      .from('bug_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', callerId)
+      .gte('created_at', windowStart);
+
+    if (!rateLimitError && (recentReportCount ?? 0) >= RATE_LIMIT_MAX_REPORTS) {
+      return new Response(
+        JSON.stringify({ error: 'Too many bug reports submitted recently — please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { error: insertError } = await supabase.from('bug_reports').insert({
       user_id: callerId,
