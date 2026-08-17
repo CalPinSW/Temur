@@ -6,9 +6,8 @@ export interface ParsedAuthCallbackUrl {
 }
 
 // Supabase's implicit-flow redirects carry tokens/errors as a URL fragment
-// (or, less commonly, as query params) rather than a parseable path — shared
-// by both the OAuth callback (socialAuthService) and the password-recovery
-// deep link (useAuthDeepLinks), since both use the same redirect shape.
+// (or, less commonly, as query params) rather than a parseable path — used
+// by the password-recovery deep link (useAuthDeepLinks).
 export function parseAuthCallbackUrl(url: string): ParsedAuthCallbackUrl {
   const hashParams = url.includes('#') ? url.split('#')[1] : '';
   const queryParamsStr = url.includes('?') ? (url.split('?')[1]?.split('#')[0] ?? '') : '';

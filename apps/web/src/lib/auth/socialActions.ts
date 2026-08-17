@@ -9,20 +9,26 @@ export interface SocialSignInState {
   error?: string;
 }
 
-export async function signInWithProvider(provider: SocialProvider): Promise<SocialSignInState> {
+export async function signInWithIdToken(
+  provider: SocialProvider,
+  token: string,
+  nonce: string,
+  fullName?: string
+): Promise<SocialSignInState> {
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
-    options: {
-      redirectTo: `${siteUrl}/auth/callback`,
-    },
-  });
+  const { error } = await supabase.auth.signInWithIdToken({ provider, token, nonce });
 
-  if (error || !data.url) {
-    return { error: error?.message ?? 'Failed to start sign in. Please try again.' };
+  if (error) {
+    return { error: error.message };
   }
 
-  redirect(data.url);
+  // Apple only ever includes the user's name on the very first sign-in for
+  // this app (see SocialSignInButtons), so this is the one chance to persist
+  // it — every later sign-in omits it even though the id_token is still valid.
+  if (fullName) {
+    await supabase.auth.updateUser({ data: { full_name: fullName } });
+  }
+
+  redirect('/games');
 }
