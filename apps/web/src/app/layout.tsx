@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { getThemeMode } from '@/lib/theme';
 import { ToastProvider } from '@/components/toast/ToastProvider';
 import { ErrorCapture } from './ErrorCapture';
@@ -34,6 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
         <ErrorCapture />
         <ToastProvider>{children}</ToastProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
