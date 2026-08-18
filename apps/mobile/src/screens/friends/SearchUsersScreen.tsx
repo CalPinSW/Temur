@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, Alert } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
-import { Profile } from '@temur/shared';
+import { Profile, FriendshipStatus, getFriendshipStatuses } from '@temur/shared';
 import { NotificationTemplates } from '@/services/notificationService';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox, ThemedInput } from '@/components/themed';
@@ -19,6 +19,9 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<Profile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [friendshipStatuses, setFriendshipStatuses] = useState<Map<string, FriendshipStatus>>(
+    new Map()
+  );
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
 
   const searchUsers = useCallback(
@@ -38,7 +41,24 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
           .limit(20);
 
         if (error) throw error;
-        setResults(data as Profile[]);
+        const profiles = data as Profile[];
+        setResults(profiles);
+
+        if (profiles.length > 0) {
+          const ids = profiles.map((p) => p.id);
+          const { data: friendships, error: friendshipsError } = await supabase
+            .from('friendships')
+            .select('user_id, friend_id, status')
+            .or(
+              `and(user_id.eq.${user.id},friend_id.in.(${ids.join(',')})),` +
+                `and(friend_id.eq.${user.id},user_id.in.(${ids.join(',')}))`
+            );
+
+          if (friendshipsError) throw friendshipsError;
+          setFriendshipStatuses(getFriendshipStatuses(friendships ?? [], user.id));
+        } else {
+          setFriendshipStatuses(new Map());
+        }
       } catch (error) {
         console.error('Search error:', error);
         Sentry.captureException(error);
@@ -70,7 +90,10 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
 
       if (error) {
         if (error.code === '23505') {
-          Alert.alert('Already Sent', 'You already sent a friend request to this user.');
+          Alert.alert(
+            'Already Connected',
+            "You're already friends, or a request is already pending."
+          );
         } else {
           throw error;
         }
@@ -117,8 +140,20 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
     return profile.username?.slice(0, 2).toUpperCase() || '??';
   };
 
+  const getDisplayStatus = (profileId: string): FriendshipStatus =>
+    sentRequests.has(profileId)
+      ? 'pending_outgoing'
+      : (friendshipStatuses.get(profileId) ?? 'none');
+
+  const ADD_BUTTON_LABELS: Record<FriendshipStatus, string> = {
+    none: 'Add',
+    friends: 'Friends',
+    pending_outgoing: 'Sent',
+    pending_incoming: 'Requested You',
+  };
+
   const renderUser = ({ item }: { item: Profile }) => {
-    const hasSentRequest = sentRequests.has(item.id);
+    const status = getDisplayStatus(item.id);
 
     return (
       <View style={[styles.userItem, { borderBottomColor: colors.border }]}>
@@ -138,11 +173,11 @@ export function SearchUsersScreen({ onGoBack }: SearchUsersScreenProps) {
           </ThemedTextBox>
         </View>
         <ThemedButton
-          title={hasSentRequest ? 'Sent' : 'Add'}
-          variant={hasSentRequest ? 'secondary' : 'primary'}
+          title={ADD_BUTTON_LABELS[status]}
+          variant={status === 'none' ? 'primary' : 'secondary'}
           size="small"
           onPress={() => sendFriendRequest(item.id)}
-          disabled={hasSentRequest}
+          disabled={status !== 'none'}
         />
       </View>
     );

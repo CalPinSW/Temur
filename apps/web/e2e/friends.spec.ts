@@ -38,6 +38,18 @@ test.describe('Friends', () => {
     const friendRow = page.locator('div.px-4.py-3', { hasText: E2E_USERS.secondary.displayName });
     await expect(friendRow).toBeVisible();
 
+    // The bug this guards against: primary never took any action after
+    // sending the request, so if search still offered "Add" here it would
+    // mean primary has to re-add secondary even though secondary already
+    // accepted — searchUsers must reflect the accepted friendship, not just
+    // locally-tracked "sent" state.
+    await page.goto('/friends/search');
+    await page.getByPlaceholder('Search by username or name...').fill(E2E_USERS.secondary.username);
+    const searchRow = page.locator('div.px-4.py-3', { hasText: E2E_USERS.secondary.displayName });
+    await expect(searchRow.getByRole('button', { name: 'Friends' })).toBeVisible();
+    await expect(searchRow.getByRole('button', { name: 'Friends' })).toBeDisabled();
+
+    await page.goto('/friends');
     page.once('dialog', (dialog) => dialog.accept());
     await friendRow.getByRole('button', { name: `Remove ${E2E_USERS.secondary.displayName}` }).click();
     await expect(friendRow).not.toBeVisible();
