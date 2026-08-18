@@ -13,4 +13,20 @@ export async function register() {
   }
 }
 
-export const onRequestError = Sentry.captureRequestError;
+// A client that navigates away or closes the tab mid-stream (e.g. before an
+// RSC response finishes) aborts the connection Next.js is writing to. Next's
+// own abort detection (`isAbortError`) only recognizes `AbortError`/
+// `ResponseAborted`, so this generic one slips through to `onRequestError`
+// as if it were a real server failure — it isn't, it's expected client
+// behavior. Filtering it here (rather than via Sentry's `ignoreErrors`)
+// keeps the check colocated with the one place this error can originate.
+// Upstream bug: https://github.com/vercel/next.js/issues/96704
+const isClientAbortedStreamError = (error: unknown) =>
+  error instanceof Error && error.message === 'The destination stream closed early.';
+
+export const onRequestError: typeof Sentry.captureRequestError = (error, request, context) => {
+  if (isClientAbortedStreamError(error)) {
+    return;
+  }
+  return Sentry.captureRequestError(error, request, context);
+};
