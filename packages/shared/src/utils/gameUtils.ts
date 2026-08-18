@@ -132,7 +132,7 @@ export const formatGameResult = (
   return null;
 };
 
-const VISIBLE_AT_LEAD_DAYS = 7;
+const VISIBLE_AT_LEAD_DAYS = 6;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const isSameDay = (date1: Date, date2: Date): boolean =>
