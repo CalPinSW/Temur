@@ -159,7 +159,7 @@ export const getDefaultKickoffDate = (existingKickoffDates: Date[]): Date => {
   return candidate;
 };
 
-// visible_at's default always tracks kickoff_date: exactly 7 days earlier,
+// visible_at's default always tracks kickoff_date: exactly 6 days earlier,
 // at the same time of day. Re-run this whenever kickoff changes, unless the
 // admin has manually edited visible_at themselves.
 export const getDefaultVisibleAt = (kickoffDate: Date): Date =>

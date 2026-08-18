@@ -13,6 +13,7 @@ import {
   getWaitlistPlayers,
   getPlayerDisplayName,
   isGameAdmin,
+  getGameVisibilityStatus,
 } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { SignupActions } from './SignupActions';
@@ -20,10 +21,12 @@ import { OpenRingersSection } from './OpenRingersSection';
 import { AddRingerSection } from './AddRingerSection';
 import { RemoveRingerButton } from './RemoveRingerButton';
 import { DeleteGameButton } from './DeleteGameButton';
+import { PublishGameButton } from './PublishGameButton';
 import { InviteFriendsSection } from './InviteFriendsSection';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
+  group: { name: string } | null;
 }
 
 interface RawFriendship {
@@ -90,7 +93,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
     supabase
       .from('games')
       .select(
-        `*, player_games (
+        `*, group:groups(name), player_games (
           id, user_id, signup_order, team, created_at, is_ringer, guest_name, added_by,
           profile:profiles!player_games_user_id_fkey ( id, username, display_name, avatar_url )
         )`
@@ -107,6 +110,16 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const game = data as RawGame;
   const adminGroupIds = new Set((adminGroups ?? []).map((row) => row.group_id));
   const isAdmin = isGameAdmin(game, user.id, adminGroupIds);
+
+  // Not yet visible and this user isn't an admin who gets an early preview
+  // — can_view_game's RLS doesn't consider visible_at at all (only group
+  // membership/creator/invite), so without this check a group member could
+  // still reach this page directly even though every list view hides it.
+  const visibility = getGameVisibilityStatus(game, user.id, adminGroupIds);
+  if (!visibility.visible) {
+    notFound();
+  }
+
   const isPast = new Date(game.kickoff_date) < new Date();
 
   let invitableFriends: Profile[] = [];
@@ -182,15 +195,37 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-text">
-          {game.team1_name} vs {game.team2_name}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold text-text">
+            {game.team1_name} vs {game.team2_name}
+          </h1>
+          {visibility.isPreview && (
+            <span className="rounded-full bg-background-secondary px-2 py-0.5 text-xs font-medium text-text-tertiary">
+              Not visible yet
+            </span>
+          )}
+        </div>
+        {game.group?.name && (
+          <p className="text-sm font-medium text-primary">{game.group.name}</p>
+        )}
         <p className="text-sm text-text-secondary">
           {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
         </p>
       </div>
 
-      <SignupActions gameId={game.id} isSignedUp={isSignedUp} />
+      {isAdmin && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-light px-3 py-2">
+          <Link
+            href={`/games/${game.id}/edit`}
+            className="text-sm font-medium text-primary hover:text-primary-hover"
+          >
+            Edit Game
+          </Link>
+          {visibility.isPreview && <PublishGameButton gameId={game.id} />}
+        </div>
+      )}
+
+      {!visibility.isPreview && <SignupActions gameId={game.id} isSignedUp={isSignedUp} />}
 
       {isAdmin && players.length > 0 && (
         <Link
@@ -239,11 +274,11 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </ul>
       </section>
 
-      {!!game.group_id && !!game.ringers_opened_at && !isPast && (
+      {!!game.group_id && !!game.ringers_opened_at && !isPast && !visibility.isPreview && (
         <AddRingerSection gameId={game.id} />
       )}
 
-      {isAdmin && !!game.group_id && (
+      {isAdmin && !!game.group_id && !visibility.isPreview && (
         <>
           {game.ringers_opened_at ? (
             <p className="text-sm text-text-secondary">

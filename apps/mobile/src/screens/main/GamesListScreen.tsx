@@ -18,6 +18,7 @@ interface GamesListScreenProps {
 }
 
 interface RawGame extends Game {
+  group: { name: string } | null;
   player_games:
     | {
         id: string;
@@ -66,6 +67,7 @@ export function GamesListScreen({
           .select(
             `
           *,
+          group:groups(name),
           player_games (
             id,
             user_id,
@@ -91,13 +93,16 @@ export function GamesListScreen({
         ((invitations as RawInvitation[]) || []).map((inv) => [inv.game_id, inv.status])
       );
 
-      const processedGames: GameWithPlayers[] = ((games as RawGame[]) || []).map((game) => ({
-        ...game,
-        player_games: game.player_games || [],
-        player_count: game.player_games?.length || 0,
-        user_signed_up: game.player_games?.some((pg) => pg.user_id === user.id) || false,
-        invitation_status: invitationByGameId.get(game.id),
-      })) as GameWithPlayers[];
+      const processedGames: GameWithPlayers[] = ((games as RawGame[]) || []).map(
+        ({ group, ...game }) => ({
+          ...game,
+          group_name: group?.name ?? null,
+          player_games: game.player_games || [],
+          player_count: game.player_games?.length || 0,
+          user_signed_up: game.player_games?.some((pg) => pg.user_id === user.id) || false,
+          invitation_status: invitationByGameId.get(game.id),
+        })
+      ) as GameWithPlayers[];
 
       const visibleGames: GameListItem[] = processedGames
         .map((game) => ({ game, status: getGameVisibilityStatus(game, user.id, adminGroupIds) }))

@@ -13,6 +13,7 @@ import { createClient, getUser } from '@/lib/supabase/server';
 
 interface RawGame extends Game {
   player_games: Pick<PlayerGameWithProfile, 'id' | 'user_id' | 'signup_order' | 'team' | 'profile'>[] | null;
+  group: { name: string } | null;
 }
 
 interface GameListItem extends GameWithPlayers {
@@ -26,7 +27,7 @@ async function loadGames(userId: string) {
     supabase
       .from('games')
       .select(
-        `*, player_games (
+        `*, group:groups(name), player_games (
           id, user_id, signup_order, team,
           profile:profiles!player_games_user_id_fkey ( id, username, display_name, avatar_url )
         )`
@@ -42,6 +43,7 @@ async function loadGames(userId: string) {
 
   const processed: GameWithPlayers[] = ((games as RawGame[]) ?? []).map((game) => ({
     ...game,
+    group_name: game.group?.name ?? null,
     player_games: (game.player_games ?? []) as PlayerGameWithProfile[],
     player_count: game.player_games?.length ?? 0,
     user_signed_up: game.player_games?.some((pg) => pg.user_id === userId) ?? false,
@@ -74,6 +76,9 @@ function GameCard({ game }: { game: GameListItem }) {
           </span>
         )}
       </div>
+      {game.group_name && (
+        <span className="text-sm font-medium text-primary">{game.group_name}</span>
+      )}
       <span className="text-sm text-text-secondary">
         {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
       </span>
@@ -84,21 +89,12 @@ function GameCard({ game }: { game: GameListItem }) {
     </>
   );
 
-  if (game.isPreview) {
-    return (
-      <div
-        aria-disabled="true"
-        className="flex cursor-not-allowed flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 opacity-60"
-      >
-        {content}
-      </div>
-    );
-  }
-
   return (
     <Link
       href={`/games/${game.id}`}
-      className="flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary"
+      className={`flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary ${
+        game.isPreview ? 'opacity-60' : ''
+      }`}
     >
       {content}
     </Link>

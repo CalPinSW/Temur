@@ -44,21 +44,12 @@ function GameCard({ game }: { game: GameListItem }) {
     </>
   );
 
-  if (game.isPreview) {
-    return (
-      <div
-        aria-disabled="true"
-        className="flex cursor-not-allowed flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 opacity-60"
-      >
-        {content}
-      </div>
-    );
-  }
-
   return (
     <Link
       href={`/games/${game.id}`}
-      className="flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary"
+      className={`flex flex-col gap-1 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary ${
+        game.isPreview ? 'opacity-60' : ''
+      }`}
     >
       {content}
     </Link>

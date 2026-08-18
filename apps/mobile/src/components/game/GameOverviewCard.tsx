@@ -22,7 +22,6 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
     <TouchableOpacity
       key={game.id}
       onPress={() => onNavigateToGame(game.id)}
-      disabled={isPreview}
       activeOpacity={0.7}
       style={[styles.gameCardTouchable, isPreview && styles.gameCardPreview]}
     >
@@ -49,6 +48,15 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
             isPreview && <ThemedBadge variant="warning" text="Not visible yet" />
           )}
         </View>
+
+        {game.group_name && (
+          <View style={styles.gameCardGroupRow}>
+            <MaterialIcons name="groups" size={16} color={colors.primary} />
+            <ThemedTextBox variant="caption" color="primary" weight="medium">
+              {game.group_name}
+            </ThemedTextBox>
+          </View>
+        )}
 
         <View style={styles.gameCardInfo}>
           <View style={styles.gameCardStat}>
@@ -96,6 +104,12 @@ const styles = StyleSheet.create({
   },
   gameCardDateText: {
     gap: 2,
+  },
+  gameCardGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
   gameCardInfo: {
     flexDirection: 'row',

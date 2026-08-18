@@ -24,6 +24,7 @@ interface RawPlayerGame {
 }
 
 interface RawGame extends Game {
+  group: { name: string } | null;
   player_games: RawPlayerGame[];
 }
 
@@ -47,6 +48,7 @@ export function useGameDetails(gameId: string, userId?: string) {
           .select(
             `
           *,
+          group:groups(name),
           player_games (
             id,
             user_id,
@@ -112,6 +114,7 @@ export function useGameDetails(gameId: string, userId?: string) {
 
       const processedGame: GameWithPlayers = {
         ...gameData,
+        group_name: gameData.group?.name ?? null,
         // This query doesn't select board_x/board_y (only the team-assignment
         // screen needs those), so RawPlayerGame is a subset of PlayerGameWithProfile.
         player_games: playersWithRatings as unknown as PlayerGameWithProfile[],

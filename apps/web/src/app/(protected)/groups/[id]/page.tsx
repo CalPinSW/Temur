@@ -105,14 +105,10 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
           </span>
           {games.length > 0 && (
             <Link
-              href={
-                games.length === 1 && !games[0].isPreview
-                  ? `/games/${games[0].id}`
-                  : `/groups/${groupId}/games`
-              }
+              href={games.length === 1 ? `/games/${games[0].id}` : `/groups/${groupId}/games`}
               className="text-sm font-medium text-primary hover:text-primary-hover"
             >
-              {games.length === 1 && !games[0].isPreview ? 'View Game' : 'View Games'}
+              {games.length === 1 ? 'View Game' : 'View Games'}
             </Link>
           )}
         </div>
