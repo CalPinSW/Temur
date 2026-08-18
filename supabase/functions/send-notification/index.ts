@@ -153,6 +153,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Caps repeated identical sends (same caller, target, type, entity) so
+    // calling this endpoint directly in a loop — or an admin mashing
+    // "notify" — can't spam a user with duplicate push/email notifications.
+    const entityKey = typeof data?.gameId === 'string' ? data.gameId : '';
+    const authed = await getAuthedSupabaseClient(req);
+    const { data: allowedToSend, error: throttleError } = await authed!.rpc(
+      'check_and_log_notification_send',
+      { p_target_user_id: userId, p_notification_type: type, p_entity_key: entityKey }
+    );
+
+    if (!throttleError && !allowedToSend) {
+      return new Response(
+        JSON.stringify({ success: true, throttled: true, push: null, email: null }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

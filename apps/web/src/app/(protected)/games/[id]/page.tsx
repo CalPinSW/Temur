@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import {
   type Game,
   type GameOutcome,
+  type Profile,
   type PlayerGameWithProfile,
   formatDate,
   formatTime,
@@ -21,9 +22,14 @@ import { AddRingerSection } from './AddRingerSection';
 import { RemoveRingerButton } from './RemoveRingerButton';
 import { DeleteGameButton } from './DeleteGameButton';
 import { PublishGameButton } from './PublishGameButton';
+import { InviteFriendsSection } from './InviteFriendsSection';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
+}
+
+interface RawFriendship {
+  friend: Profile | Profile[];
 }
 
 interface RatingSummary {
@@ -114,6 +120,47 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   }
 
   const isPast = new Date(game.kickoff_date) < new Date();
+
+  let invitableFriends: Profile[] = [];
+  if (isAdmin) {
+    const [{ data: sentFriendships }, { data: receivedFriendships }, { data: groupMemberRows }] =
+      await Promise.all([
+        supabase
+          .from('friendships')
+          .select('friend:profiles!friendships_friend_id_fkey(*)')
+          .eq('user_id', user.id)
+          .eq('status', 'accepted'),
+        supabase
+          .from('friendships')
+          .select('friend:profiles!friendships_user_id_fkey(*)')
+          .eq('friend_id', user.id)
+          .eq('status', 'accepted'),
+        game.group_id
+          ? supabase.from('group_members').select('user_id').eq('group_id', game.group_id)
+          : Promise.resolve({ data: null }),
+      ]);
+
+    const toProfile = (item: RawFriendship) =>
+      Array.isArray(item.friend) ? item.friend[0] : item.friend;
+    const allFriends = [
+      ...((sentFriendships as unknown as RawFriendship[]) ?? []),
+      ...((receivedFriendships as unknown as RawFriendship[]) ?? []),
+    ].map(toProfile);
+    const friends = allFriends.filter(
+      (friend, index, self) => index === self.findIndex((f) => f.id === friend.id)
+    );
+
+    // For a group game, members already have access via group membership —
+    // "inviting" them wouldn't do anything, so only friends outside the
+    // group are offered. Doing this never adds an invitee to the group
+    // itself, only to this one game (see can_view_game's game_invitations
+    // fallback).
+    const groupMemberIds = new Set((groupMemberRows ?? []).map((row) => row.user_id));
+    const signedUpIds = new Set((game.player_games ?? []).map((pg) => pg.user_id));
+    invitableFriends = friends.filter(
+      (friend) => !signedUpIds.has(friend.id) && !groupMemberIds.has(friend.id)
+    );
+  }
   let players = (game.player_games ?? []).slice().sort((a, b) => a.signup_order - b.signup_order);
 
   if (isPast && players.length > 0) {
@@ -239,6 +286,14 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
             <OpenRingersSection gameId={game.id} groupId={game.group_id} />
           )}
         </>
+      )}
+
+      {isAdmin && (
+        <InviteFriendsSection
+          gameId={game.id}
+          invitableFriends={invitableFriends}
+          isGroupGame={!!game.group_id}
+        />
       )}
 
       {waitlistPlayers.length > 0 && (

@@ -13,13 +13,33 @@ export async function acceptRequest(requestId: string): Promise<RequestActionRes
   if (!user) return { error: 'You must be signed in.' };
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('friendships')
     .update({ status: 'accepted' })
     .eq('id', requestId)
-    .eq('friend_id', user.id);
+    .eq('friend_id', user.id)
+    .select('user_id')
+    .single();
 
   if (error) return { error: 'Failed to accept request. Please try again.' };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('username, display_name')
+    .eq('id', user.id)
+    .single();
+
+  const accepterName = profile?.display_name || profile?.username || 'Someone';
+
+  await supabase.functions.invoke('send-notification', {
+    body: {
+      userId: data.user_id,
+      type: 'friend_accepted',
+      title: 'Friend Request Accepted',
+      body: `${accepterName} accepted your friend request`,
+      data: { screen: 'Friends' },
+    },
+  });
 
   await trackEvent(AnalyticsEvent.FriendRequestAccepted);
 

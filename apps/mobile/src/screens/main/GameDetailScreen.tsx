@@ -24,6 +24,7 @@ import { useGameDetails } from '@/hooks/useGameDetails';
 import { useGameActions } from '@/hooks/useGameActions';
 import { useRingerActions } from '@/hooks/useRingerActions';
 import { useGroupAdminGroupIds } from '@/hooks/useGroupAdminGroupIds';
+import { useGroupMemberIds } from '@/hooks/useGroupMemberIds';
 import { useAcceptedFriends } from '@/hooks/useAcceptedFriends';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
 import {
@@ -103,6 +104,7 @@ export function GameDetailScreen({
     user?.id
   );
   const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
+  const { memberIds: groupMemberIds } = useGroupMemberIds(game?.group_id ?? null);
   const { friends } = useAcceptedFriends(user?.id);
   const { refreshing, onRefresh } = useRefreshControl(refetch);
 
@@ -166,8 +168,14 @@ export function GameDetailScreen({
   const activePlayers = getActivePlayers(game.player_games, capacity);
   const waitlistPlayers = getWaitlistPlayers(game.player_games, capacity);
 
+  // For a group game, members already have access via group membership —
+  // "inviting" them wouldn't do anything, so only friends outside the
+  // group are offered. Doing this never adds an invitee to the group
+  // itself, only to this one game (see can_view_game's game_invitations
+  // fallback).
   const invitableFriends = friends.filter(
-    (friend) => !game.player_games.some((pg) => pg.user_id === friend.id)
+    (friend) =>
+      !game.player_games.some((pg) => pg.user_id === friend.id) && !groupMemberIds.has(friend.id)
   );
 
   const handleAcceptInvite = async () => {
@@ -472,8 +480,14 @@ export function GameDetailScreen({
           )}
         </ThemedCard>
 
-        {isAdmin && !game.group_id && (
+        {isAdmin && (
           <ThemedCard variant="elevated" title="Invite Friends">
+            {!!game.group_id && (
+              <ThemedTextBox variant="caption" color="secondary" style={styles.inviteSectionText}>
+                Invited friends get access to this game only — they won&apos;t be added to the
+                group.
+              </ThemedTextBox>
+            )}
             <ThemedButton
               title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
               variant="outline"
@@ -483,7 +497,9 @@ export function GameDetailScreen({
               <View style={styles.inviteSection}>
                 {invitableFriends.length === 0 ? (
                   <ThemedTextBox variant="body" color="secondary" style={styles.inviteSectionText}>
-                    All your friends are already signed up, or you have no friends to invite.
+                    {game.group_id
+                      ? 'All your friends are already in this group, already signed up, or you have no friends to invite.'
+                      : 'All your friends are already signed up, or you have no friends to invite.'}
                   </ThemedTextBox>
                 ) : (
                   invitableFriends.map((friend) => (

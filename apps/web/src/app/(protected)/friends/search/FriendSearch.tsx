@@ -1,12 +1,19 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { getInitials, type Profile } from '@temur/shared';
-import { searchUsers, sendFriendRequest } from './actions';
+import { getInitials, type FriendshipStatus } from '@temur/shared';
+import { searchUsers, sendFriendRequest, type SearchResult } from './actions';
+
+const ADD_BUTTON_LABELS: Record<FriendshipStatus, string> = {
+  none: 'Add',
+  friends: 'Friends',
+  pending_outgoing: 'Sent',
+  pending_incoming: 'Requested You',
+};
 
 export function FriendSearch() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Profile[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
   const [isSearching, startSearch] = useTransition();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,7 +69,9 @@ export function FriendSearch() {
       ) : (
         <div className="flex flex-col divide-y divide-border-light rounded-lg border border-border bg-card">
           {results.map((profile) => {
-            const hasSent = sentIds.has(profile.id);
+            const status: FriendshipStatus = sentIds.has(profile.id)
+              ? 'pending_outgoing'
+              : profile.friendshipStatus;
             return (
               <div key={profile.id} className="flex items-center gap-3 px-4 py-3">
                 {profile.avatar_url ? (
@@ -86,10 +95,10 @@ export function FriendSearch() {
                 <button
                   type="button"
                   onClick={() => handleAdd(profile.id)}
-                  disabled={hasSent}
+                  disabled={status !== 'none'}
                   className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
-                  {hasSent ? 'Sent' : 'Add'}
+                  {ADD_BUTTON_LABELS[status]}
                 </button>
               </div>
             );
