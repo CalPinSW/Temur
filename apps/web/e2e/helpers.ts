@@ -69,6 +69,30 @@ export async function deleteUser(userId: string): Promise<void> {
   await getAdminClient().auth.admin.deleteUser(userId);
 }
 
+// Direct DB cleanup (not via the UI) so a test can guarantee no dangling
+// friendship/pending-request survives it regardless of where it failed —
+// the app has no "cancel my own sent request" UI, so a test that fails
+// after sending one but before it's accepted would otherwise leave a
+// pending row neither side can clear, breaking every later spec that
+// assumes primary/secondary start out as strangers.
+export async function removeFriendshipBetween(
+  usernameA: string,
+  usernameB: string
+): Promise<void> {
+  const admin = getAdminClient();
+  const { data: profiles } = await admin
+    .from('profiles')
+    .select('id, username')
+    .in('username', [usernameA, usernameB]);
+
+  const idA = profiles?.find((p) => p.username === usernameA)?.id;
+  const idB = profiles?.find((p) => p.username === usernameB)?.id;
+  if (!idA || !idB) return;
+
+  await admin.from('friendships').delete().eq('user_id', idA).eq('friend_id', idB);
+  await admin.from('friendships').delete().eq('user_id', idB).eq('friend_id', idA);
+}
+
 // Creates a fresh group (the signed-in page's user becomes its admin) and a
 // game scoped to it, via the real UI. Returns the group id and the game's
 // team names so callers can navigate straight to either. Kickoff defaults to
