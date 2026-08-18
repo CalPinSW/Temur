@@ -10,6 +10,10 @@ import {
   getGameVisibilityStatus,
   getPlayerDisplayName,
   getNextSignupOrder,
+  getNextSaturday,
+  getDefaultKickoffDate,
+  getDefaultVisibleAt,
+  isVisibleAtBeforeKickoff,
 } from '../utils/gameUtils';
 import { PlayerGameWithProfile } from '../types/game';
 
@@ -280,4 +284,65 @@ describe('gameUtils', () => {
       expect(getTeamCounts({})).toEqual({ team1: 0, team2: 0, unassigned: 0 });
     });
   });
+
+  describe('getNextSaturday', () => {
+    it('advances a full week when starting exactly on a Saturday', () => {
+      // 2026-03-07 is a Saturday; using local (not UTC) constructors avoids
+      // timezone off-by-one-day surprises when comparing calendar dates.
+      // "Next" is strictly after the input, so an already-Saturday input
+      // rolls forward a full week rather than returning the same day.
+      const saturday = new Date(2026, 2, 7);
+      const result = getNextSaturday(saturday);
+      expect(result.getDay()).toBe(6);
+      expect(result.getTime()).toBeGreaterThan(saturday.getTime());
+      expect(isSameCalendarDay(result, new Date(2026, 2, 14))).toBe(true);
+    });
+
+    it('rolls forward to the next Saturday from a weekday', () => {
+      const wednesday = new Date(2026, 2, 4);
+      const result = getNextSaturday(wednesday);
+      expect(result.getDay()).toBe(6);
+      expect(result.getTime()).toBeGreaterThan(wednesday.getTime());
+    });
+  });
+
+  describe('getDefaultKickoffDate', () => {
+    it('skips Saturdays that already have a game', () => {
+      const nextSaturday = getNextSaturday(new Date());
+      const result = getDefaultKickoffDate([nextSaturday]);
+      expect(isSameCalendarDay(result, nextSaturday)).toBe(false);
+      expect(result.getTime()).toBeGreaterThan(nextSaturday.getTime());
+    });
+  });
+
+  describe('getDefaultVisibleAt', () => {
+    it('is exactly 6 days before kickoff, same time of day', () => {
+      const kickoff = new Date('2026-03-14T10:45:00.000Z');
+      const result = getDefaultVisibleAt(kickoff);
+      expect(result.toISOString()).toBe('2026-03-08T10:45:00.000Z');
+    });
+  });
+
+  describe('isVisibleAtBeforeKickoff', () => {
+    it('accepts a visibleAt earlier than kickoff', () => {
+      expect(
+        isVisibleAtBeforeKickoff(new Date('2026-03-14T10:45:00.000Z'), new Date('2026-03-07T10:45:00.000Z'))
+      ).toBe(true);
+    });
+
+    it('accepts a visibleAt equal to kickoff', () => {
+      const same = new Date('2026-03-14T10:45:00.000Z');
+      expect(isVisibleAtBeforeKickoff(same, same)).toBe(true);
+    });
+
+    it('rejects a visibleAt later than kickoff', () => {
+      expect(
+        isVisibleAtBeforeKickoff(new Date('2026-03-07T10:45:00.000Z'), new Date('2026-03-14T10:45:00.000Z'))
+      ).toBe(false);
+    });
+  });
 });
+
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}

@@ -61,6 +61,10 @@ test.describe('Games', () => {
     const previewTeam2 = `E2E-Preview-T2-${suffix}`;
 
     await page.goto('/games/new');
+    // Kickoff must stay on/after Visible From (visibleAt <= kickoff_date is
+    // enforced both client- and server-side), so push both into the future
+    // rather than only Visible From.
+    await page.getByLabel('Kickoff Date & Time').fill('2099-01-02T10:00');
     await page.getByLabel('Visible From').fill('2099-01-01T10:00');
     await page.getByLabel('Team 1 Name').fill(previewTeam1);
     await page.getByLabel('Team 2 Name').fill(previewTeam2);
