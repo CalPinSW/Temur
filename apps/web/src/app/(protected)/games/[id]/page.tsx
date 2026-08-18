@@ -26,6 +26,7 @@ import { InviteFriendsSection } from './InviteFriendsSection';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
+  group: { name: string } | null;
 }
 
 interface RawFriendship {
@@ -92,7 +93,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
     supabase
       .from('games')
       .select(
-        `*, player_games (
+        `*, group:groups(name), player_games (
           id, user_id, signup_order, team, created_at, is_ringer, guest_name, added_by,
           profile:profiles!player_games_user_id_fkey ( id, username, display_name, avatar_url )
         )`
@@ -204,6 +205,9 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
             </span>
           )}
         </div>
+        {game.group?.name && (
+          <p className="text-sm font-medium text-primary">{game.group.name}</p>
+        )}
         <p className="text-sm text-text-secondary">
           {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
         </p>

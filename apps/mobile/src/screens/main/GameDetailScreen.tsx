@@ -430,7 +430,12 @@ export function GameDetailScreen({
         )}
 
         <ThemedCard variant="elevated">
-          <GameHeader kickoffDate={game.kickoff_date} isPast={isPast} isVisible={isVisible} />
+          <GameHeader
+            kickoffDate={game.kickoff_date}
+            isPast={isPast}
+            isVisible={isVisible}
+            groupName={game.group_name}
+          />
 
           <GameStats
             activePlayersCount={activePlayers.length}

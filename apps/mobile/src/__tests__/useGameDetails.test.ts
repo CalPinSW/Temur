@@ -66,6 +66,25 @@ describe('useGameDetails', () => {
     expect(result.current.game?.player_count).toBe(2);
   });
 
+  it('derives group_name from the joined group, and null for a groupless game', async () => {
+    const gamesBuilder = createQueryBuilder({
+      data: {
+        ...baseGameRow,
+        kickoff_date: '2099-01-01T18:00:00.000Z',
+        group: { name: 'Tuesday Regulars' },
+      },
+      error: null,
+    });
+    const invitationsBuilder = createQueryBuilder({ data: null, error: null });
+    mockFromTables(mockSupabase, { games: gamesBuilder, game_invitations: invitationsBuilder });
+
+    const { result } = renderHook(() => useGameDetails('game-1', 'user-1'));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.game?.group_name).toBe('Tuesday Regulars');
+  });
+
   it('attaches average ratings for a past game', async () => {
     const gamesBuilder = createQueryBuilder({
       data: { ...baseGameRow, kickoff_date: '2020-01-01T18:00:00.000Z' },

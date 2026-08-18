@@ -49,6 +49,14 @@ test.describe('Groups', () => {
     await page.getByLabel('Visible From').fill(recentPast);
     await page.getByRole('button', { name: 'Create Game' }).click();
     await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+
+    // The group name is shown clearly on the game itself, not just implied
+    // by how you navigated there.
+    await expect(page.getByRole('main').getByText(groupName)).toBeVisible();
+
+    await page.goto('/games');
+    const card = page.locator('a', { hasText: groupName }).first();
+    await expect(card).toBeVisible();
   });
 
   test('gates a not-yet-visible group game — admin preview only, hidden from other members', async ({

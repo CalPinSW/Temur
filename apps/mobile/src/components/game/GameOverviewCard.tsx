@@ -49,6 +49,15 @@ export const GameOverviewCard: React.FC<GameOverviewCardProps> = ({ game, onNavi
           )}
         </View>
 
+        {game.group_name && (
+          <View style={styles.gameCardGroupRow}>
+            <MaterialIcons name="groups" size={16} color={colors.primary} />
+            <ThemedTextBox variant="caption" color="primary" weight="medium">
+              {game.group_name}
+            </ThemedTextBox>
+          </View>
+        )}
+
         <View style={styles.gameCardInfo}>
           <View style={styles.gameCardStat}>
             <MaterialIcons name="people" size={18} color={colors.textSecondary} />
@@ -95,6 +104,12 @@ const styles = StyleSheet.create({
   },
   gameCardDateText: {
     gap: 2,
+  },
+  gameCardGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
   gameCardInfo: {
     flexDirection: 'row',

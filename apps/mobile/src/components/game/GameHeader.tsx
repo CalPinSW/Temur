@@ -9,13 +9,23 @@ interface GameHeaderProps {
   kickoffDate: string;
   isPast: boolean;
   isVisible: boolean;
+  groupName?: string | null;
 }
 
-export function GameHeader({ kickoffDate, isPast, isVisible }: GameHeaderProps) {
+export function GameHeader({ kickoffDate, isPast, isVisible, groupName }: GameHeaderProps) {
   const { colors } = useTheme();
 
   return (
     <View>
+      {!!groupName && (
+        <View style={styles.groupRow}>
+          <MaterialIcons name="groups" size={16} color={colors.primary} />
+          <ThemedTextBox variant="body" color="primary" weight="medium">
+            {groupName}
+          </ThemedTextBox>
+        </View>
+      )}
+
       <View style={styles.gameHeader}>
         <MaterialIcons
           name="event"
@@ -42,6 +52,12 @@ export function GameHeader({ kickoffDate, isPast, isVisible }: GameHeaderProps) 
 }
 
 const styles = StyleSheet.create({
+  groupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
   gameHeader: {
     flexDirection: 'row',
     alignItems: 'center',

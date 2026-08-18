@@ -10,6 +10,9 @@ export interface Game {
   team2_name: string;
   players_per_team: number;
   group_id: string | null;
+  // Not a real games column — populated by callers that join groups(name)
+  // for display, since a game itself doesn't own its group's name.
+  group_name?: string | null;
   created_by: string | null;
   ringers_opened_at: string | null;
   ringers_opened_by: string | null;
