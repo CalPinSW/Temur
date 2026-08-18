@@ -193,4 +193,77 @@ test.describe('Groups', () => {
     await page.goto(gameUrl);
     await expect(page.getByText(/could not be found/i)).toBeVisible();
   });
+
+  test('invites a friend who is not a group member to a single group game', async ({
+    page,
+    browser,
+  }) => {
+    const inviteGroupName = `E2E Invite Group ${Date.now()}`;
+    const inviteTeam1 = `E2E-Invite-T1-${Date.now()}`;
+    const inviteTeam2 = `E2E-Invite-T2-${Date.now()}`;
+
+    // The invite UI only offers the admin's own friends, so establish a
+    // friendship with secondary first.
+    await page.goto('/friends/search');
+    await page.getByPlaceholder('Search by username or name...').fill(E2E_USERS.secondary.username);
+    const searchRow = page.locator('div.px-4.py-3', { hasText: E2E_USERS.secondary.displayName });
+    await expect(searchRow).toBeVisible();
+    await searchRow.getByRole('button', { name: 'Add' }).click();
+    await expect(searchRow.getByRole('button', { name: 'Sent' })).toBeVisible();
+
+    const secondaryContext = await browser.newContext({ storageState: secondaryStorageState });
+    const secondaryPage = await secondaryContext.newPage();
+    try {
+      await secondaryPage.goto('/friends/requests');
+      const requestRow = secondaryPage.locator('div.px-4.py-3', {
+        hasText: E2E_USERS.primary.displayName,
+      });
+      await expect(requestRow).toBeVisible();
+      await requestRow.getByRole('button', { name: 'Accept' }).click();
+
+      // A group game secondary is not a member of.
+      await page.goto('/groups/new');
+      await page.getByLabel('Group Name').fill(inviteGroupName);
+      await page.getByRole('button', { name: 'Create Group' }).click();
+      await page.waitForURL(/\/groups\/[0-9a-f-]+$/);
+
+      await page.getByRole('link', { name: 'Create Game' }).click();
+      const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
+      await page.getByLabel('Visible From').fill(recentPast);
+      await page.getByLabel('Team 1 Name').fill(inviteTeam1);
+      await page.getByLabel('Team 2 Name').fill(inviteTeam2);
+      await page.getByRole('button', { name: 'Create Game' }).click();
+      await page.waitForURL(/\/games\/[0-9a-f-]+$/);
+      const gameUrl = page.url();
+
+      // Not a member yet — RLS blocks the row entirely.
+      await secondaryPage.goto(gameUrl);
+      await expect(secondaryPage.getByText(/could not be found/i)).toBeVisible();
+
+      // Invite secondary to just this game (not the group).
+      await page.getByRole('button', { name: 'Invite More Friends' }).click();
+      await page.getByLabel(E2E_USERS.secondary.displayName).check();
+      await page.getByRole('button', { name: 'Send Invites' }).click();
+      await expect(page.getByRole('button', { name: 'Hide' })).toBeVisible();
+
+      // Now visible and signable, without being a group member.
+      await secondaryPage.goto(gameUrl);
+      await expect(
+        secondaryPage.getByRole('heading', { name: `${inviteTeam1} vs ${inviteTeam2}` })
+      ).toBeVisible();
+      await secondaryPage.getByRole('button', { name: 'Sign up' }).click();
+      await expect(secondaryPage.getByRole('button', { name: 'Withdraw' })).toBeVisible();
+
+      await secondaryPage.goto('/groups');
+      await expect(secondaryPage.getByRole('link', { name: inviteGroupName })).not.toBeVisible();
+    } finally {
+      await secondaryContext.close();
+    }
+
+    await page.goto('/friends');
+    const friendRow = page.locator('div.px-4.py-3', { hasText: E2E_USERS.secondary.displayName });
+    page.once('dialog', (dialog) => dialog.accept());
+    await friendRow.getByRole('button', { name: `Remove ${E2E_USERS.secondary.displayName}` }).click();
+    await expect(friendRow).not.toBeVisible();
+  });
 });
