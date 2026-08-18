@@ -316,10 +316,10 @@ describe('gameUtils', () => {
   });
 
   describe('getDefaultVisibleAt', () => {
-    it('is exactly 7 days before kickoff, same time of day', () => {
+    it('is exactly 6 days before kickoff, same time of day', () => {
       const kickoff = new Date('2026-03-14T10:45:00.000Z');
       const result = getDefaultVisibleAt(kickoff);
-      expect(result.toISOString()).toBe('2026-03-07T10:45:00.000Z');
+      expect(result.toISOString()).toBe('2026-03-08T10:45:00.000Z');
     });
   });
 
