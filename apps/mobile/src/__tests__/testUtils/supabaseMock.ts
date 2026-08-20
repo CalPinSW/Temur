@@ -56,16 +56,43 @@ export function createQueryBuilder(
   return builder;
 }
 
+// Real supabase-js reuses the same underlying channel for two `.channel()`
+// calls sharing a name, so calling `.on()` on the second one after the
+// first has already `.subscribe()`d throws "cannot add postgres_changes
+// callbacks ... after subscribe()". Mirroring that here (keyed by name, not
+// by call) is what lets a hook test actually catch a channel-name collision
+// between two concurrently-mounted instances, rather than silently passing
+// against a mock that accepts anything.
 export function createSupabaseMock() {
-  const channel = {
-    on: jest.fn().mockReturnThis(),
-    subscribe: jest.fn().mockReturnThis(),
-  };
+  const subscribedChannelNames = new Set<string>();
+
+  const channel = jest.fn((name: string) => {
+    const channelObj = {
+      __name: name,
+      on: jest.fn(() => {
+        if (subscribedChannelNames.has(name)) {
+          throw new Error(
+            `cannot add \`postgres_changes\` callbacks for realtime:${name} after \`subscribe()\`.`
+          );
+        }
+        return channelObj;
+      }),
+      subscribe: jest.fn(() => {
+        subscribedChannelNames.add(name);
+        return channelObj;
+      }),
+    };
+    return channelObj;
+  });
+
+  const removeChannel = jest.fn((removed: { __name?: string } | undefined) => {
+    if (removed?.__name) subscribedChannelNames.delete(removed.__name);
+  });
 
   return {
     from: jest.fn<QueryBuilder, [string]>(),
-    channel: jest.fn(() => channel),
-    removeChannel: jest.fn(),
+    channel,
+    removeChannel,
     rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
     functions: {
       invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
