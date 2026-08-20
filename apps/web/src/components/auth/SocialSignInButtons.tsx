@@ -47,7 +47,7 @@ declare global {
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const APPLE_CLIENT_ID = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
 
-export function SocialSignInButtons() {
+export function SocialSignInButtons({ redirectTo }: { redirectTo?: string }) {
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const [nonce, setNonce] = useState<{ nonce: string; hashedNonce: string } | null>(null);
   const [googleReady, setGoogleReady] = useState(false);
@@ -63,7 +63,7 @@ export function SocialSignInButtons() {
     if (!nonce) return;
     setError('');
     startTransition(async () => {
-      const result = await signInWithIdToken(provider, token, nonce.nonce, fullName);
+      const result = await signInWithIdToken(provider, token, nonce.nonce, fullName, redirectTo);
       if (result?.error) setError(result.error);
     });
   };

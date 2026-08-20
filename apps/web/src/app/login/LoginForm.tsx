@@ -4,11 +4,18 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { login } from './actions';
 
-export function LoginForm({ initialError }: { initialError?: string }) {
+export function LoginForm({
+  initialError,
+  redirectTo,
+}: {
+  initialError?: string;
+  redirectTo?: string;
+}) {
   const [state, formAction, isPending] = useActionState(login, { error: initialError });
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
+      {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-sm font-medium text-text-secondary">
           Email
@@ -61,7 +68,10 @@ export function LoginForm({ initialError }: { initialError?: string }) {
 
       <p className="text-center text-sm text-text-secondary">
         No account?{' '}
-        <Link href="/signup" className="font-medium text-primary hover:text-primary-hover">
+        <Link
+          href={redirectTo ? `/signup?redirect=${encodeURIComponent(redirectTo)}` : '/signup'}
+          className="font-medium text-primary hover:text-primary-hover"
+        >
           Sign up
         </Link>
       </p>

@@ -38,7 +38,11 @@ export function resolveDeepLinkRoute(url: string): DeepLinkRoute | null {
     case 'friends':
       return segments[1] === 'requests' ? { screen: 'FriendRequests' } : { screen: 'Friends' };
     case 'groups':
-      return segments[1] === 'invites' ? { screen: 'GroupInvites' } : null;
+      if (segments[1] === 'invites') return { screen: 'GroupInvites' };
+      if (segments[1] === 'join' && segments[2]) {
+        return { screen: 'GroupJoin', params: { token: segments[2] } };
+      }
+      return null;
     case 'games':
       return segments[1]
         ? { screen: 'GameDetail', params: { gameId: segments[1] } }

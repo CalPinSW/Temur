@@ -26,6 +26,7 @@ export async function GET() {
             { '/': '/friends/requests', comment: 'Friend request links' },
             { '/': '/friends', comment: 'Friend-accepted links' },
             { '/': '/groups/invites', comment: 'Group invite links' },
+            { '/': '/groups/join/*', comment: 'Group join links' },
             { '/': '/reset-password', comment: 'Password reset links' },
           ],
         },

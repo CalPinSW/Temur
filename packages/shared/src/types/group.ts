@@ -51,3 +51,13 @@ export interface GroupInvitationWithDetails extends GroupInvitation {
     display_name: string | null;
   };
 }
+
+export interface GroupJoinLink {
+  token: string;
+  expires_at: string;
+}
+
+export interface GroupJoinLinkInfo {
+  group_id: string;
+  group_name: string;
+}

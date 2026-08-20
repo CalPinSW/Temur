@@ -20,8 +20,23 @@ describe('resolveDeepLinkRoute', () => {
     expect(resolveDeepLinkRoute('temur://groups/invites')).toEqual({ screen: 'GroupInvites' });
   });
 
-  it('ignores group links that are not invites', () => {
+  it('ignores group links that are not invites or join links', () => {
     expect(resolveDeepLinkRoute('https://www.temur.app/groups/abc123')).toBeNull();
+  });
+
+  it('resolves a group join link to GroupJoin with the token', () => {
+    expect(resolveDeepLinkRoute('https://www.temur.app/groups/join/tok123')).toEqual({
+      screen: 'GroupJoin',
+      params: { token: 'tok123' },
+    });
+    expect(resolveDeepLinkRoute('temur://groups/join/tok123')).toEqual({
+      screen: 'GroupJoin',
+      params: { token: 'tok123' },
+    });
+  });
+
+  it('ignores a group join link with no token', () => {
+    expect(resolveDeepLinkRoute('https://www.temur.app/groups/join')).toBeNull();
   });
 
   it('resolves a game detail link to GameDetail with the game id', () => {

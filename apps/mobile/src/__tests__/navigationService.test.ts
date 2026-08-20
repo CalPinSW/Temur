@@ -84,6 +84,12 @@ describe('navigationService', () => {
       expect(mockNavigate).toHaveBeenCalledWith('HomeTab');
     });
 
+    it('navigates to the groups tab join screen with the token for GroupJoin', () => {
+      navigateFromNotification('GroupJoin', { token: 'tok123' });
+
+      expect(mockNavigate).toHaveBeenCalledWith('GroupsTab', { screen: 'join', token: 'tok123' });
+    });
+
     it('does nothing when the navigator is not ready', () => {
       setIsReady(false);
 

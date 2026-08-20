@@ -1,6 +1,26 @@
 import { supabase } from './supabase';
 import { NotificationTemplates } from './notificationService';
-import { GroupRole } from '@temur/shared';
+import { GroupJoinLink, GroupRole } from '@temur/shared';
+
+// Matches the fallback default in supabase/functions/_shared/email.ts —
+// there's no EXPO_PUBLIC_SITE_URL env var on mobile today, so this is
+// hardcoded the same way that server-side fallback is.
+const WEB_URL = 'https://www.temur.app';
+
+export async function getOrCreateGroupJoinLink(groupId: string): Promise<string> {
+  const { data, error } = await supabase
+    .rpc('get_or_create_group_join_link', { p_group_id: groupId })
+    .single();
+
+  if (error || !data) throw error ?? new Error('Failed to create join link');
+  return `${WEB_URL}/groups/join/${(data as GroupJoinLink).token}`;
+}
+
+export async function joinGroupViaLink(token: string): Promise<string> {
+  const { data, error } = await supabase.rpc('join_group_via_link', { p_token: token });
+  if (error || !data) throw error ?? new Error('This join link is invalid or has expired');
+  return data as string;
+}
 
 export async function createGroup(name: string, description: string | null, createdBy: string) {
   const { data, error } = await supabase

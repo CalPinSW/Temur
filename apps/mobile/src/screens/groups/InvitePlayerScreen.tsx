@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Clipboard from 'expo-clipboard';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { Profile } from '@temur/shared';
-import { inviteToGroup } from '@/services/groupService';
+import { inviteToGroup, getOrCreateGroupJoinLink } from '@/services/groupService';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox, ThemedInput } from '@/components/themed';
 import * as Sentry from '@sentry/react-native';
@@ -28,6 +29,25 @@ export function InvitePlayerScreen({
   const [results, setResults] = useState<Profile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sentInvites, setSentInvites] = useState<Set<string>>(new Set());
+  const [isCopyingLink, setIsCopyingLink] = useState(false);
+
+  const handleCopyJoinLink = async () => {
+    setIsCopyingLink(true);
+    try {
+      const link = await getOrCreateGroupJoinLink(groupId);
+      await Clipboard.setStringAsync(link);
+      Alert.alert(
+        'Link Copied',
+        'Join link copied to clipboard. Anyone with this link can join the group for the next 7 days.'
+      );
+    } catch (error) {
+      console.error('Copy join link error:', error);
+      Sentry.captureException(error);
+      Alert.alert('Error', 'Failed to create join link');
+    } finally {
+      setIsCopyingLink(false);
+    }
+  };
 
   const searchUsers = useCallback(
     async (query: string) => {
@@ -184,6 +204,15 @@ export function InvitePlayerScreen({
         <View style={styles.placeholder} />
       </View>
 
+      <View style={styles.joinLinkContainer}>
+        <ThemedButton
+          title={isCopyingLink ? 'Copying…' : 'Copy Join Link'}
+          variant="outline"
+          onPress={handleCopyJoinLink}
+          disabled={isCopyingLink}
+        />
+      </View>
+
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
           <ThemedInput
@@ -221,6 +250,10 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 50,
+  },
+  joinLinkContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   searchContainer: {
     padding: 16,

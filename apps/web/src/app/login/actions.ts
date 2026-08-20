@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeRedirectPath } from '@/lib/redirect';
 
 export interface AuthFormState {
   error?: string;
@@ -19,5 +20,5 @@ export async function login(_prevState: AuthFormState, formData: FormData): Prom
     return { error: getAuthErrorMessage(error) };
   }
 
-  redirect('/games');
+  redirect(sanitizeRedirectPath(formData.get('redirect')));
 }
