@@ -4,6 +4,8 @@ import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { parseAuthCallbackUrl } from '@/utils/authCallbackUrl';
+import { resolveDeepLinkRoute } from '@/utils/deepLinkRouting';
+import { navigateFromNotification } from '@/services/navigationService';
 
 const RESET_PASSWORD_PATH = 'reset-password';
 
@@ -46,14 +48,31 @@ export async function handleAuthDeepLink(url: string): Promise<void> {
   useAuthStore.getState().setIsPasswordRecovery(true);
 }
 
+// Handles an incoming temur:// custom-scheme link or an https://www.temur.app
+// universal link (see apps/mobile/app.json's associatedDomains/intentFilters
+// and apps/web's .well-known/apple-app-site-association + assetlinks.json)
+// the same way regardless of which form it arrived in: auth links establish
+// a recovery session, everything else routes to the matching in-app screen
+// via resolveDeepLinkRoute so a notification-email link opens directly into
+// the relevant screen instead of just landing on whatever was last open.
+export function handleDeepLink(url: string): void {
+  if (isResetPasswordUrl(url)) {
+    handleAuthDeepLink(url);
+    return;
+  }
+
+  const route = resolveDeepLinkRoute(url);
+  if (route) navigateFromNotification(route.screen, route.params);
+}
+
 export function useAuthDeepLinks() {
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      if (url) handleAuthDeepLink(url);
+      if (url) handleDeepLink(url);
     });
 
     const subscription = Linking.addEventListener('url', ({ url }) => {
-      handleAuthDeepLink(url);
+      handleDeepLink(url);
     });
 
     return () => subscription.remove();
