@@ -12,12 +12,26 @@ interface JoinGroupScreenProps {
   onGoBack: () => void;
 }
 
+// Distinguishes a transient network failure (the fetch itself never reached
+// the server) from the RPC's own rejection (e.g. an actually invalid or
+// expired token) — supabase-js reports both the same way, as an object with
+// {message, details, hint, code}, so this is the only signal available.
+// Worth telling apart: a network blip should invite a retry, not tell the
+// user their invite is dead.
+function isNetworkError(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return message.includes('Network request failed');
+}
+
 export function JoinGroupScreen({ token, onJoined, onGoBack }: JoinGroupScreenProps) {
   const { colors } = useTheme();
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setError(null);
     joinGroupViaLink(token)
       .then((groupId) => {
         if (!cancelled) onJoined(groupId);
@@ -25,13 +39,19 @@ export function JoinGroupScreen({ token, onJoined, onGoBack }: JoinGroupScreenPr
       .catch((err) => {
         console.error('Join group via link error:', err);
         Sentry.captureException(err);
-        if (!cancelled) setError('This join link is invalid or has expired.');
+        if (cancelled) return;
+        setError(
+          isNetworkError(err)
+            ? "Couldn't connect. Check your connection and try again."
+            : (err instanceof Error ? err.message : null) ||
+                'This join link is invalid or has expired.'
+        );
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  }, [token, attempt]);
 
   if (error) {
     return (
@@ -44,11 +64,12 @@ export function JoinGroupScreen({ token, onJoined, onGoBack }: JoinGroupScreenPr
             {error}
           </ThemedTextBox>
           <ThemedButton
-            title="Go Back"
+            title="Try Again"
             variant="primary"
-            onPress={onGoBack}
+            onPress={() => setAttempt((prev) => prev + 1)}
             style={styles.button}
           />
+          <ThemedButton title="Go Back" variant="ghost" onPress={onGoBack} style={styles.button} />
         </View>
       </SafeAreaView>
     );
