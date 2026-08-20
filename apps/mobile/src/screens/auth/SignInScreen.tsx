@@ -54,7 +54,7 @@ export function SignInScreen({
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.text }]}>Welcome Back</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Sign in to continue splitting bills
+            Sign in to organize your next game
           </Text>
         </View>
 

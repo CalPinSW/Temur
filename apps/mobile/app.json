@@ -14,12 +14,15 @@
       "backgroundColor": "#0A3B27"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.calpin.temur",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "associatedDomains": [
+        "applinks:temur.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
