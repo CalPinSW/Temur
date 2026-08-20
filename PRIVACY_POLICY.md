@@ -1,6 +1,6 @@
 # Privacy Policy for Temur
 
-**Last Updated:** August 18, 2026
+**Last Updated:** August 20, 2026
 
 ## Introduction
 
@@ -21,12 +21,16 @@ Temur ("we", "our", or "the app") is a mobile app for organizing 5-a-side and ot
 ### Device Information
 - A push notification token, if you enable push notifications, used to notify you about game updates (signups, team assignments, reminders)
 
+### Diagnostic Information
+- Crash reports and error logs, including device model, operating system version, app version, and the sequence of actions leading up to a crash, sent to our error monitoring service so we can detect and fix bugs
+
 ## How We Use Your Information
 
 - **Authentication**: To verify your identity and secure your account
 - **Game Organization**: To run signups, waitlists, team assignment, and post-game ratings
 - **Social Features**: To enable friend connections and invites
 - **Notifications**: To alert you about game activity, if enabled
+- **Diagnostics**: To detect, diagnose, and fix crashes and errors
 
 ## Data Storage
 
@@ -80,5 +84,7 @@ We use the following third-party services:
 - **Supabase**: Database and authentication
 - **Expo**: App distribution, updates, and push notifications
 - **Google / Apple**: Optional social sign-in
+- **Sentry**: Error monitoring and crash reporting
+- **Resend**: Sending transactional emails (account emails, notifications, bug report replies)
 
 Each service has its own privacy policy that governs their use of data.
