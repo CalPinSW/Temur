@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { InviteSearch } from './InviteSearch';
+import { JoinLinkCard } from './JoinLinkCard';
 
 export default async function InviteToGroupPage({ params }: PageProps<'/groups/[id]/invite'>) {
   const { id: groupId } = await params;
@@ -25,6 +26,7 @@ export default async function InviteToGroupPage({ params }: PageProps<'/groups/[
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
       <h1 className="text-lg font-semibold text-text">Invite Players to {group.name}</h1>
+      <JoinLinkCard groupId={groupId} />
       <InviteSearch groupId={groupId} existingMemberIds={existingMemberIds} />
     </div>
   );

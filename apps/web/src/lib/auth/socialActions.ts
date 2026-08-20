@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeRedirectPath } from '@/lib/redirect';
 
 export type SocialProvider = 'google' | 'apple';
 
@@ -13,7 +14,8 @@ export async function signInWithIdToken(
   provider: SocialProvider,
   token: string,
   nonce: string,
-  fullName?: string
+  fullName?: string,
+  redirectTo?: string
 ): Promise<SocialSignInState> {
   const supabase = await createClient();
 
@@ -30,5 +32,5 @@ export async function signInWithIdToken(
     await supabase.auth.updateUser({ data: { full_name: fullName } });
   }
 
-  redirect('/games');
+  redirect(sanitizeRedirectPath(redirectTo));
 }

@@ -14,7 +14,7 @@ export function navigateToGame(gameId: string) {
 }
 
 export type NotificationScreen =
-  'FriendRequests' | 'Friends' | 'Home' | 'GroupInvites' | 'GameDetail' | 'Games';
+  'FriendRequests' | 'Friends' | 'Home' | 'GroupInvites' | 'GroupJoin' | 'GameDetail' | 'Games';
 
 export function navigateFromNotification(
   screen: NotificationScreen,
@@ -34,6 +34,10 @@ export function navigateFromNotification(
     case 'GroupInvites':
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       navigationRef.navigate('GroupsTab' as any, { screen: 'invites' });
+      break;
+    case 'GroupJoin':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigationRef.navigate('GroupsTab' as any, { screen: 'join', token: data?.token });
       break;
     case 'GameDetail':
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

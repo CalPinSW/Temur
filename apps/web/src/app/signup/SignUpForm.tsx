@@ -8,14 +8,15 @@ import { signUp, type SignUpFormState } from './actions';
 
 const initialState: SignUpFormState = {};
 
-export function SignUpForm() {
+export function SignUpForm({ redirectTo }: { redirectTo?: string }) {
   const [state, formAction, isPending] = useActionState(signUp, initialState);
+  const loginHref = redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : '/login';
 
   if (state.success) {
     return (
       <p className="max-w-sm rounded-lg bg-background-secondary px-4 py-3 text-center text-text">
         Check your email to confirm your account, then{' '}
-        <Link href="/login" className="font-medium text-primary hover:text-primary-hover">
+        <Link href={loginHref} className="font-medium text-primary hover:text-primary-hover">
           sign in
         </Link>
         .
@@ -25,6 +26,7 @@ export function SignUpForm() {
 
   return (
     <form action={formAction} className="flex w-full max-w-sm flex-col gap-4">
+      {redirectTo && <input type="hidden" name="redirect" value={redirectTo} />}
       <div className="flex flex-col gap-1">
         <label htmlFor="email" className="text-sm font-medium text-text-secondary">
           Email
@@ -104,12 +106,12 @@ export function SignUpForm() {
 
       <p className="text-center text-sm text-text-secondary">
         Already have an account?{' '}
-        <Link href="/login" className="font-medium text-primary hover:text-primary-hover">
+        <Link href={loginHref} className="font-medium text-primary hover:text-primary-hover">
           Sign in
         </Link>
       </p>
 
-      <SocialSignInButtons />
+      <SocialSignInButtons redirectTo={redirectTo} />
     </form>
   );
 }

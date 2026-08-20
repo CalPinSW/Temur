@@ -31,13 +31,14 @@ import {
   GroupInvitesScreen,
   GroupGamesScreen,
   GroupMembersScreen,
+  JoinGroupScreen,
 } from '@/screens/groups';
 
 export type MainTabParamList = {
   HomeTab: undefined;
   MainFunctionalityTab: { screen?: 'detail'; gameId?: string } | undefined;
   FriendsTab: { screen?: 'list' | 'search' | 'requests' | 'ringers' } | undefined;
-  GroupsTab: { screen?: 'list' | 'invites' } | undefined;
+  GroupsTab: { screen?: 'list' | 'invites' | 'join'; token?: string } | undefined;
   ProfileTab: undefined;
 };
 
@@ -102,10 +103,23 @@ function FriendsStack({
   );
 }
 
-function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invites' } } }) {
+function GroupsStack({
+  route,
+}: {
+  route?: { params?: { screen?: 'list' | 'invites' | 'join'; token?: string } };
+}) {
   const screenParam = route?.params?.screen;
+  const token = route?.params?.token;
   const [screen, setScreen] = useState<
-    'list' | 'create' | 'detail' | 'invite' | 'invites' | 'creategame' | 'games' | 'members'
+    | 'list'
+    | 'create'
+    | 'detail'
+    | 'invite'
+    | 'invites'
+    | 'creategame'
+    | 'games'
+    | 'members'
+    | 'join'
   >(screenParam || 'list');
   const [groupId, setGroupId] = useState<string | null>(null);
   const [inviteContext, setInviteContext] = useState<{
@@ -122,6 +136,19 @@ function GroupsStack({ route }: { route?: { params?: { screen?: 'list' | 'invite
 
   if (screen === 'invites') {
     return <GroupInvitesScreen onGoBack={() => setScreen('list')} />;
+  }
+
+  if (screen === 'join' && token) {
+    return (
+      <JoinGroupScreen
+        token={token}
+        onJoined={(joinedGroupId) => {
+          setGroupId(joinedGroupId);
+          setScreen('detail');
+        }}
+        onGoBack={() => setScreen('list')}
+      />
+    );
   }
 
   if (screen === 'create') {

@@ -1,6 +1,6 @@
 'use server';
 
-import { type Profile } from '@temur/shared';
+import { type GroupJoinLink, type Profile } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 
 export async function searchUsersToInvite(
@@ -67,4 +67,22 @@ export async function sendGroupInvite(
   });
 
   return {};
+}
+
+export interface GetJoinLinkResult {
+  data?: GroupJoinLink;
+  error?: string;
+}
+
+export async function getOrCreateJoinLink(groupId: string): Promise<GetJoinLinkResult> {
+  const user = await getUser();
+  if (!user) return { error: 'You must be signed in.' };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .rpc('get_or_create_group_join_link', { p_group_id: groupId })
+    .single();
+
+  if (error || !data) return { error: 'Failed to create join link. Please try again.' };
+  return { data: data as GroupJoinLink };
 }

@@ -3,6 +3,7 @@
 import { validateUsername, getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
+import { sanitizeRedirectPath } from '@/lib/redirect';
 
 export interface SignUpFormState {
   error?: string;
@@ -25,12 +26,13 @@ export async function signUp(
 
   const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const redirectTo = sanitizeRedirectPath(formData.get('redirect'));
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${siteUrl}/auth/callback`,
+      emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
       data: {
         username,
         display_name: displayName || undefined,
