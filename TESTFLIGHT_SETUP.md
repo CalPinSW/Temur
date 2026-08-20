@@ -25,13 +25,7 @@
 
 ## Step 2: Update eas.json with Your Credentials
 
-`apps/mobile/eas.json`'s `submit.production.ios.appleTeamId` already reads from the `APPLE_TEAM_ID` EAS environment variable (`$APPLE_TEAM_ID`) — the same Team ID used by apps/web's Universal Links `.well-known` routes (see root README's "Universal Links (iOS) / App Links (Android) Setup"). Set it once via:
-
-```bash
-eas env:create --scope project --name APPLE_TEAM_ID --value ABC123XYZ --environment production
-```
-
-(or the EAS dashboard). Then add your `appleId` and `ascAppId` directly to `eas.json` — those aren't shared with any other part of the app, so there's no env var for them:
+Edit `apps/mobile/eas.json` and replace the placeholder values:
 
 ```json
 "submit": {
@@ -39,7 +33,7 @@ eas env:create --scope project --name APPLE_TEAM_ID --value ABC123XYZ --environm
     "ios": {
       "appleId": "your-actual-email@example.com",
       "ascAppId": "1234567890",
-      "appleTeamId": "$APPLE_TEAM_ID"
+      "appleTeamId": "ABC123XYZ"
     }
   }
 }

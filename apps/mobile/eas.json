@@ -3,13 +3,6 @@
     "version": ">= 5.0.0",
     "appVersionSource": "remote"
   },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleTeamId": "$APPLE_TEAM_ID"
-      }
-    }
-  },
   "build": {
     "development": {
       "developmentClient": true,
