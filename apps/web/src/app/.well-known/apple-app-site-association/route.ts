@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 
-// REPLACE_WITH_APPLE_TEAM_ID — the 10-character Apple Developer Team ID
-// (developer.apple.com → Membership, or `eas credentials`). Until this is
-// replaced, iOS can never verify the app owns temur.app links, so Universal
-// Links silently fail closed (links keep opening in the browser, same as
-// before this file existed) rather than breaking anything — see README's
+// The 10-character Apple Developer Team ID (developer.apple.com →
+// Membership, or `eas credentials`), set via APPLE_TEAM_ID in
+// apps/web/.env.local (and the Vercel project's env vars in production) —
+// never exposed to the client, so no NEXT_PUBLIC_ prefix. Until it's set,
+// iOS can never verify the app owns temur.app links, so Universal Links
+// silently fail closed (links keep opening in the browser, same as before
+// this file existed) rather than breaking anything — see README's
 // "Universal Links (iOS) / App Links (Android) Setup" section.
-const APPLE_TEAM_ID = 'REPLACE_WITH_APPLE_TEAM_ID';
+const APPLE_TEAM_ID = process.env.APPLE_TEAM_ID ?? 'REPLACE_WITH_APPLE_TEAM_ID';
 
 // Served at https://www.temur.app/.well-known/apple-app-site-association —
 // the file iOS fetches (over HTTPS, no redirects allowed) to verify this

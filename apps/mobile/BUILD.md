@@ -52,10 +52,7 @@ eas build --profile production --platform all
 ## Submitting to App Stores
 
 ### iOS (App Store Connect)
-1. Update `eas.json` with your Apple credentials:
-   - `appleId`: Your Apple ID email
-   - `ascAppId`: App Store Connect App ID
-   - `appleTeamId`: Your team ID
+1. `eas.json`'s `submit.production.ios.appleTeamId` reads from the `APPLE_TEAM_ID` EAS environment variable (`$APPLE_TEAM_ID`) — the same Team ID used by apps/web's Universal Links `.well-known` routes (see root README's "Universal Links (iOS) / App Links (Android) Setup"). Set it once via `eas env:create --scope project --name APPLE_TEAM_ID --value <team_id> --environment production` (or the EAS dashboard) if it isn't already set. Add `appleId` (your Apple ID email) and `ascAppId` (App Store Connect App ID) to `eas.json`'s same `ios` block too — those aren't shared with any other part of the app, so there's no env var for them.
 
 2. Submit:
    ```bash
