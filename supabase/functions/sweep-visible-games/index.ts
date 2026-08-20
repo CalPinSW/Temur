@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
         (m) => preferenceByUserId.get(m.user_id)?.email_enabled ?? true
       );
 
-      const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
+      const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://www.temur.app';
       const { subject, html } = buildNotificationEmail('game_visible', title, body, notifyData, siteUrl);
       await Promise.all(
         emailEligibleMembers.map(async (m) => {

@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.calpin.temur",
+      "associatedDomains": ["applinks:www.temur.app"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -41,6 +42,20 @@
               "scheme": "temur",
               "host": "auth",
               "pathPrefix": "/callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.temur.app"
             }
           ],
           "category": [

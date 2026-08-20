@@ -4,14 +4,20 @@ jest.mock('@/services/supabase', () => {
   return { supabase: createSupabaseMock() };
 });
 
+jest.mock('@/services/navigationService', () => ({
+  navigateFromNotification: jest.fn(),
+}));
+
 import { Linking } from 'react-native';
 import { renderHook } from '@testing-library/react-native';
 import { supabase } from '@/services/supabase';
 import { SupabaseMock } from './testUtils/supabaseMock';
 import { useAuthStore } from '@/store/authStore';
-import { handleAuthDeepLink, useAuthDeepLinks } from '@/hooks/useAuthDeepLinks';
+import { navigateFromNotification } from '@/services/navigationService';
+import { handleAuthDeepLink, handleDeepLink, useAuthDeepLinks } from '@/hooks/useAuthDeepLinks';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
+const mockNavigateFromNotification = navigateFromNotification as jest.Mock;
 
 describe('handleAuthDeepLink', () => {
   beforeEach(() => {
@@ -65,6 +71,38 @@ describe('handleAuthDeepLink', () => {
     await handleAuthDeepLink('temur://reset-password#access_token=abc&refresh_token=def');
 
     expect(useAuthStore.getState().isPasswordRecovery).toBe(false);
+  });
+});
+
+describe('handleDeepLink', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useAuthStore.setState({ isPasswordRecovery: false });
+  });
+
+  it('routes a reset-password link through the auth flow instead of navigation', async () => {
+    mockSupabase.auth.setSession.mockResolvedValue({ data: {}, error: null });
+
+    handleDeepLink('temur://reset-password#access_token=abc&refresh_token=def');
+    await Promise.resolve();
+
+    expect(mockSupabase.auth.setSession).toHaveBeenCalled();
+    expect(mockNavigateFromNotification).not.toHaveBeenCalled();
+  });
+
+  it('navigates to the matching screen for a non-auth universal link', () => {
+    handleDeepLink('https://www.temur.app/games/abc-123');
+
+    expect(mockNavigateFromNotification).toHaveBeenCalledWith('GameDetail', {
+      gameId: 'abc-123',
+    });
+    expect(mockSupabase.auth.setSession).not.toHaveBeenCalled();
+  });
+
+  it('does nothing for a link with no matching screen', () => {
+    handleDeepLink('https://www.temur.app/profile/edit');
+
+    expect(mockNavigateFromNotification).not.toHaveBeenCalled();
   });
 });
 

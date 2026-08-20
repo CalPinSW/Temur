@@ -14,7 +14,7 @@ export function navigateToGame(gameId: string) {
 }
 
 export type NotificationScreen =
-  'FriendRequests' | 'Friends' | 'Home' | 'GroupInvites' | 'GameDetail';
+  'FriendRequests' | 'Friends' | 'Home' | 'GroupInvites' | 'GameDetail' | 'Games';
 
 export function navigateFromNotification(
   screen: NotificationScreen,
@@ -41,6 +41,10 @@ export function navigateFromNotification(
         screen: 'detail',
         gameId: data?.gameId,
       });
+      break;
+    case 'Games':
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      navigationRef.navigate('MainFunctionalityTab' as any);
       break;
     case 'Home':
     default:

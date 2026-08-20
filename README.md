@@ -399,6 +399,22 @@ For production builds and app store submission, see [Build Guide](./apps/mobile/
 
 `apps/web` deploys to Vercel. In the Vercel project settings, set **Root Directory** to `apps/web` (monorepo setup) and configure the same environment variables as `apps/web/.env.local.example`, using your production `NEXT_PUBLIC_SITE_URL`. Remember to add the deployed domain to Supabase's Auth redirect allow-list (see "Authentication Redirect Setup" above).
 
+### Universal Links (iOS) / App Links (Android) Setup
+
+Notification emails (friend requests, group invites, game invites/results, etc. — `send-notification`/`sweep-visible-games`) link to `https://www.temur.app/...` URLs built from `PUBLIC_SITE_URL`. With Universal Links (iOS) / App Links (Android) configured, tapping one of these opens the mobile app directly if it's installed and falls back to the browser otherwise — the OS resolves the same `https://` URL to either the app or the browser depending on whether the app is installed and verified, so there's no separate `temur://` link to generate or maintain.
+
+Two pieces are already wired up in this repo, and the two values below (Apple Team ID, Android release keystore's SHA-256 fingerprint) are already filled in for this project. If you ever regenerate the Android release keystore or move to a different Apple team, redo the matching step:
+
+- **`apps/mobile/app.json`** declares `ios.associatedDomains: ["applinks:www.temur.app"]` and an `autoVerify` Android `https` intent filter for `www.temur.app` — this is what tells each OS to trust that domain and (for iOS) triggers the device to fetch and cache the AASA file below on install/update.
+- **`apps/web/src/app/.well-known/apple-app-site-association/route.ts`** and **`apps/web/public/.well-known/assetlinks.json`** are what each OS fetches from `https://www.temur.app/.well-known/...` to verify the app is actually authorized for that domain (the mechanism that stops any other app from claiming your links). Only the paths notification emails actually link to (`/games`, `/games/*`, `/friends`, `/friends/requests`, `/groups/invites`, `/reset-password`) are claimed — everything else (login, profile, group detail, etc.) has no matching mobile screen yet and keeps opening in the browser. `apps/mobile/src/utils/deepLinkRouting.ts` is the in-app side of that same route table — it maps an incoming `temur://` or `https://www.temur.app/...` link to the matching screen (`useAuthDeepLinks` wires it in); update both together if you add a new claimed path.
+
+Manual steps:
+
+1. **iOS** — find your Apple Developer **Team ID** (developer.apple.com → Membership, or `eas credentials`), then set `APPLE_TEAM_ID` in `apps/web/src/app/.well-known/apple-app-site-association/route.ts` to it (it's used as `TEAMID.com.calpin.temur`). Deploy web, then verify with `curl -s https://www.temur.app/.well-known/apple-app-site-association` (should return valid JSON) and Apple's own validator (https://search.developer.apple.com/appsearch-validation-tool/). iOS caches AASA lookups at install/update time, so a fresh install may be needed to see a change take effect.
+2. **Android** — once you have a release signing key (EAS-managed or your own keystore), get its SHA-256 fingerprint via `eas credentials` (Android → your build profile → Keystore) or `keytool -list -v -keystore <path> -alias <alias>`, then set `sha256_cert_fingerprints` in `apps/web/public/.well-known/assetlinks.json` to it (colon-separated hex, as printed). Deploy web, then verify with `adb shell pm get-app-links com.calpin.temur` after installing a release build, or Google's Statement List Generator/Tester (https://developers.google.com/digital-asset-links/tools/generator).
+
+If either value is ever wrong, unset, or regenerated without updating here, links behave exactly as they do today — they just always open in the browser. An unverified/mismatched AASA or `assetlinks.json` fails closed rather than breaking anything.
+
 ## Documentation
 
 - [Web feature parity plan](./docs/web-feature-parity-plan.md) - what's built vs. outstanding on `apps/web`

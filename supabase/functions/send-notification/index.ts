@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
     if (emailEnabled) {
       const { data: authUser } = await supabase.auth.admin.getUserById(userId);
       if (authUser?.user?.email) {
-        const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://temur-web.vercel.app';
+        const siteUrl = Deno.env.get('PUBLIC_SITE_URL') || 'https://www.temur.app';
         const { subject, html } = buildNotificationEmail(type, title, body, data, siteUrl);
         email = await sendEmail(authUser.user.email, subject, html);
       }
