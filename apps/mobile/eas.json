@@ -29,5 +29,14 @@
         "buildConfiguration": "Release"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "calpinsw@gmail.com",
+        "ascAppId": "6802068197",
+        "appleTeamId": "49CC6LJ3XA"
+      }
+    }
   }
 }

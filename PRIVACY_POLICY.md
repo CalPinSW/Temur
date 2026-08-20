@@ -1,6 +1,6 @@
 # Privacy Policy for Temur
 
-**Last Updated:** August 14, 2026
+**Last Updated:** August 18, 2026
 
 ## Introduction
 
@@ -46,13 +46,13 @@ We do **not**:
 
 You have the right to:
 - Access your personal data
-- Request deletion of your account and associated data by emailing us (see Contact Us below)
+- Delete your account and all associated data at any time, from within the app (Profile → Delete Account)
 - Opt out of optional data collection, such as push notifications, in the app's settings
 
 ## Data Retention
 
 - Active account data is retained while your account exists
-- Account deletion removes all associated data
+- Deleting your account permanently removes your profile, game activity, ratings, and friend connections; this cannot be undone, and signing up again later creates an unrelated new account
 
 ## Security
 
