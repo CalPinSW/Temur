@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.calpin.temur",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_RELEASE_SHA256_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["C5:E7:0A:20:89:E2:EA:88:7F:BC:45:AB:7A:33:5F:31:D2:D2:3E:93:A6:59:10:4C:82:6C:5C:36:DD:07:86:D6"]
     }
   }
 ]

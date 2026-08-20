@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 
-// REPLACE_WITH_APPLE_TEAM_ID — the 10-character Apple Developer Team ID
-// (developer.apple.com → Membership, or `eas credentials`). Until this is
-// replaced, iOS can never verify the app owns temur.app links, so Universal
-// Links silently fail closed (links keep opening in the browser, same as
-// before this file existed) rather than breaking anything — see README's
-// "Universal Links (iOS) / App Links (Android) Setup" section.
-const APPLE_TEAM_ID = 'REPLACE_WITH_APPLE_TEAM_ID';
+// The Apple Developer Team ID (developer.apple.com → Membership, or
+// `eas credentials`). If this is ever wrong or unset, iOS can't verify the
+// app owns temur.app links, so Universal Links silently fail closed (links
+// keep opening in the browser) rather than breaking anything — see
+// README's "Universal Links (iOS) / App Links (Android) Setup" section.
+const APPLE_TEAM_ID = '49CC6LJ3XA';
 
 // Served at https://www.temur.app/.well-known/apple-app-site-association —
 // the file iOS fetches (over HTTPS, no redirects allowed) to verify this
