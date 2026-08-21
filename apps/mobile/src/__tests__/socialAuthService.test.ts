@@ -26,19 +26,26 @@ jest.mock('@/services/supabase', () => {
   return { supabase: createSupabaseMock() };
 });
 
+jest.mock('@sentry/react-native', () => ({
+  captureException: jest.fn(),
+}));
+
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/services/supabase';
 import { SupabaseMock } from './testUtils/supabaseMock';
 import {
   signInWithGoogle,
   signInWithApple,
   signInWithProvider,
+  ExpectedSocialAuthError,
 } from '@/services/socialAuthService';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
 const mockGoogleSignin = GoogleSignin as jest.Mocked<typeof GoogleSignin>;
 const mockAppleAuthentication = AppleAuthentication as jest.Mocked<typeof AppleAuthentication>;
+const mockCaptureException = Sentry.captureException as jest.Mock;
 
 describe('socialAuthService', () => {
   beforeEach(() => {
@@ -77,13 +84,15 @@ describe('socialAuthService', () => {
       expect(mockSupabase.auth.signInWithIdToken).not.toHaveBeenCalled();
     });
 
-    it('returns a cancellation error when the user cancels', async () => {
+    it('returns a cancellation error when the user cancels, without reporting to Sentry', async () => {
       mockGoogleSignin.signIn.mockRejectedValue({ code: statusCodes.SIGN_IN_CANCELLED });
 
       const result = await signInWithGoogle();
 
       expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
       expect(result.error?.message).toBe('Authentication was cancelled');
+      expect(mockCaptureException).not.toHaveBeenCalled();
     });
 
     it('returns an error when Supabase rejects the ID token', async () => {
@@ -140,7 +149,7 @@ describe('socialAuthService', () => {
       });
     });
 
-    it('returns an error when no identityToken is returned', async () => {
+    it('returns an error and reports to Sentry when no identityToken is returned', async () => {
       mockAppleAuthentication.signInAsync.mockResolvedValue({
         identityToken: null,
         fullName: null,
@@ -148,18 +157,41 @@ describe('socialAuthService', () => {
 
       const result = await signInWithApple();
 
+      expect(mockCaptureException).toHaveBeenCalled();
       expect(result.data).toBeNull();
       expect(result.error).toBeInstanceOf(Error);
       expect(mockSupabase.auth.signInWithIdToken).not.toHaveBeenCalled();
     });
 
-    it('returns a cancellation error when the user cancels', async () => {
+    it('returns a cancellation error when the user cancels, without reporting to Sentry', async () => {
       mockAppleAuthentication.signInAsync.mockRejectedValue({ code: 'ERR_REQUEST_CANCELED' });
 
       const result = await signInWithApple();
 
       expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
       expect(result.error?.message).toBe('Authentication was cancelled');
+      expect(mockCaptureException).not.toHaveBeenCalled();
+    });
+
+    // Apple's generic native failure (code 1000) — thrown by
+    // ASAuthorizationController itself, almost always because the signed-in
+    // Apple ID isn't set up for Sign In with Apple. Confirmed via Sentry
+    // (TEMUR-MOBILE-2) that this reaches real users on production builds, so
+    // it gets an actionable message instead of Apple's raw "unknown reason"
+    // text — and since it isn't a bug in this app, it shouldn't page Sentry.
+    it('returns an actionable message for an unknown authorization failure, without reporting to Sentry', async () => {
+      mockAppleAuthentication.signInAsync.mockRejectedValue({
+        code: 'ERR_REQUEST_UNKNOWN',
+        message: 'The authorization attempt failed for an unknown reason',
+      });
+
+      const result = await signInWithApple();
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error?.message).toMatch(/sign in with apple isn't available/i);
+      expect(mockCaptureException).not.toHaveBeenCalled();
     });
   });
 

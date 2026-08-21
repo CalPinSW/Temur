@@ -63,13 +63,19 @@ export function createQueryBuilder(
 // by call) is what lets a hook test actually catch a channel-name collision
 // between two concurrently-mounted instances, rather than silently passing
 // against a mock that accepts anything.
+interface MockChannel {
+  __name: string;
+  on: jest.Mock<MockChannel, []>;
+  subscribe: jest.Mock<MockChannel, []>;
+}
+
 export function createSupabaseMock() {
   const subscribedChannelNames = new Set<string>();
 
   const channel = jest.fn((name: string) => {
-    const channelObj = {
+    const channelObj: MockChannel = {
       __name: name,
-      on: jest.fn(() => {
+      on: jest.fn((): MockChannel => {
         if (subscribedChannelNames.has(name)) {
           throw new Error(
             `cannot add \`postgres_changes\` callbacks for realtime:${name} after \`subscribe()\`.`
@@ -77,7 +83,7 @@ export function createSupabaseMock() {
         }
         return channelObj;
       }),
-      subscribe: jest.fn(() => {
+      subscribe: jest.fn((): MockChannel => {
         subscribedChannelNames.add(name);
         return channelObj;
       }),
