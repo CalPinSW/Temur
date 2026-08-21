@@ -12,19 +12,30 @@ jest.mock('@/services/supabase', () => {
 jest.mock('@/services/socialAuthService', () => ({
   __esModule: true,
   signInWithProvider: jest.fn(),
+  // A real class (not a jest.fn stub) so `instanceof` checks in authStore.ts
+  // behave the same as production, without loading the real module — which
+  // would pull in @react-native-google-signin/google-signin's native
+  // GoogleSignin.configure() at module scope, unmocked in this test file.
+  ExpectedSocialAuthError: class ExpectedSocialAuthError extends Error {},
+}));
+
+jest.mock('@sentry/react-native', () => ({
+  captureException: jest.fn(),
 }));
 
 import { Session, User } from '@supabase/supabase-js';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as Sentry from '@sentry/react-native';
 import { supabase } from '@/services/supabase';
 import { createQueryBuilder, mockFromTables, SupabaseMock } from './testUtils/supabaseMock';
-import { signInWithProvider } from '@/services/socialAuthService';
+import { signInWithProvider, ExpectedSocialAuthError } from '@/services/socialAuthService';
 import { Profile } from '@temur/shared';
 import { useAuthStore } from '@/store/authStore';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
 const mockSignInWithProvider = signInWithProvider as jest.Mock;
 const mockMakeRedirectUri = makeRedirectUri as jest.Mock;
+const mockCaptureException = Sentry.captureException as jest.Mock;
 
 const initialState = useAuthStore.getState();
 
@@ -148,12 +159,29 @@ describe('authStore', () => {
       expect(useAuthStore.getState().profile).toEqual({ id: 'user-1', username: 'alice' });
     });
 
-    it('returns the error when the provider sign-in fails', async () => {
-      mockSignInWithProvider.mockResolvedValue({ data: null, error: new Error('cancelled') });
+    it('returns the error and reports to Sentry when the provider sign-in fails unexpectedly', async () => {
+      mockSignInWithProvider.mockResolvedValue({ data: null, error: new Error('boom') });
+
+      const result = await useAuthStore.getState().signInWithSocial('apple');
+
+      expect(result.error?.message).toBe('boom');
+      expect(mockCaptureException).toHaveBeenCalled();
+    });
+
+    // socialAuthService already decided a cancelled/unavailable sign-in
+    // isn't a bug (see ExpectedSocialAuthError) — this only re-throws the
+    // error here to short-circuit the profile fetch, so it must not get
+    // re-reported to Sentry on the way back out.
+    it('returns the error without reporting to Sentry when the provider sign-in fails expectedly', async () => {
+      mockSignInWithProvider.mockResolvedValue({
+        data: null,
+        error: new ExpectedSocialAuthError('cancelled'),
+      });
 
       const result = await useAuthStore.getState().signInWithSocial('apple');
 
       expect(result.error?.message).toBe('cancelled');
+      expect(mockCaptureException).not.toHaveBeenCalled();
     });
   });
 

@@ -10,6 +10,12 @@ GoogleSignin.configure({
 
 type Provider = 'google' | 'apple';
 
+// Marks a social sign-in failure as a known, user-side condition (cancelled
+// the prompt, or their Apple ID isn't set up for Sign In with Apple) rather
+// than an app bug — callers use this to skip Sentry reporting for it, since
+// reporting it would just be noise, not something fixable in this codebase.
+export class ExpectedSocialAuthError extends Error {}
+
 export async function signInWithGoogle() {
   try {
     await GoogleSignin.hasPlayServices();
@@ -28,7 +34,7 @@ export async function signInWithGoogle() {
     return { data, error: null };
   } catch (error) {
     if ((error as { code?: string }).code === statusCodes.SIGN_IN_CANCELLED) {
-      return { data: null, error: new Error('Authentication was cancelled') };
+      return { data: null, error: new ExpectedSocialAuthError('Authentication was cancelled') };
     }
     console.error('[SocialAuth] Google sign-in error:', error);
     Sentry.captureException(error);
@@ -70,9 +76,26 @@ export async function signInWithApple() {
 
     return { data, error: null };
   } catch (error) {
-    if ((error as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
-      return { data: null, error: new Error('Authentication was cancelled') };
+    const code = (error as { code?: string }).code;
+
+    if (code === 'ERR_REQUEST_CANCELED') {
+      return { data: null, error: new ExpectedSocialAuthError('Authentication was cancelled') };
     }
+
+    // Apple's generic native failure code, thrown by ASAuthorizationController
+    // itself before the app ever sees a token back — in practice this is
+    // almost always the signed-in Apple ID not being set up for Sign In with
+    // Apple (no two-factor authentication, or not signed in to iCloud) rather
+    // than anything this app's code can fix, so it isn't worth reporting.
+    if (code === 'ERR_REQUEST_UNKNOWN') {
+      return {
+        data: null,
+        error: new ExpectedSocialAuthError(
+          "Sign in with Apple isn't available right now. Make sure you're signed in to iCloud with two-factor authentication enabled, then try again."
+        ),
+      };
+    }
+
     console.error('[SocialAuth] Apple sign-in error:', error);
     Sentry.captureException(error);
     return { data: null, error: error as Error };

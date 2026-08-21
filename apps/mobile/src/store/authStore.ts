@@ -169,9 +169,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   signInWithSocial: async (provider) => {
+    // Declared outside the try block since it's needed in the catch block
+    // too, and a `try`-scoped `const` isn't visible there.
+    let ExpectedSocialAuthError:
+      typeof import('@/services/socialAuthService').ExpectedSocialAuthError | undefined;
     try {
-      const { signInWithProvider } = await import('@/services/socialAuthService');
-      const { data, error } = await signInWithProvider(provider);
+      const socialAuthService = await import('@/services/socialAuthService');
+      ExpectedSocialAuthError = socialAuthService.ExpectedSocialAuthError;
+      const { data, error } = await socialAuthService.signInWithProvider(provider);
 
       if (error) throw error;
 
@@ -182,8 +187,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       return { error: null };
     } catch (error) {
-      console.error('Social sign in error:', error);
-      Sentry.captureException(error);
+      // socialAuthService already decided this is a known, user-side
+      // condition (cancelled, or an Apple ID not set up for Sign In with
+      // Apple) rather than a bug — don't re-report it here.
+      if (!(ExpectedSocialAuthError && error instanceof ExpectedSocialAuthError)) {
+        console.error('Social sign in error:', error);
+        Sentry.captureException(error);
+      }
       return { error: error as Error };
     }
   },
