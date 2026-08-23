@@ -2,6 +2,7 @@
 
 import { getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
+import { getSiteUrl } from '@/lib/site';
 
 export interface ForgotPasswordState {
   error?: string;
@@ -15,7 +16,7 @@ export async function requestPasswordReset(
   const email = String(formData.get('email') ?? '');
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const siteUrl = getSiteUrl();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     // Recovery links deliver tokens as a URL hash fragment, not a ?code=

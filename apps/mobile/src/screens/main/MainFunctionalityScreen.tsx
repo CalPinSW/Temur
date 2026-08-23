@@ -5,14 +5,15 @@ import { TeamAssignmentScreen } from './TeamAssignmentScreen';
 import { CreateGameScreen } from './CreateGameScreen';
 import { GameResultScreen } from './GameResultScreen';
 import { EditGameScreen } from './EditGameScreen';
+import { JoinGameScreen } from './JoinGameScreen';
 
 interface MainFunctionalityScreenProps {
-  route?: { params?: { screen?: 'detail'; gameId?: string } };
+  route?: { params?: { screen?: 'detail' | 'join'; gameId?: string; token?: string } };
 }
 
 export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps) {
   const [currentScreen, setCurrentScreen] = useState<
-    'list' | 'detail' | 'teamAssignment' | 'create' | 'result' | 'edit'
+    'list' | 'detail' | 'teamAssignment' | 'create' | 'result' | 'edit' | 'join'
   >('list');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
@@ -23,7 +24,11 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
 
       setCurrentScreen('detail');
     }
-  }, [route?.params?.screen, route?.params?.gameId]);
+
+    if (route?.params?.screen === 'join' && route.params.token) {
+      setCurrentScreen('join');
+    }
+  }, [route?.params?.screen, route?.params?.gameId, route?.params?.token]);
 
   const handleNavigateToGame = (gameId: string) => {
     setSelectedGameId(gameId);
@@ -61,6 +66,19 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     setSelectedGameId(gameId);
     setCurrentScreen('edit');
   };
+
+  if (currentScreen === 'join' && route?.params?.token) {
+    return (
+      <JoinGameScreen
+        token={route.params.token}
+        onJoined={(joinedGameId) => {
+          setSelectedGameId(joinedGameId);
+          setCurrentScreen('detail');
+        }}
+        onGoBack={handleGoBack}
+      />
+    );
+  }
 
   if (currentScreen === 'create') {
     return <CreateGameScreen onGoBack={handleGoBack} onCreated={handleGameCreated} />;

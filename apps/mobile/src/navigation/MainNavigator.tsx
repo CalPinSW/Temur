@@ -36,7 +36,7 @@ import {
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  MainFunctionalityTab: { screen?: 'detail'; gameId?: string } | undefined;
+  MainFunctionalityTab: { screen?: 'detail' | 'join'; gameId?: string; token?: string } | undefined;
   FriendsTab: { screen?: 'list' | 'search' | 'requests' | 'ringers' } | undefined;
   GroupsTab: { screen?: 'list' | 'invites' | 'join'; token?: string } | undefined;
   ProfileTab: undefined;
@@ -59,7 +59,7 @@ function HomeStack() {
 function MainFunctionalityStack({
   route,
 }: {
-  route?: { params?: { screen?: 'detail'; gameId?: string } };
+  route?: { params?: { screen?: 'detail' | 'join'; gameId?: string; token?: string } };
 }) {
   return <MainFunctionalityScreen route={route} />;
 }

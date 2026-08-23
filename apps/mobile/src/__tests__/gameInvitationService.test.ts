@@ -11,6 +11,7 @@ import {
   inviteFriendsToGame,
   acceptGameInvitation,
   declineGameInvitation,
+  joinGameViaLink,
 } from '@/services/gameInvitationService';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
@@ -102,6 +103,28 @@ describe('gameInvitationService', () => {
 
       expect(builder.delete).toHaveBeenCalled();
       expect(builder.eq).toHaveBeenCalledWith('id', 'invitation-1');
+    });
+  });
+
+  describe('joinGameViaLink', () => {
+    it('returns the game id from the RPC', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({ data: 'game-1', error: null });
+
+      const gameId = await joinGameViaLink('tok123');
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('join_game_via_link', { p_token: 'tok123' });
+      expect(gameId).toBe('game-1');
+    });
+
+    it('throws the RPC error when the token is invalid or expired', async () => {
+      mockSupabase.rpc.mockResolvedValueOnce({
+        data: null,
+        error: new Error('This join link is invalid or has expired'),
+      });
+
+      await expect(joinGameViaLink('bad-token')).rejects.toThrow(
+        'This join link is invalid or has expired'
+      );
     });
   });
 });

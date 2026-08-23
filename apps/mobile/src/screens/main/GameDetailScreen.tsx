@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import * as Sentry from '@sentry/react-native';
+import * as Clipboard from 'expo-clipboard';
 import {
   View,
   StyleSheet,
@@ -31,6 +32,7 @@ import {
   acceptGameInvitation,
   declineGameInvitation,
   inviteFriendsToGame,
+  getOrCreateGameJoinLink,
 } from '@/services/gameInvitationService';
 import {
   notifyTeamAssignments,
@@ -81,6 +83,7 @@ export function GameDetailScreen({
   const [isInviteSectionOpen, setIsInviteSectionOpen] = useState(false);
   const [selectedInviteFriendIds, setSelectedInviteFriendIds] = useState<Set<string>>(new Set());
   const [isInviting, setIsInviting] = useState(false);
+  const [isCopyingJoinLink, setIsCopyingJoinLink] = useState(false);
   const [isNotifySectionOpen, setIsNotifySectionOpen] = useState(false);
   const [notifyMessage, setNotifyMessage] = useState('');
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
@@ -249,6 +252,24 @@ export function GameDetailScreen({
       Alert.alert('Error', 'Failed to send invites');
     } finally {
       setIsInviting(false);
+    }
+  };
+
+  const handleCopyJoinLink = async () => {
+    setIsCopyingJoinLink(true);
+    try {
+      const link = await getOrCreateGameJoinLink(gameId);
+      await Clipboard.setStringAsync(link);
+      Alert.alert(
+        'Link Copied',
+        'Join link copied to clipboard. Anyone with this link can access this game for the next 7 days.'
+      );
+    } catch (error) {
+      console.error('Copy join link error:', error);
+      Sentry.captureException(error);
+      Alert.alert('Error', 'Failed to create join link');
+    } finally {
+      setIsCopyingJoinLink(false);
     }
   };
 
@@ -493,6 +514,13 @@ export function GameDetailScreen({
                 group.
               </ThemedTextBox>
             )}
+            <ThemedButton
+              title={isCopyingJoinLink ? 'Copying…' : 'Copy Join Link'}
+              variant="outline"
+              onPress={handleCopyJoinLink}
+              disabled={isCopyingJoinLink}
+              style={styles.copyJoinLinkButton}
+            />
             <ThemedButton
               title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
               variant="outline"
@@ -762,6 +790,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   inviteSectionText: {
+    marginTop: 8,
+  },
+  copyJoinLinkButton: {
     marginTop: 8,
   },
   friendRow: {

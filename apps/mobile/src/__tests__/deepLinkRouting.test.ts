@@ -54,6 +54,21 @@ describe('resolveDeepLinkRoute', () => {
     expect(resolveDeepLinkRoute('https://www.temur.app/games')).toEqual({ screen: 'Games' });
   });
 
+  it('resolves a game join link to GameJoin with the token', () => {
+    expect(resolveDeepLinkRoute('https://www.temur.app/games/join/tok123')).toEqual({
+      screen: 'GameJoin',
+      params: { token: 'tok123' },
+    });
+    expect(resolveDeepLinkRoute('temur://games/join/tok123')).toEqual({
+      screen: 'GameJoin',
+      params: { token: 'tok123' },
+    });
+  });
+
+  it('ignores a game join link with no token', () => {
+    expect(resolveDeepLinkRoute('https://www.temur.app/games/join')).toBeNull();
+  });
+
   it('ignores query strings and fragments when matching the path', () => {
     expect(resolveDeepLinkRoute('https://www.temur.app/games/abc-123?foo=bar#section')).toEqual({
       screen: 'GameDetail',
