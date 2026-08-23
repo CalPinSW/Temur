@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import { AppState } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/react-native';
@@ -121,4 +122,19 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+});
+
+// Without this, the auto-refresh timer keeps firing while the app is
+// backgrounded and tries to read/write the session via SecureStore —
+// iOS's Keychain rejects that with "User interaction is not allowed"
+// (errSecInteractionNotAllowed) once the device locks, since the item's
+// default accessibility requires the device to be unlocked. Matches
+// Supabase's own React Native guidance: stop refreshing in the background,
+// resume when the app is foregrounded again.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
 });
