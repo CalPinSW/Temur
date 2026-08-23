@@ -4,6 +4,7 @@ import { validateUsername, getAuthErrorMessage } from '@temur/shared';
 import { createClient } from '@/lib/supabase/server';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 import { sanitizeRedirectPath } from '@/lib/redirect';
+import { getSiteUrl } from '@/lib/site';
 
 export interface SignUpFormState {
   error?: string;
@@ -25,7 +26,7 @@ export async function signUp(
   }
 
   const supabase = await createClient();
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const siteUrl = getSiteUrl();
   const redirectTo = sanitizeRedirectPath(formData.get('redirect'));
 
   const { data, error } = await supabase.auth.signUp({

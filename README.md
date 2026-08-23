@@ -143,9 +143,10 @@ Configure redirect URLs in **Supabase Dashboard → Authentication → URL Confi
 - **Web**:
   - `http://localhost:3000/auth/callback` (local dev)
   - `http://localhost:3000/reset-password` (forgot-password flow — recovery links deliver tokens as a URL hash fragment rather than a `?code=` param, so this bypasses `/auth/callback`'s server-side exchange entirely and is handled client-side in `ResetPasswordForm`)
-  - `https://<your-vercel-domain>/auth/callback` and `https://<your-vercel-domain>/reset-password` (once deployed — add both once you have a Vercel domain; also update `NEXT_PUBLIC_SITE_URL` in `apps/web`'s production env)
+  - `https://www.temur.app/auth/callback` and `https://www.temur.app/reset-password` (production)
+  - `https://*-<your-vercel-scope>.vercel.app/**` (every Preview deployment — PRs and non-`main` branches — gets its own one-off `*.vercel.app` hostname with no custom domain; this wildcard is what lets those still-shared-database preview builds' confirmation/reset-password emails redirect back successfully instead of Supabase rejecting the mismatch. Find `<your-vercel-scope>` in any preview deployment's URL, e.g. `calums-projects-8679c2fb`)
 
-**Site URL** (used to build email confirmation / password reset links) should point at whichever app you consider primary, or be updated per environment — for mobile deep links it must be a scheme your app can handle (e.g. `temur://auth/callback`); for web it's a plain `https://` URL.
+**Site URL** (used to build email confirmation / password reset links) should point at whichever app you consider primary, or be updated per environment — for mobile deep links it must be a scheme your app can handle (e.g. `temur://auth/callback`); for web it's a plain `https://` URL. `apps/web` only needs `NEXT_PUBLIC_SITE_URL` set to *override* this (e.g. pinning production to `https://www.temur.app` instead of a `*.vercel.app` hostname) — see `getSiteUrl()` in `apps/web/src/lib/site.ts` below.
 
 #### Social Sign-In (Google / Apple) Setup
 
@@ -397,7 +398,9 @@ For production builds and app store submission, see [Build Guide](./apps/mobile/
 
 ### Web App Deployment
 
-`apps/web` deploys to Vercel. In the Vercel project settings, set **Root Directory** to `apps/web` (monorepo setup) and configure the same environment variables as `apps/web/.env.local.example`, using your production `NEXT_PUBLIC_SITE_URL`. Remember to add the deployed domain to Supabase's Auth redirect allow-list (see "Authentication Redirect Setup" above).
+`apps/web` deploys to Vercel. In the Vercel project settings, set **Root Directory** to `apps/web` (monorepo setup) and configure the same environment variables as `apps/web/.env.local.example`. Vercel's Git integration already isolates in-progress work from production on its own: only the **Production Branch** (`main`) deploys to the production target/domain; every other branch — including every PR — gets its own Preview deployment on a one-off `*.vercel.app` URL that never touches `www.temur.app`, with no extra setup needed. That project currently shares the same Supabase project as production (there's only one), so a Preview build reads/writes real data — worth keeping in mind when testing a PR live rather than against `supabase start` locally; if that ever needs to change, give Preview its own Supabase project and scope `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to the Preview environment only (`vercel env add <name> preview`).
+
+Set `NEXT_PUBLIC_SITE_URL` only for the **Production** environment, pinned to `https://www.temur.app` — leave it unset for Preview and Development. `getSiteUrl()` (`apps/web/src/lib/site.ts`) falls back to Vercel's own system environment variables (`VERCEL_URL`, populated automatically on every deployment with no configuration) when `NEXT_PUBLIC_SITE_URL` isn't set, so each Preview build's email confirmation/password-reset links correctly point at its own `*.vercel.app` URL instead of silently defaulting to `http://localhost:3000`. This does mean Supabase's Auth redirect allow-list needs a wildcard entry covering every preview hostname, not just the production domain — see "Authentication Redirect Setup" above.
 
 ### Universal Links (iOS) / App Links (Android) Setup
 
