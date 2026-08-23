@@ -93,7 +93,7 @@ export async function updateGame(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('games')
     .update({
       game_description: input.gameDescription || null,
@@ -103,9 +103,11 @@ export async function updateGame(
       team2_name: input.team2Name,
       players_per_team: input.playersPerTeam,
     })
-    .eq('id', gameId);
+    .eq('id', gameId)
+    .select('id')
+    .single();
 
-  if (error) return { error: 'Failed to save changes. Please try again.' };
+  if (error || !data) return { error: 'Failed to save changes. Please try again.' };
 
   revalidatePath(`/games/${gameId}`);
   revalidatePath('/games');

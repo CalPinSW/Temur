@@ -1,5 +1,14 @@
 import { Game, GameOutcome, PlayerGameWithProfile } from '../types/game';
 
+// Kickoff times are always UK wall-clock time, regardless of where a
+// server rendering the page or a device viewing it happens to be. Without
+// an explicit zone, Intl falls back to the executing runtime's ambient
+// timezone — which differs between a Next.js Server Component (the
+// server's timezone, typically UTC on Vercel) and a browser/device (the
+// viewer's own timezone), producing a display mismatch across an hour of
+// BST/GMT drift depending on where each render happened.
+export const APP_TIME_ZONE = 'Europe/London';
+
 export const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-GB', {
@@ -7,6 +16,7 @@ export const formatDate = (dateString: string) => {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: APP_TIME_ZONE,
   });
 };
 
@@ -15,7 +25,68 @@ export const formatTime = (dateString: string) => {
   return date.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: APP_TIME_ZONE,
   });
+};
+
+const getTimeZoneOffsetMinutes = (date: Date, timeZone: string): number => {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const asUTC = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second')
+  );
+  return (asUTC - date.getTime()) / 60000;
+};
+
+// Renders an instant as a `datetime-local` input value (`YYYY-MM-DDTHH:mm`)
+// showing the wall-clock time it represents in `timeZone`, so an HTML date
+// picker reads the same kickoff time regardless of the browser's own zone.
+export const formatDateTimeLocalInputValue = (
+  dateString: string,
+  timeZone: string = APP_TIME_ZONE
+): string => {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(new Date(dateString));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+};
+
+// Inverse of formatDateTimeLocalInputValue: given a `datetime-local` value
+// (a zone-less wall-clock string) that's meant to represent a time in
+// `timeZone`, returns the UTC instant it corresponds to. Needed because a
+// bare `new Date("2026-07-05T19:30")` parses as local time in whatever
+// zone the browser happens to be in, not `timeZone`.
+export const parseDateTimeLocalInputValue = (
+  value: string,
+  timeZone: string = APP_TIME_ZONE
+): Date => {
+  const [datePart, timePart] = value.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  const guess = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  const offsetMinutes = getTimeZoneOffsetMinutes(guess, timeZone);
+  return new Date(guess.getTime() - offsetMinutes * 60000);
 };
 
 export const getGameCapacity = (playersPerTeam: number) => {

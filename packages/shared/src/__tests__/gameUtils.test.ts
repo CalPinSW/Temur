@@ -1,6 +1,8 @@
 import {
   formatDate,
   formatTime,
+  formatDateTimeLocalInputValue,
+  parseDateTimeLocalInputValue,
   getGameCapacity,
   getActivePlayers,
   getWaitlistPlayers,
@@ -51,6 +53,29 @@ describe('gameUtils', () => {
   describe('formatTime', () => {
     it('formats an ISO date as a 24-hour UK-style time', () => {
       expect(formatTime('2026-03-05T18:30:00.000Z')).toBe('18:30');
+    });
+
+    it('renders BST-affected instants in UK local time regardless of the runtime timezone', () => {
+      // 18:30 UTC in July is 19:30 in the UK, since BST (UTC+1) is in effect.
+      // This must hold no matter what timezone the process running the test
+      // (or the server rendering the page) happens to be in.
+      expect(formatTime('2026-07-05T18:30:00.000Z')).toBe('19:30');
+    });
+  });
+
+  describe('formatDateTimeLocalInputValue / parseDateTimeLocalInputValue', () => {
+    it('round-trips a GMT instant through a datetime-local string unchanged', () => {
+      const iso = '2026-01-10T18:30:00.000Z';
+      const value = formatDateTimeLocalInputValue(iso);
+      expect(value).toBe('2026-01-10T18:30');
+      expect(parseDateTimeLocalInputValue(value).toISOString()).toBe(iso);
+    });
+
+    it('round-trips a BST instant through UK wall-clock time, not the runtime timezone', () => {
+      const iso = '2026-07-05T18:30:00.000Z';
+      const value = formatDateTimeLocalInputValue(iso);
+      expect(value).toBe('2026-07-05T19:30');
+      expect(parseDateTimeLocalInputValue(value).toISOString()).toBe(iso);
     });
   });
 
