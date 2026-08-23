@@ -1,0 +1,12 @@
+-- `game_description` was added to the already-applied
+-- 20260228000000_create_game_relevant_tables.sql migration on 2026-03-06
+-- instead of via a new migration. Supabase tracks migrations as applied by
+-- version, so editing that file after it had already run against the
+-- remote project never re-applied it there — every fresh local/dev stack
+-- picked up the column (since it replays the edited file from scratch), but
+-- production never got it. That silently broke both apps' game-edit flow:
+-- mobile's explicit column-list SELECT on EditGameScreen 42703'd outright
+-- ("column games.game_description does not exist"), and web's edit page
+-- (a `select('*')`) loaded fine but its `.update({ game_description, ... })`
+-- 42703'd the same way, surfacing as "Failed to save changes."
+ALTER TABLE games ADD COLUMN IF NOT EXISTS game_description TEXT;
