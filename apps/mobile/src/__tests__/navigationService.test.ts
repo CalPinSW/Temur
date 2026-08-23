@@ -90,6 +90,15 @@ describe('navigationService', () => {
       expect(mockNavigate).toHaveBeenCalledWith('GroupsTab', { screen: 'join', token: 'tok123' });
     });
 
+    it('navigates to the games tab join screen with the token for GameJoin', () => {
+      navigateFromNotification('GameJoin', { token: 'tok123' });
+
+      expect(mockNavigate).toHaveBeenCalledWith('MainFunctionalityTab', {
+        screen: 'join',
+        token: 'tok123',
+      });
+    });
+
     it('does nothing when the navigator is not ready', () => {
       setIsReady(false);
 

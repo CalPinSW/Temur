@@ -86,3 +86,15 @@ export interface GameInvitation {
   created_at: string;
   updated_at: string;
 }
+
+export interface GameJoinLink {
+  token: string;
+  expires_at: string;
+}
+
+export interface GameJoinLinkInfo {
+  game_id: string;
+  team1_name: string;
+  team2_name: string;
+  kickoff_date: string;
+}

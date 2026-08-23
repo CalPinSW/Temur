@@ -44,6 +44,9 @@ export function resolveDeepLinkRoute(url: string): DeepLinkRoute | null {
       }
       return null;
     case 'games':
+      if (segments[1] === 'join') {
+        return segments[2] ? { screen: 'GameJoin', params: { token: segments[2] } } : null;
+      }
       return segments[1]
         ? { screen: 'GameDetail', params: { gameId: segments[1] } }
         : { screen: 'Games' };
