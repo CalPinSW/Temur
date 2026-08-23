@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { isVisibleAtBeforeKickoff } from '@temur/shared';
+import {
+  isVisibleAtBeforeKickoff,
+  formatDateTimeLocalInputValue,
+  parseDateTimeLocalInputValue,
+} from '@temur/shared';
 import { updateGame, type UpdateGameInput } from '../actions';
 
 const PLAYERS_PER_TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11];
-
-function toDatetimeLocal(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export function EditGameForm({
   gameId,
@@ -26,8 +25,10 @@ export function EditGameForm({
   };
 }) {
   const [gameDescription, setGameDescription] = useState(initial.gameDescription);
-  const [kickoffDate, setKickoffDate] = useState(toDatetimeLocal(new Date(initial.kickoffDate)));
-  const [visibleAt, setVisibleAt] = useState(toDatetimeLocal(new Date(initial.visibleAt)));
+  const [kickoffDate, setKickoffDate] = useState(
+    formatDateTimeLocalInputValue(initial.kickoffDate)
+  );
+  const [visibleAt, setVisibleAt] = useState(formatDateTimeLocalInputValue(initial.visibleAt));
   const [team1Name, setTeam1Name] = useState(initial.team1Name);
   const [team2Name, setTeam2Name] = useState(initial.team2Name);
   const [playersPerTeam, setPlayersPerTeam] = useState(initial.playersPerTeam);
@@ -37,15 +38,18 @@ export function EditGameForm({
   const handleSubmit = () => {
     setError('');
 
-    if (!isVisibleAtBeforeKickoff(new Date(kickoffDate), new Date(visibleAt))) {
+    const kickoffInstant = parseDateTimeLocalInputValue(kickoffDate);
+    const visibleAtInstant = parseDateTimeLocalInputValue(visibleAt);
+
+    if (!isVisibleAtBeforeKickoff(kickoffInstant, visibleAtInstant)) {
       setError('"Visible From" must be before the kickoff time.');
       return;
     }
 
     const input: UpdateGameInput = {
       gameDescription,
-      kickoffDate: new Date(kickoffDate).toISOString(),
-      visibleAt: new Date(visibleAt).toISOString(),
+      kickoffDate: kickoffInstant.toISOString(),
+      visibleAt: visibleAtInstant.toISOString(),
       team1Name,
       team2Name,
       playersPerTeam,
