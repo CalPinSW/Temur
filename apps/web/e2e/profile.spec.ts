@@ -89,6 +89,9 @@ test.describe('Profile', () => {
     await expect(friendRequestPush).toBeChecked();
 
     // The DB write persists across a reload, not just in-memory state.
+    // Wait for the upsert's transition to settle (inputs re-enable) before
+    // reloading, otherwise the reload can race the in-flight Server Action.
+    await expect(friendRequestEmail).toBeEnabled();
     await page.reload();
     await expect(friendRequestEmail).not.toBeChecked();
 

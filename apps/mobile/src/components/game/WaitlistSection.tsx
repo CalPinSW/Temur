@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme';
 import { ThemedTextBox } from '@/components/themed';
-import { PlayerGameWithProfile, getVisiblePlayers } from '@temur/shared';
+import { PlayerGameWithProfile, getWaitlistPlayers } from '@temur/shared';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { PlayersList } from './PlayersList';
 
@@ -26,14 +26,7 @@ export function WaitlistSection({
   onRemoveRinger,
 }: WaitlistSectionProps) {
   const { colors } = useTheme();
-  const waitlistPlayers = getVisiblePlayers(
-    players,
-    capacity,
-    isExpanded,
-    currentUserId,
-    undefined,
-    true
-  );
+  const waitlistPlayers = getWaitlistPlayers(players, capacity);
 
   return (
     <View>
@@ -50,6 +43,7 @@ export function WaitlistSection({
         onToggleExpand={onToggleExpand}
         isAdmin={isAdmin}
         onRemoveRinger={onRemoveRinger}
+        positionOffset={capacity}
       />
     </View>
   );

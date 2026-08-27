@@ -46,7 +46,6 @@ import {
   getGameCapacity,
   getActivePlayers,
   getWaitlistPlayers,
-  getVisiblePlayers,
   getNextSignupOrder,
   isGameAdmin,
   getGameVisibilityStatus,
@@ -575,14 +574,7 @@ export function GameDetailScreen({
               />
             ) : (
               <PlayersList
-                players={getVisiblePlayers(
-                  game.player_games,
-                  capacity,
-                  isPlayersExpanded,
-                  user?.id,
-                  undefined,
-                  false
-                )}
+                players={activePlayers}
                 currentUserId={user?.id}
                 isExpanded={isPlayersExpanded}
                 onToggleExpand={() => setIsPlayersExpanded(!isPlayersExpanded)}

@@ -6,7 +6,6 @@ import {
   getGameCapacity,
   getActivePlayers,
   getWaitlistPlayers,
-  getVisiblePlayers,
   getTeamCounts,
   isGameAdmin,
   getGameVisibilityStatus,
@@ -105,83 +104,6 @@ describe('gameUtils', () => {
     it('returns no active players when capacity is zero', () => {
       expect(getActivePlayers(players, 0)).toHaveLength(0);
       expect(getWaitlistPlayers(players, 0)).toHaveLength(5);
-    });
-  });
-
-  describe('getVisiblePlayers', () => {
-    const capacity = 10;
-
-    it('returns unassigned active players when no team filter is given', () => {
-      const players = [
-        makePlayer({ signup_order: 1, team: null }),
-        makePlayer({ signup_order: 2, team: 1 }),
-        makePlayer({ signup_order: 3, team: null }),
-      ];
-
-      const visible = getVisiblePlayers(players, capacity, true);
-
-      expect(visible.map((p) => p.signup_order)).toEqual([1, 3]);
-    });
-
-    it('filters to the given team', () => {
-      const players = [
-        makePlayer({ signup_order: 1, team: 1 }),
-        makePlayer({ signup_order: 2, team: 2 }),
-        makePlayer({ signup_order: 3, team: 1 }),
-      ];
-
-      const visible = getVisiblePlayers(players, capacity, true, undefined, 1);
-
-      expect(visible.map((p) => p.signup_order)).toEqual([1, 3]);
-    });
-
-    it('returns waitlist players when isWaitlist is true', () => {
-      const players = [1, 2, 3].map((signup_order) => makePlayer({ signup_order }));
-
-      const visible = getVisiblePlayers(players, 1, true, undefined, undefined, true);
-
-      expect(visible.map((p) => p.signup_order)).toEqual([2, 3]);
-    });
-
-    it('does not truncate when 5 or fewer players and collapsed', () => {
-      const players = [1, 2, 3, 4, 5].map((signup_order) =>
-        makePlayer({ signup_order, team: null })
-      );
-
-      const visible = getVisiblePlayers(players, capacity, false);
-
-      expect(visible).toHaveLength(5);
-    });
-
-    it('truncates to the first 5 when collapsed, more than 5, and no matching user', () => {
-      const players = Array.from({ length: 8 }, (_, i) =>
-        makePlayer({ signup_order: i + 1, team: null })
-      );
-
-      const visible = getVisiblePlayers(players, capacity, false, 'not-in-list');
-
-      expect(visible.map((p) => p.signup_order)).toEqual([1, 2, 3, 4, 5]);
-    });
-
-    it('centers the window on the current user when collapsed', () => {
-      const players = Array.from({ length: 8 }, (_, i) =>
-        makePlayer({ signup_order: i + 1, user_id: `user-${i + 1}`, team: null })
-      );
-
-      const visible = getVisiblePlayers(players, capacity, false, 'user-6');
-
-      // userPlayerIndex = 5 (0-based) -> slice(3, 8)
-      expect(visible.map((p) => p.signup_order)).toEqual([4, 5, 6, 7, 8]);
-    });
-
-    it('clamps the centered window at the start of the list', () => {
-      const players = Array.from({ length: 8 }, (_, i) =>
-        makePlayer({ signup_order: i + 1, user_id: `user-${i + 1}`, team: null })
-      );
-
-      const visible = getVisiblePlayers(players, capacity, false, 'user-1');
-
-      expect(visible.map((p) => p.signup_order)).toEqual([1, 2, 3]);
     });
   });
 
