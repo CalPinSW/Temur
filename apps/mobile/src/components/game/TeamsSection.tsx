@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ThemedTextBox } from '@/components/themed';
-import { PlayerGameWithProfile, getActivePlayers, getVisiblePlayers } from '@temur/shared';
+import { PlayerGameWithProfile, getActivePlayers } from '@temur/shared';
 import { PlayersList } from './PlayersList';
 
 interface TeamsSectionProps {
@@ -28,16 +28,9 @@ export function TeamsSection({
   onRemoveRinger,
 }: TeamsSectionProps) {
   const activePlayers = getActivePlayers(players, capacity);
-  const team1Players = getVisiblePlayers(players, capacity, isExpanded, currentUserId, 1, false);
-  const team2Players = getVisiblePlayers(players, capacity, isExpanded, currentUserId, 2, false);
-  const unassignedPlayers = getVisiblePlayers(
-    players,
-    capacity,
-    isExpanded,
-    currentUserId,
-    undefined,
-    false
-  );
+  const team1Players = activePlayers.filter((p) => p.team === 1);
+  const team2Players = activePlayers.filter((p) => p.team === 2);
+  const unassignedPlayers = activePlayers.filter((p) => p.team === null);
 
   return (
     <View>

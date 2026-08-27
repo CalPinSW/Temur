@@ -5,6 +5,8 @@ import { ThemedTextBox, ThemedButton, ThemedBadge, ThemedAvatar } from '@/compon
 import { PlayerGameWithProfile, getPlayerDisplayName } from '@temur/shared';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
+const COLLAPSED_VISIBLE_COUNT = 5;
+
 interface PlayersListProps {
   players: PlayerGameWithProfile[];
   currentUserId?: string;
@@ -12,6 +14,7 @@ interface PlayersListProps {
   onToggleExpand: () => void;
   isAdmin?: boolean;
   onRemoveRinger?: (playerGameId: string, ringerName: string) => void;
+  positionOffset?: number;
 }
 
 export function PlayersList({
@@ -21,20 +24,34 @@ export function PlayersList({
   onToggleExpand,
   isAdmin,
   onRemoveRinger,
+  positionOffset = 0,
 }: PlayersListProps) {
   const { colors } = useTheme();
 
   if (players.length === 0) return null;
 
-  const visiblePlayers = isExpanded || players.length <= 5 ? players : players.slice(0, 5);
-  const showExpandButton = players.length > 5;
-  const firstVisibleIndex = players.indexOf(visiblePlayers[0]);
+  const showExpandButton = players.length > COLLAPSED_VISIBLE_COUNT;
+  const shouldCollapse = showExpandButton && !isExpanded;
+
+  let firstVisibleIndex = 0;
+  if (shouldCollapse) {
+    const userIndex = players.findIndex((p) => p.user_id === currentUserId);
+    if (userIndex !== -1) {
+      firstVisibleIndex = Math.min(
+        Math.max(0, userIndex - 2),
+        players.length - COLLAPSED_VISIBLE_COUNT
+      );
+    }
+  }
+  const visiblePlayers = shouldCollapse
+    ? players.slice(firstVisibleIndex, firstVisibleIndex + COLLAPSED_VISIBLE_COUNT)
+    : players;
 
   return (
     <View>
       <View style={styles.playersList}>
         {visiblePlayers.map((playerGame, index) => {
-          const actualIndex = firstVisibleIndex + index;
+          const actualIndex = positionOffset + firstVisibleIndex + index;
           const isCurrentUser = playerGame.user_id === currentUserId;
 
           return (
