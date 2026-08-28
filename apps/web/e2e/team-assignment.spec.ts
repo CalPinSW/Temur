@@ -68,4 +68,28 @@ test.describe('Team assignment', () => {
       await expect(page.getByRole('button', { name: /no changes/ })).toBeVisible({ timeout: 10_000 });
     }
   });
+
+  test('notifies players once team assignments are saved', async ({ page }) => {
+    const { team1 } = await createGroupAndGame(page, 'E2E NotifyPlayers');
+    await page.getByRole('button', { name: 'Sign up' }).click();
+    await page.getByRole('link', { name: 'Assign Teams' }).click();
+    await page.waitForURL(/\/team-assignment$/);
+
+    // Notifying isn't offered until the board has been saved — assigning
+    // without saving leaves the guard message in its place.
+    await page.getByRole('button', { name: 'T1' }).click();
+    await expect(page.getByText(`${team1}: 1`)).toBeVisible();
+    await expect(
+      page.getByText('Save your team assignments before notifying players.')
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Notify Players of Teams' })).not.toBeVisible();
+
+    await page.getByRole('button', { name: 'Save Team Assignments' }).click();
+    await expect(page.getByRole('button', { name: /no changes/ })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Notify Players of Teams' }).click();
+    await page.getByPlaceholder('Add a message for players...').fill('Kickoff at 7pm sharp!');
+    await page.getByRole('button', { name: 'Send Notifications' }).click();
+    await expect(page.getByText('Players notified!')).toBeVisible();
+  });
 });

@@ -9,22 +9,25 @@ import {
   autoAssign,
   clearAll,
   buildSavePayload,
+  buildNotifyRecipients,
   type AssignmentState,
 } from './teamAssignmentState';
 import { TeamAssignmentBoard } from './TeamAssignmentBoard';
 import { PlayerAssignmentRow } from './PlayerAssignmentRow';
-import { saveTeamAssignments } from './actions';
+import { saveTeamAssignments, notifyTeamAssignments } from './actions';
 
 export function TeamAssignmentClient({
   gameId,
   players,
   team1Name,
   team2Name,
+  defaultNotifyMessage,
 }: {
   gameId: string;
   players: PlayerGameWithProfile[];
   team1Name: string;
   team2Name: string;
+  defaultNotifyMessage: string;
 }) {
   const playerIds = players.map((p) => p.id);
   const [state, setState] = useState<AssignmentState>(() => seedFromPlayers(players));
@@ -32,6 +35,11 @@ export function TeamAssignmentClient({
   const [isDirty, setIsDirty] = useState(false);
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const [notifyMessage, setNotifyMessage] = useState(defaultNotifyMessage);
+  const [notifyError, setNotifyError] = useState('');
+  const [notifySent, setNotifySent] = useState(false);
+  const [isNotifying, startNotifying] = useTransition();
 
   const teamCounts = getTeamCounts(state.assignments);
 
@@ -71,6 +79,27 @@ export function TeamAssignmentClient({
         return;
       }
       setIsDirty(false);
+      setNotifySent(false);
+    });
+  };
+
+  const handleNotify = () => {
+    setNotifyError('');
+    const recipients = buildNotifyRecipients(players, state);
+
+    startNotifying(async () => {
+      const { error } = await notifyTeamAssignments(
+        gameId,
+        recipients,
+        team1Name,
+        team2Name,
+        notifyMessage
+      );
+      if (error) {
+        setNotifyError(error);
+        return;
+      }
+      setNotifySent(true);
     });
   };
 
@@ -147,6 +176,54 @@ export function TeamAssignmentClient({
       >
         {isPending ? 'Saving…' : isDirty ? 'Save Team Assignments' : 'Save Team Assignments (no changes)'}
       </button>
+
+      {teamCounts.team1 + teamCounts.team2 > 0 && (
+        <section className="flex flex-col gap-3 rounded-lg border border-border-light px-3 py-2">
+          <h2 className="text-sm font-semibold text-text-secondary">Notify Players</h2>
+          {isDirty ? (
+            <p className="text-xs text-text-tertiary">
+              Save your team assignments before notifying players.
+            </p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setNotifyOpen((v) => !v)}
+                className="self-start rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
+              >
+                {notifyOpen ? 'Hide' : 'Notify Players of Teams'}
+              </button>
+
+              {notifyOpen && (
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    value={notifyMessage}
+                    onChange={(e) => setNotifyMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Add a message for players..."
+                    className="rounded-lg border border-input-border bg-input px-3 py-2 text-sm text-text outline-none focus:border-primary"
+                  />
+                  <p className="text-xs text-text-tertiary">
+                    {`Each player's team is added automatically, e.g. "You're on ${team1Name}".`}
+                  </p>
+                  {notifyError && <p className="text-sm text-error">{notifyError}</p>}
+                  {notifySent && !notifyError && (
+                    <p className="text-sm text-success">Players notified!</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleNotify}
+                    disabled={isNotifying}
+                    className="self-start rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  >
+                    {isNotifying ? 'Sending…' : 'Send Notifications'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      )}
     </div>
   );
 }

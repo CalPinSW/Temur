@@ -45,6 +45,16 @@ export default async function TeamAssignmentPage({
 
   if (!isAdmin) redirect(`/games/${gameId}`);
 
+  let defaultNotifyMessage = '';
+  if (game.group_id) {
+    const { data: group } = await supabase
+      .from('groups')
+      .select('team_assignment_message_template')
+      .eq('id', game.group_id)
+      .single();
+    defaultNotifyMessage = group?.team_assignment_message_template ?? '';
+  }
+
   const capacity = getGameCapacity(game.players_per_team);
   const sortedPlayers = (game.player_games ?? [])
     .slice()
@@ -68,6 +78,7 @@ export default async function TeamAssignmentPage({
         players={activePlayers}
         team1Name={game.team1_name}
         team2Name={game.team2_name}
+        defaultNotifyMessage={defaultNotifyMessage}
       />
     </div>
   );
