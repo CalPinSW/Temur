@@ -5,6 +5,7 @@ import {
   autoAssign,
   clearAll,
   buildSavePayload,
+  buildNotifyRecipients,
   type AssignmentState,
 } from '../teamAssignmentState';
 
@@ -126,5 +127,54 @@ describe('buildSavePayload', () => {
     expect(buildSavePayload(['pg-1'], state)).toEqual([
       { id: 'pg-1', team: null, board_x: null, board_y: null },
     ]);
+  });
+});
+
+describe('buildNotifyRecipients', () => {
+  it('maps assigned players with an account to their user id and team', () => {
+    const state: AssignmentState = {
+      assignments: { 'pg-1': 1, 'pg-2': 2 },
+      positions: { 'pg-1': null, 'pg-2': null },
+    };
+    const players = [
+      { id: 'pg-1', user_id: 'user-1' },
+      { id: 'pg-2', user_id: 'user-2' },
+    ];
+
+    expect(buildNotifyRecipients(players, state)).toEqual([
+      { userId: 'user-1', team: 1 },
+      { userId: 'user-2', team: 2 },
+    ]);
+  });
+
+  it('excludes players who have not been assigned a team yet', () => {
+    const state: AssignmentState = {
+      assignments: { 'pg-1': 1, 'pg-2': null },
+      positions: { 'pg-1': null, 'pg-2': null },
+    };
+    const players = [
+      { id: 'pg-1', user_id: 'user-1' },
+      { id: 'pg-2', user_id: 'user-2' },
+    ];
+
+    expect(buildNotifyRecipients(players, state)).toEqual([{ userId: 'user-1', team: 1 }]);
+  });
+
+  it('excludes ringers, who have no user_id to notify', () => {
+    const state: AssignmentState = {
+      assignments: { 'pg-1': 1, 'pg-2': 2 },
+      positions: { 'pg-1': null, 'pg-2': null },
+    };
+    const players = [
+      { id: 'pg-1', user_id: 'user-1' },
+      { id: 'pg-2', user_id: null },
+    ];
+
+    expect(buildNotifyRecipients(players, state)).toEqual([{ userId: 'user-1', team: 1 }]);
+  });
+
+  it('returns an empty list when no players are assigned', () => {
+    const state: AssignmentState = { assignments: {}, positions: {} };
+    expect(buildNotifyRecipients([], state)).toEqual([]);
   });
 });

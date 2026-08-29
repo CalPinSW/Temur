@@ -84,3 +84,30 @@ export function buildSavePayload(playerIds: string[], state: AssignmentState): S
     board_y: state.positions[id]?.y ?? null,
   }));
 }
+
+export interface NotifyRecipient {
+  userId: string;
+  team: number;
+}
+
+interface NotifiablePlayer {
+  id: string;
+  user_id: string | null;
+}
+
+// Ringers have no user_id (no account to notify), and a player who hasn't
+// been assigned a team yet has nothing to be told — both are dropped here
+// rather than left for the caller to filter out.
+export function buildNotifyRecipients(
+  players: NotifiablePlayer[],
+  state: AssignmentState
+): NotifyRecipient[] {
+  const recipients: NotifyRecipient[] = [];
+  for (const player of players) {
+    const team = state.assignments[player.id];
+    if (player.user_id && team) {
+      recipients.push({ userId: player.user_id, team });
+    }
+  }
+  return recipients;
+}

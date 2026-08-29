@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
-import { type SaveRow } from './teamAssignmentState';
+import { createClient, getUser } from '@/lib/supabase/server';
+import { type NotifyRecipient, type SaveRow } from './teamAssignmentState';
 
 export interface SaveTeamAssignmentsResult {
   error?: string;
@@ -25,5 +25,47 @@ export async function saveTeamAssignments(
 
   revalidatePath(`/games/${gameId}`);
   revalidatePath(`/games/${gameId}/team-assignment`);
+  return {};
+}
+
+export interface NotifyTeamAssignmentsResult {
+  error?: string;
+}
+
+export async function notifyTeamAssignments(
+  gameId: string,
+  recipients: NotifyRecipient[],
+  team1Name: string,
+  team2Name: string,
+  message: string
+): Promise<NotifyTeamAssignmentsResult> {
+  const user = await getUser();
+  if (!user) return { error: 'You must be signed in.' };
+  if (recipients.length === 0) return { error: 'No players are assigned to a team yet.' };
+
+  const supabase = await createClient();
+  const trimmedMessage = message.trim();
+
+  const results = await Promise.all(
+    recipients.map(({ userId, team }) => {
+      const teamName = team === 1 ? team1Name : team2Name;
+      const suffix = `You're on ${teamName}`;
+      const body = trimmedMessage ? `${trimmedMessage}\n\n${suffix}` : suffix;
+      return supabase.functions.invoke('send-notification', {
+        body: {
+          userId,
+          type: 'team_assigned',
+          title: 'Team Assignment',
+          body,
+          data: { screen: 'GameDetail', gameId },
+        },
+      });
+    })
+  );
+
+  if (results.some((result) => result.error)) {
+    return { error: 'Failed to notify some players. Please try again.' };
+  }
+
   return {};
 }
