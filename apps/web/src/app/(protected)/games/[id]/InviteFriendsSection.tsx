@@ -94,7 +94,7 @@ export function InviteFriendsSection({
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border-light px-3 py-2">
+    <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-text-secondary">Invite Friends</h2>
       {isGroupGame && (
         <p className="text-xs text-text-tertiary">
@@ -152,6 +152,6 @@ export function InviteFriendsSection({
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }

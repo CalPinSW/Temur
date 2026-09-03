@@ -24,7 +24,7 @@ export function OpenRingersSection({ gameId, groupId }: { gameId: string; groupI
   };
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border-light px-3 py-2">
+    <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-text-secondary">Ringers</h2>
       <button
         type="button"
@@ -56,6 +56,6 @@ export function OpenRingersSection({ gameId, groupId }: { gameId: string; groupI
           </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }
