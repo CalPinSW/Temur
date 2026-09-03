@@ -213,27 +213,8 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </p>
       </div>
 
-      {isAdmin && (
-        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border-light px-3 py-2">
-          <Link
-            href={`/games/${game.id}/edit`}
-            className="text-sm font-medium text-primary hover:text-primary-hover"
-          >
-            Edit Game
-          </Link>
-          {visibility.isPreview && <PublishGameButton gameId={game.id} />}
-        </div>
-      )}
-
-      {!visibility.isPreview && <SignupActions gameId={game.id} isSignedUp={isSignedUp} />}
-
-      {isAdmin && players.length > 0 && (
-        <Link
-          href={`/games/${game.id}/team-assignment`}
-          className="self-start rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
-        >
-          Assign Teams
-        </Link>
+      {!visibility.isPreview && !isSignedUp && (
+        <SignupActions gameId={game.id} isSignedUp={false} />
       )}
 
       {isPast && (
@@ -278,28 +259,6 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         <AddRingerSection gameId={game.id} />
       )}
 
-      {isAdmin && !!game.group_id && !visibility.isPreview && (
-        <>
-          {game.ringers_opened_at ? (
-            <p className="text-sm text-text-secondary">
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                Open to ringers
-              </span>
-            </p>
-          ) : (
-            <OpenRingersSection gameId={game.id} groupId={game.group_id} />
-          )}
-        </>
-      )}
-
-      {isAdmin && (
-        <InviteFriendsSection
-          gameId={game.id}
-          invitableFriends={invitableFriends}
-          isGroupGame={!!game.group_id}
-        />
-      )}
-
       {waitlistPlayers.length > 0 && (
         <section className="flex flex-col gap-2">
           <h2 className="text-sm font-semibold text-text-secondary">
@@ -320,10 +279,60 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </section>
       )}
 
-      {isCreator && (
-        <section className="flex flex-col gap-2 self-start">
-          <DeleteGameButton gameId={game.id} />
+      {isAdmin && (
+        <section className="flex flex-col gap-4 rounded-lg border border-border-light p-4">
+          <h2 className="text-sm font-semibold text-text-secondary">Admin</h2>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={`/games/${game.id}/edit`}
+              className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+            >
+              Edit Game
+            </Link>
+            {visibility.isPreview && <PublishGameButton gameId={game.id} />}
+            {players.length > 0 && (
+              <Link
+                href={`/games/${game.id}/team-assignment`}
+                className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                Assign Teams
+              </Link>
+            )}
+          </div>
+
+          <div className="border-t border-border-light pt-4">
+            <InviteFriendsSection
+              gameId={game.id}
+              invitableFriends={invitableFriends}
+              isGroupGame={!!game.group_id}
+            />
+          </div>
+
+          {!!game.group_id && !visibility.isPreview && (
+            <div className="border-t border-border-light pt-4">
+              {game.ringers_opened_at ? (
+                <p className="text-sm text-text-secondary">
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    Open to ringers
+                  </span>
+                </p>
+              ) : (
+                <OpenRingersSection gameId={game.id} groupId={game.group_id} />
+              )}
+            </div>
+          )}
+
+          {isCreator && (
+            <div className="border-t border-border-light pt-4">
+              <DeleteGameButton gameId={game.id} />
+            </div>
+          )}
         </section>
+      )}
+
+      {!visibility.isPreview && isSignedUp && (
+        <SignupActions gameId={game.id} isSignedUp={true} />
       )}
     </div>
   );

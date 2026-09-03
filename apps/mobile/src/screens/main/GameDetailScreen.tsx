@@ -19,6 +19,7 @@ import {
   ThemedToggle,
   ThemedInput,
   ThemedBadge,
+  ThemedDivider,
 } from '@/components/themed';
 import { useAuthStore } from '@/store/authStore';
 import { useGameDetails } from '@/hooks/useGameDetails';
@@ -425,30 +426,6 @@ export function GameDetailScreen({
           </ThemedCard>
         )}
 
-        {isAdmin && (
-          <ThemedCard variant="elevated">
-            <View style={styles.adminControlsRow}>
-              {onNavigateToEditGame && (
-                <ThemedButton
-                  title="Edit Game"
-                  variant="outline"
-                  size="small"
-                  onPress={() => onNavigateToEditGame(gameId)}
-                />
-              )}
-              {pageVisibility.isPreview && (
-                <ThemedButton
-                  title={isPublishing ? 'Publishing...' : 'Make Visible Now'}
-                  variant="primary"
-                  size="small"
-                  onPress={handlePublishNow}
-                  disabled={isPublishing}
-                />
-              )}
-            </View>
-          </ThemedCard>
-        )}
-
         <ThemedCard variant="elevated">
           <GameHeader
             kickoffDate={game.kickoff_date}
@@ -463,19 +440,8 @@ export function GameDetailScreen({
             waitlistCount={waitlistPlayers.length}
           />
 
-          {!isPast && isVisible && game.invitation_status !== 'pending' && (
-            <GameActions
-              isUserSignedUp={game.user_signed_up}
-              isSigningUp={isSigningUp}
-              isWithdrawing={isWithdrawing}
-              onSignUp={() => handleSignUp(game, refetch)}
-              onWithdraw={() => handleWithdraw(game, refetch)}
-              isAdmin={isAdmin}
-              hasPlayers={game.player_count > 0}
-              onNavigateToTeamAssignment={
-                onNavigateToTeamAssignment ? () => onNavigateToTeamAssignment(gameId) : undefined
-              }
-            />
+          {!isPast && isVisible && game.invitation_status !== 'pending' && !game.user_signed_up && (
+            <GameActions isSigningUp={isSigningUp} onSignUp={() => handleSignUp(game, refetch)} />
           )}
 
           {isPast && (
@@ -504,59 +470,6 @@ export function GameDetailScreen({
             </View>
           )}
         </ThemedCard>
-
-        {isAdmin && (
-          <ThemedCard variant="elevated" title="Invite Friends">
-            {!!game.group_id && (
-              <ThemedTextBox variant="caption" color="secondary" style={styles.inviteSectionText}>
-                Invited friends get access to this game only — they won&apos;t be added to the
-                group.
-              </ThemedTextBox>
-            )}
-            <ThemedButton
-              title={isCopyingJoinLink ? 'Copying…' : 'Copy Join Link'}
-              variant="outline"
-              onPress={handleCopyJoinLink}
-              disabled={isCopyingJoinLink}
-              style={styles.copyJoinLinkButton}
-            />
-            <ThemedButton
-              title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
-              variant="outline"
-              onPress={() => setIsInviteSectionOpen(!isInviteSectionOpen)}
-            />
-            {isInviteSectionOpen && (
-              <View style={styles.inviteSection}>
-                {invitableFriends.length === 0 ? (
-                  <ThemedTextBox variant="body" color="secondary" style={styles.inviteSectionText}>
-                    {game.group_id
-                      ? 'All your friends are already in this group, already signed up, or you have no friends to invite.'
-                      : 'All your friends are already signed up, or you have no friends to invite.'}
-                  </ThemedTextBox>
-                ) : (
-                  invitableFriends.map((friend) => (
-                    <View key={friend.id} style={styles.friendRow}>
-                      <ThemedToggle
-                        label={friend.display_name || friend.username}
-                        value={selectedInviteFriendIds.has(friend.id)}
-                        onValueChange={() => toggleInviteFriend(friend.id)}
-                      />
-                    </View>
-                  ))
-                )}
-                {invitableFriends.length > 0 && (
-                  <ThemedButton
-                    title={isInviting ? 'Sending...' : 'Send Invites'}
-                    variant="primary"
-                    onPress={handleSendInvites}
-                    disabled={isInviting || selectedInviteFriendIds.size === 0}
-                    style={styles.sendInvitesButton}
-                  />
-                )}
-              </View>
-            )}
-          </ThemedCard>
-        )}
 
         {activePlayers.length > 0 && (
           <ThemedCard variant="elevated" title={hasTeams ? 'Teams' : 'Players'}>
@@ -624,74 +537,6 @@ export function GameDetailScreen({
           </ThemedCard>
         )}
 
-        {isAdmin && hasTeams && (
-          <ThemedCard variant="elevated" title="Notify Players">
-            <ThemedButton
-              title={isNotifySectionOpen ? 'Hide' : 'Notify Players of Teams'}
-              variant="outline"
-              onPress={handleToggleNotifySection}
-            />
-            {isNotifySectionOpen && (
-              <View style={styles.notifySection}>
-                <ThemedInput
-                  label="Message"
-                  value={notifyMessage}
-                  onChangeText={setNotifyMessage}
-                  multiline
-                  placeholder="Add a message for players..."
-                  editable={!isLoadingTemplate}
-                />
-                <ThemedTextBox variant="caption" color="secondary" style={styles.notifyHint}>
-                  {`Each player's team is added automatically, e.g. "You're on ${game.team1_name}".`}
-                </ThemedTextBox>
-                <ThemedButton
-                  title={isNotifying ? 'Sending...' : 'Send Notifications'}
-                  variant="primary"
-                  onPress={handleNotifyPlayers}
-                  disabled={isNotifying || isLoadingTemplate}
-                  style={styles.sendInvitesButton}
-                />
-              </View>
-            )}
-          </ThemedCard>
-        )}
-
-        {isAdmin && !!game.group_id && (
-          <ThemedCard variant="elevated" title="Ringers">
-            {game.ringers_opened_at ? (
-              <ThemedBadge variant="info" text="Open to ringers" />
-            ) : (
-              <>
-                <ThemedButton
-                  title={isRingersSectionOpen ? 'Hide' : 'Open to Ringers'}
-                  variant="outline"
-                  onPress={() => setIsRingersSectionOpen(!isRingersSectionOpen)}
-                />
-                {isRingersSectionOpen && (
-                  <View style={styles.notifySection}>
-                    <ThemedInput
-                      label="Message"
-                      value={ringersMessage}
-                      onChangeText={setRingersMessage}
-                      multiline
-                    />
-                    <ThemedTextBox variant="caption" color="secondary" style={styles.notifyHint}>
-                      Every group member will get a push notification with this message.
-                    </ThemedTextBox>
-                    <ThemedButton
-                      title={isOpeningRingers ? 'Sending...' : 'Send Notifications'}
-                      variant="primary"
-                      onPress={handleOpenRingers}
-                      disabled={isOpeningRingers}
-                      style={styles.sendInvitesButton}
-                    />
-                  </View>
-                )}
-              </>
-            )}
-          </ThemedCard>
-        )}
-
         {waitlistPlayers.length > 0 && (
           <ThemedCard variant="elevated" title="Waitlist">
             <WaitlistSection
@@ -706,13 +551,191 @@ export function GameDetailScreen({
           </ThemedCard>
         )}
 
-        {isCreator && (
+        {isAdmin && (
+          <ThemedCard variant="elevated" title="Admin">
+            <View style={styles.adminControlsRow}>
+              {onNavigateToEditGame && (
+                <ThemedButton
+                  title="Edit Game"
+                  variant="outline"
+                  size="small"
+                  onPress={() => onNavigateToEditGame(gameId)}
+                />
+              )}
+              {pageVisibility.isPreview && (
+                <ThemedButton
+                  title={isPublishing ? 'Publishing...' : 'Make Visible Now'}
+                  variant="primary"
+                  size="small"
+                  onPress={handlePublishNow}
+                  disabled={isPublishing}
+                />
+              )}
+            </View>
+
+            {game.player_count > 0 && onNavigateToTeamAssignment && (
+              <ThemedButton
+                title="Assign Teams"
+                variant="secondary"
+                fullWidth
+                onPress={() => onNavigateToTeamAssignment(gameId)}
+              />
+            )}
+
+            <ThemedDivider />
+
+            <ThemedTextBox variant="body" weight="semibold">
+              Invite Friends
+            </ThemedTextBox>
+            {!!game.group_id && (
+              <ThemedTextBox variant="caption" color="secondary">
+                Invited friends get access to this game only — they won&apos;t be added to the
+                group.
+              </ThemedTextBox>
+            )}
+            <ThemedButton
+              title={isCopyingJoinLink ? 'Copying…' : 'Copy Join Link'}
+              variant="outline"
+              onPress={handleCopyJoinLink}
+              disabled={isCopyingJoinLink}
+            />
+            <ThemedButton
+              title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
+              variant="outline"
+              onPress={() => setIsInviteSectionOpen(!isInviteSectionOpen)}
+            />
+            {isInviteSectionOpen && (
+              <View style={styles.inviteSection}>
+                {invitableFriends.length === 0 ? (
+                  <ThemedTextBox variant="body" color="secondary" style={styles.inviteSectionText}>
+                    {game.group_id
+                      ? 'All your friends are already in this group, already signed up, or you have no friends to invite.'
+                      : 'All your friends are already signed up, or you have no friends to invite.'}
+                  </ThemedTextBox>
+                ) : (
+                  invitableFriends.map((friend) => (
+                    <View key={friend.id} style={styles.friendRow}>
+                      <ThemedToggle
+                        label={friend.display_name || friend.username}
+                        value={selectedInviteFriendIds.has(friend.id)}
+                        onValueChange={() => toggleInviteFriend(friend.id)}
+                      />
+                    </View>
+                  ))
+                )}
+                {invitableFriends.length > 0 && (
+                  <ThemedButton
+                    title={isInviting ? 'Sending...' : 'Send Invites'}
+                    variant="primary"
+                    onPress={handleSendInvites}
+                    disabled={isInviting || selectedInviteFriendIds.size === 0}
+                    style={styles.sendInvitesButton}
+                  />
+                )}
+              </View>
+            )}
+
+            {hasTeams && (
+              <>
+                <ThemedDivider />
+                <ThemedTextBox variant="body" weight="semibold">
+                  Notify Players
+                </ThemedTextBox>
+                <ThemedButton
+                  title={isNotifySectionOpen ? 'Hide' : 'Notify Players of Teams'}
+                  variant="outline"
+                  onPress={handleToggleNotifySection}
+                />
+                {isNotifySectionOpen && (
+                  <View style={styles.notifySection}>
+                    <ThemedInput
+                      label="Message"
+                      value={notifyMessage}
+                      onChangeText={setNotifyMessage}
+                      multiline
+                      placeholder="Add a message for players..."
+                      editable={!isLoadingTemplate}
+                    />
+                    <ThemedTextBox variant="caption" color="secondary" style={styles.notifyHint}>
+                      {`Each player's team is added automatically, e.g. "You're on ${game.team1_name}".`}
+                    </ThemedTextBox>
+                    <ThemedButton
+                      title={isNotifying ? 'Sending...' : 'Send Notifications'}
+                      variant="primary"
+                      onPress={handleNotifyPlayers}
+                      disabled={isNotifying || isLoadingTemplate}
+                      style={styles.sendInvitesButton}
+                    />
+                  </View>
+                )}
+              </>
+            )}
+
+            {!!game.group_id && (
+              <>
+                <ThemedDivider />
+                <ThemedTextBox variant="body" weight="semibold">
+                  Ringers
+                </ThemedTextBox>
+                {game.ringers_opened_at ? (
+                  <ThemedBadge variant="info" text="Open to ringers" />
+                ) : (
+                  <>
+                    <ThemedButton
+                      title={isRingersSectionOpen ? 'Hide' : 'Open to Ringers'}
+                      variant="outline"
+                      onPress={() => setIsRingersSectionOpen(!isRingersSectionOpen)}
+                    />
+                    {isRingersSectionOpen && (
+                      <View style={styles.notifySection}>
+                        <ThemedInput
+                          label="Message"
+                          value={ringersMessage}
+                          onChangeText={setRingersMessage}
+                          multiline
+                        />
+                        <ThemedTextBox
+                          variant="caption"
+                          color="secondary"
+                          style={styles.notifyHint}
+                        >
+                          Every group member will get a push notification with this message.
+                        </ThemedTextBox>
+                        <ThemedButton
+                          title={isOpeningRingers ? 'Sending...' : 'Send Notifications'}
+                          variant="primary"
+                          onPress={handleOpenRingers}
+                          disabled={isOpeningRingers}
+                          style={styles.sendInvitesButton}
+                        />
+                      </View>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+
+            {isCreator && (
+              <>
+                <ThemedDivider />
+                <ThemedButton
+                  title={isDeleting ? 'Deleting...' : 'Delete Game'}
+                  variant="danger"
+                  onPress={() => handleDelete(onGoBack)}
+                  disabled={isDeleting}
+                />
+              </>
+            )}
+          </ThemedCard>
+        )}
+
+        {!isPast && isVisible && game.invitation_status !== 'pending' && game.user_signed_up && (
           <ThemedButton
-            title={isDeleting ? 'Deleting...' : 'Delete Game'}
+            title={isWithdrawing ? 'Withdrawing...' : 'Withdraw'}
             variant="danger"
-            onPress={() => handleDelete(onGoBack)}
-            disabled={isDeleting}
-            style={styles.deleteButton}
+            fullWidth
+            onPress={() => handleWithdraw(game, refetch)}
+            disabled={isWithdrawing}
           />
         )}
       </ScrollView>
@@ -764,10 +787,6 @@ const styles = StyleSheet.create({
   resultButton: {
     alignSelf: 'flex-start',
   },
-  deleteButton: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
   inviteBannerText: {
     marginBottom: 12,
   },
@@ -782,9 +801,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   inviteSectionText: {
-    marginTop: 8,
-  },
-  copyJoinLinkButton: {
     marginTop: 8,
   },
   friendRow: {
