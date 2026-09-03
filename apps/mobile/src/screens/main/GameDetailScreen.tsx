@@ -99,14 +99,14 @@ export function GameDetailScreen({
   const [isLoadingSavedRingers, setIsLoadingSavedRingers] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const { game, isLoading, refetch } = useGameDetails(gameId, user?.id);
+  const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
+  const { game, isLoading, refetch } = useGameDetails(gameId, user?.id, adminGroupIds);
   const { isSigningUp, isWithdrawing, isDeleting, handleSignUp, handleWithdraw, handleDelete } =
     useGameActions(gameId, user?.id);
   const { isAddingRinger, handleAddRinger, handleRemoveRinger } = useRingerActions(
     gameId,
     user?.id
   );
-  const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
   const { memberIds: groupMemberIds } = useGroupMemberIds(game?.group_id ?? null);
   const { friends } = useAcceptedFriends(user?.id);
   const { refreshing, onRefresh } = useRefreshControl(refetch);

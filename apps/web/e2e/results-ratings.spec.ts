@@ -65,6 +65,15 @@ test.describe('Results & ratings', () => {
       await page.goto(gameUrl);
       await expect(page.getByRole('main').getByText(`${team1} 3 - 1 ${team2}`)).toBeVisible();
       await expect(page.getByText(/★ 9\.0 \(1\)/)).toBeVisible();
+
+      // The aggregated average is admin-only. Secondary played and rated,
+      // but isn't a group admin, so the score is visible to them while the
+      // ★ average is not.
+      await secondaryPage.goto(gameUrl);
+      await expect(
+        secondaryPage.getByRole('main').getByText(`${team1} 3 - 1 ${team2}`)
+      ).toBeVisible();
+      await expect(secondaryPage.getByText(/★/)).not.toBeVisible();
     } finally {
       await secondaryContext.close();
     }

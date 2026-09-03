@@ -85,9 +85,13 @@ describe('useGameDetails', () => {
     expect(result.current.game?.group_name).toBe('Tuesday Regulars');
   });
 
-  it('attaches average ratings for a past game', async () => {
+  it('attaches average ratings for a past game when the viewer is the game admin', async () => {
     const gamesBuilder = createQueryBuilder({
-      data: { ...baseGameRow, kickoff_date: '2020-01-01T18:00:00.000Z' },
+      data: {
+        ...baseGameRow,
+        kickoff_date: '2020-01-01T18:00:00.000Z',
+        created_by: 'user-1',
+      },
       error: null,
     });
     const invitationsBuilder = createQueryBuilder({ data: null, error: null });
@@ -119,6 +123,27 @@ describe('useGameDetails', () => {
     expect(pg1?.rating_count).toBe(2);
     expect(pg2?.average_rating).toBe(5);
     expect(pg2?.rating_count).toBe(1);
+  });
+
+  it('does not request rating averages for a past game when the viewer is not an admin', async () => {
+    const gamesBuilder = createQueryBuilder({
+      data: {
+        ...baseGameRow,
+        kickoff_date: '2020-01-01T18:00:00.000Z',
+        created_by: 'someone-else',
+      },
+      error: null,
+    });
+    const invitationsBuilder = createQueryBuilder({ data: null, error: null });
+    mockFromTables(mockSupabase, { games: gamesBuilder, game_invitations: invitationsBuilder });
+
+    const { result } = renderHook(() => useGameDetails('game-1', 'user-1'));
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(mockSupabase.rpc).not.toHaveBeenCalled();
+    const pg1 = result.current.game?.player_games.find((p) => p.id === 'pg-1');
+    expect(pg1?.average_rating).toBeUndefined();
   });
 
   it('shows an alert and stops loading when the fetch fails', async () => {
