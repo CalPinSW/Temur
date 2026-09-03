@@ -164,7 +164,9 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   }
   let players = (game.player_games ?? []).slice().sort((a, b) => a.signup_order - b.signup_order);
 
-  if (isPast && players.length > 0) {
+  // Aggregated rating averages are admin-only. The RPC enforces this too
+  // (returns nothing for a non-admin caller); this just skips a dead call.
+  if (isPast && isAdmin && players.length > 0) {
     const { data: summaryData } = await supabase.rpc('get_player_rating_summary', {
       p_player_game_ids: players.map((p) => p.id),
     });

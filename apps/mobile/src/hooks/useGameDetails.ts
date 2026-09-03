@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '@/services/supabase';
-import { Game, GameWithPlayers, PlayerGameWithProfile } from '@temur/shared';
+import { Game, GameWithPlayers, PlayerGameWithProfile, isGameAdmin } from '@temur/shared';
 import * as Sentry from '@sentry/react-native';
 
 interface RawPlayerGame {
@@ -34,7 +34,14 @@ interface RatingSummary {
   rating_count: number;
 }
 
-export function useGameDetails(gameId: string, userId?: string) {
+// Stable identity so an omitted arg doesn't invalidate the fetch callback.
+const NO_ADMIN_GROUP_IDS = new Set<string>();
+
+export function useGameDetails(
+  gameId: string,
+  userId?: string,
+  adminGroupIds: Set<string> = NO_ADMIN_GROUP_IDS
+) {
   const [game, setGame] = useState<GameWithPlayers | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,7 +90,10 @@ export function useGameDetails(gameId: string, userId?: string) {
       const isPast = new Date(gameData.kickoff_date) < new Date();
       let playersWithRatings: RawPlayerGame[] = gameData.player_games || [];
 
-      if (isPast) {
+      // Aggregated rating averages are admin-only. The RPC enforces this
+      // server-side (a non-admin caller gets an empty result); skipping the
+      // call here just avoids a dead round trip.
+      if (isPast && isGameAdmin(gameData, userId, adminGroupIds)) {
         const playerGameIds = playersWithRatings.map((pg) => pg.id);
 
         if (playerGameIds.length > 0) {
@@ -132,7 +142,7 @@ export function useGameDetails(gameId: string, userId?: string) {
     } finally {
       setIsLoading(false);
     }
-  }, [gameId, userId]);
+  }, [gameId, userId, adminGroupIds]);
 
   useEffect(() => {
     const load = () => fetchGameDetails();
