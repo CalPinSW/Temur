@@ -69,6 +69,23 @@ export async function deleteUser(userId: string): Promise<void> {
   await getAdminClient().auth.admin.deleteUser(userId);
 }
 
+// Pushes a game's kickoff (and visible-from) into the past via the admin
+// API — the app has no UI for time-travel, and the result/ratings flow
+// only unlocks once a game has been played. Sign real players up through
+// the UI *before* calling this: the game detail page hides the sign-up
+// button (and every "recruit more players" control) once kickoff passes.
+export async function backdateGameToPast(gameId: string): Promise<void> {
+  const { error } = await getAdminClient()
+    .from('games')
+    .update({
+      visible_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      kickoff_date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    })
+    .eq('id', gameId);
+
+  if (error) throw new Error(`Failed to backdate game ${gameId}: ${error.message}`);
+}
+
 // Direct DB cleanup (not via the UI) so a test can guarantee no dangling
 // friendship/pending-request survives it regardless of where it failed —
 // the app has no "cancel my own sent request" UI, so a test that fails

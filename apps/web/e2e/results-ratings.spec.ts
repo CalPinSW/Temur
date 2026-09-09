@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { E2E_USERS, primaryStorageState, secondaryStorageState } from './helpers';
+import {
+  E2E_USERS,
+  backdateGameToPast,
+  primaryStorageState,
+  secondaryStorageState,
+} from './helpers';
 
 test.use({ storageState: primaryStorageState });
 
@@ -34,20 +39,25 @@ test.describe('Results & ratings', () => {
       const team1 = `E2E-Results-T1-${Date.now()}`;
       const team2 = `E2E-Results-T2-${Date.now()}`;
       await page.goto(`/games/new?group=${groupId}`);
-      await page.getByLabel('Kickoff Date & Time').fill('2020-06-15T10:00');
-      // Visible From's own default isn't tied to the Kickoff Date typed
-      // above (it's computed once from the form's internal default
-      // kickoff), so it can still land in the future unless set explicitly.
+      // Kickoff in the future for now so the sign-up button shows; the game
+      // gets backdated below once secondary is in. Visible From in the past
+      // so it's immediately reachable.
+      await page.getByLabel('Kickoff Date & Time').fill('2099-01-02T10:00');
       await page.getByLabel('Visible From').fill('2020-06-08T10:00');
       await page.getByLabel('Team 1 Name').fill(team1);
       await page.getByLabel('Team 2 Name').fill(team2);
       await page.getByRole('button', { name: 'Create Game' }).click();
       await page.waitForURL(/\/games\/[0-9a-f-]+$/);
       const gameUrl = page.url();
+      const gameId = new URL(gameUrl).pathname.split('/').pop()!;
 
       await secondaryPage.goto(gameUrl);
       await secondaryPage.getByRole('button', { name: 'Sign up' }).click();
       await expect(secondaryPage.getByRole('button', { name: 'Withdraw' })).toBeVisible();
+
+      // The game has now been "played" — results and ratings only unlock
+      // once kickoff is in the past.
+      await backdateGameToPast(gameId);
 
       await page.reload();
       await expect(page.getByText('No result entered yet')).toBeVisible();

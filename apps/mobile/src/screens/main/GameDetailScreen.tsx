@@ -582,57 +582,65 @@ export function GameDetailScreen({
               />
             )}
 
-            <ThemedDivider />
+            {!isPast && (
+              <>
+                <ThemedDivider />
 
-            <ThemedTextBox variant="body" weight="semibold">
-              Invite Friends
-            </ThemedTextBox>
-            {!!game.group_id && (
-              <ThemedTextBox variant="caption" color="secondary">
-                Invited friends get access to this game only — they won&apos;t be added to the
-                group.
-              </ThemedTextBox>
-            )}
-            <ThemedButton
-              title={isCopyingJoinLink ? 'Copying…' : 'Copy Join Link'}
-              variant="outline"
-              onPress={handleCopyJoinLink}
-              disabled={isCopyingJoinLink}
-            />
-            <ThemedButton
-              title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
-              variant="outline"
-              onPress={() => setIsInviteSectionOpen(!isInviteSectionOpen)}
-            />
-            {isInviteSectionOpen && (
-              <View style={styles.inviteSection}>
-                {invitableFriends.length === 0 ? (
-                  <ThemedTextBox variant="body" color="secondary" style={styles.inviteSectionText}>
-                    {game.group_id
-                      ? 'All your friends are already in this group, already signed up, or you have no friends to invite.'
-                      : 'All your friends are already signed up, or you have no friends to invite.'}
+                <ThemedTextBox variant="body" weight="semibold">
+                  Invite Friends
+                </ThemedTextBox>
+                {!!game.group_id && (
+                  <ThemedTextBox variant="caption" color="secondary">
+                    Invited friends get access to this game only — they won&apos;t be added to the
+                    group.
                   </ThemedTextBox>
-                ) : (
-                  invitableFriends.map((friend) => (
-                    <View key={friend.id} style={styles.friendRow}>
-                      <ThemedToggle
-                        label={friend.display_name || friend.username}
-                        value={selectedInviteFriendIds.has(friend.id)}
-                        onValueChange={() => toggleInviteFriend(friend.id)}
+                )}
+                <ThemedButton
+                  title={isCopyingJoinLink ? 'Copying…' : 'Copy Join Link'}
+                  variant="outline"
+                  onPress={handleCopyJoinLink}
+                  disabled={isCopyingJoinLink}
+                />
+                <ThemedButton
+                  title={isInviteSectionOpen ? 'Hide' : 'Invite More Friends'}
+                  variant="outline"
+                  onPress={() => setIsInviteSectionOpen(!isInviteSectionOpen)}
+                />
+                {isInviteSectionOpen && (
+                  <View style={styles.inviteSection}>
+                    {invitableFriends.length === 0 ? (
+                      <ThemedTextBox
+                        variant="body"
+                        color="secondary"
+                        style={styles.inviteSectionText}
+                      >
+                        {game.group_id
+                          ? 'All your friends are already in this group, already signed up, or you have no friends to invite.'
+                          : 'All your friends are already signed up, or you have no friends to invite.'}
+                      </ThemedTextBox>
+                    ) : (
+                      invitableFriends.map((friend) => (
+                        <View key={friend.id} style={styles.friendRow}>
+                          <ThemedToggle
+                            label={friend.display_name || friend.username}
+                            value={selectedInviteFriendIds.has(friend.id)}
+                            onValueChange={() => toggleInviteFriend(friend.id)}
+                          />
+                        </View>
+                      ))
+                    )}
+                    {invitableFriends.length > 0 && (
+                      <ThemedButton
+                        title={isInviting ? 'Sending...' : 'Send Invites'}
+                        variant="primary"
+                        onPress={handleSendInvites}
+                        disabled={isInviting || selectedInviteFriendIds.size === 0}
+                        style={styles.sendInvitesButton}
                       />
-                    </View>
-                  ))
+                    )}
+                  </View>
                 )}
-                {invitableFriends.length > 0 && (
-                  <ThemedButton
-                    title={isInviting ? 'Sending...' : 'Send Invites'}
-                    variant="primary"
-                    onPress={handleSendInvites}
-                    disabled={isInviting || selectedInviteFriendIds.size === 0}
-                    style={styles.sendInvitesButton}
-                  />
-                )}
-              </View>
+              </>
             )}
 
             {hasTeams && (
@@ -671,7 +679,7 @@ export function GameDetailScreen({
               </>
             )}
 
-            {!!game.group_id && (
+            {!!game.group_id && !isPast && (
               <>
                 <ThemedDivider />
                 <ThemedTextBox variant="body" weight="semibold">
