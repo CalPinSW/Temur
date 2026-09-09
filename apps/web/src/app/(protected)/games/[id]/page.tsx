@@ -215,7 +215,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </p>
       </div>
 
-      {!visibility.isPreview && !isSignedUp && (
+      {!visibility.isPreview && !isPast && !isSignedUp && (
         <SignupActions gameId={game.id} isSignedUp={false} />
       )}
 
@@ -335,7 +335,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         </section>
       )}
 
-      {!visibility.isPreview && isSignedUp && (
+      {!visibility.isPreview && !isPast && isSignedUp && (
         <SignupActions gameId={game.id} isSignedUp={true} />
       )}
     </div>

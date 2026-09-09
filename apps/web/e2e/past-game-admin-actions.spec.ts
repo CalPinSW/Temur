@@ -17,9 +17,11 @@ test.describe('Admin actions on a past game', () => {
     await expect(page.getByRole('link', { name: 'Edit Game' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete Game' })).toBeVisible();
 
-    // Gone — no point recruiting for a game that has already happened.
+    // Gone — no point recruiting for, or signing up to, a game that has
+    // already happened.
     await expect(page.getByRole('button', { name: 'Get Join Link' })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Invite More Friends' })).toBeHidden();
     await expect(page.getByRole('button', { name: 'Open to Ringers' })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Sign up' })).toBeHidden();
   });
 });
