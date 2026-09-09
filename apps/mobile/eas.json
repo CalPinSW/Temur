@@ -36,6 +36,10 @@
         "appleId": "calpinsw@gmail.com",
         "ascAppId": "6802068197",
         "appleTeamId": "49CC6LJ3XA"
+      },
+      "android": {
+        "serviceAccountKeyPath": "_secrets/temur-play.json",
+        "track": "internal"
       }
     }
   }

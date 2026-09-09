@@ -63,9 +63,10 @@ eas build --profile production --platform all
    ```
 
 ### Android (Google Play)
-1. Create a service account in Google Play Console
-2. Download the JSON key and save as `google-services.json`
-3. Submit:
+1. Create a service account in Google Play Console with the Play Developer API enabled and grant it release access
+2. Download its JSON key and save it at `apps/mobile/_secrets/temur-play.json` (the `_secrets/` dir is gitignored — this key never gets committed)
+3. `eas.json`'s `submit.production.android` already points `serviceAccountKeyPath` at that file and targets the `internal` track
+4. Submit:
    ```bash
    eas submit --platform android
    ```
