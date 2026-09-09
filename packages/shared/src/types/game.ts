@@ -14,6 +14,8 @@ export interface Game {
   // for display, since a game itself doesn't own its group's name.
   group_name?: string | null;
   created_by: string | null;
+  // Set when the game was created as part of a recurring block (game_series).
+  series_id: string | null;
   ringers_opened_at: string | null;
   ringers_opened_by: string | null;
   result_team1_score: number | null;
@@ -97,4 +99,14 @@ export interface GameJoinLinkInfo {
   team1_name: string;
   team2_name: string;
   kickoff_date: string;
+}
+
+export interface GameSeries {
+  id: string;
+  group_id: string;
+  created_by: string | null;
+  interval_weeks: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
 }

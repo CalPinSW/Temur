@@ -67,6 +67,7 @@ interface GameDetailScreenProps {
   onNavigateToTeamAssignment?: (gameId: string) => void;
   onNavigateToGameResult?: (gameId: string) => void;
   onNavigateToEditGame?: (gameId: string) => void;
+  onNavigateToEditSeries?: (seriesId: string) => void;
 }
 
 export function GameDetailScreen({
@@ -75,6 +76,7 @@ export function GameDetailScreen({
   onNavigateToTeamAssignment,
   onNavigateToGameResult,
   onNavigateToEditGame,
+  onNavigateToEditSeries,
 }: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -98,6 +100,7 @@ export function GameDetailScreen({
   const [savedRingers, setSavedRingers] = useState<SavedRinger[]>([]);
   const [isLoadingSavedRingers, setIsLoadingSavedRingers] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isCancellingSeries, setIsCancellingSeries] = useState(false);
 
   const { adminGroupIds } = useGroupAdminGroupIds(user?.id);
   const { game, isLoading, refetch } = useGameDetails(gameId, user?.id, adminGroupIds);
@@ -296,6 +299,37 @@ export function GameDetailScreen({
     }
   };
 
+  const handleCancelSeries = () => {
+    if (!game?.series_id) return;
+    Alert.alert(
+      'Cancel recurring block?',
+      'This cancels every upcoming game in the block. Games already played are kept. This cannot be undone.',
+      [
+        { text: 'Keep games', style: 'cancel' },
+        {
+          text: 'Cancel block',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsCancellingSeries(true);
+              const { error } = await supabase.rpc('cancel_game_series', {
+                p_series_id: game.series_id,
+              });
+              if (error) throw error;
+              onGoBack();
+            } catch (error) {
+              console.error('Error cancelling recurring block:', error);
+              Sentry.captureException(error);
+              Alert.alert('Error', 'Failed to cancel the block. Please try again.');
+            } finally {
+              setIsCancellingSeries(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleToggleNotifySection = async () => {
     const next = !isNotifySectionOpen;
     setIsNotifySectionOpen(next);
@@ -439,6 +473,12 @@ export function GameDetailScreen({
             capacity={capacity}
             waitlistCount={waitlistPlayers.length}
           />
+
+          {!!game.series_id && (
+            <ThemedTextBox variant="caption" color="secondary" style={styles.seriesNote}>
+              Part of a recurring block
+            </ThemedTextBox>
+          )}
 
           {!isPast && isVisible && game.invitation_status !== 'pending' && !game.user_signed_up && (
             <GameActions isSigningUp={isSigningUp} onSignUp={() => handleSignUp(game, refetch)} />
@@ -723,6 +763,26 @@ export function GameDetailScreen({
               </>
             )}
 
+            {!!game.series_id && !!game.group_id && !isPast && (
+              <>
+                <ThemedDivider />
+                <ThemedTextBox variant="body" weight="semibold">
+                  Recurring block
+                </ThemedTextBox>
+                <ThemedButton
+                  title="Edit Upcoming Games in Block"
+                  variant="outline"
+                  onPress={() => onNavigateToEditSeries?.(game.series_id!)}
+                />
+                <ThemedButton
+                  title={isCancellingSeries ? 'Cancelling...' : 'Cancel Upcoming Games in Block'}
+                  variant="danger"
+                  onPress={handleCancelSeries}
+                  disabled={isCancellingSeries}
+                />
+              </>
+            )}
+
             {isCreator && (
               <>
                 <ThemedDivider />
@@ -754,6 +814,9 @@ export function GameDetailScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  seriesNote: {
+    marginTop: 8,
   },
   adminControlsRow: {
     flexDirection: 'row',

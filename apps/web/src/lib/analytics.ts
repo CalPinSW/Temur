@@ -3,6 +3,7 @@ import { track } from '@vercel/analytics/server';
 export const AnalyticsEvent = {
   SignedUp: 'Signed Up',
   GameCreated: 'Game Created',
+  GameSeriesCreated: 'Game Series Created',
   SignedUpForGame: 'Signed Up For Game',
   WithdrewFromGame: 'Withdrew From Game',
   GroupCreated: 'Group Created',

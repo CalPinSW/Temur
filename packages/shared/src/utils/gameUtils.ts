@@ -195,14 +195,59 @@ export const getDefaultKickoffDate = (existingKickoffDates: Date[]): Date => {
   return candidate;
 };
 
+export const DEFAULT_VISIBLE_AT_LEAD_DAYS = VISIBLE_AT_LEAD_DAYS;
+
+// visible_at for a given lead time: `leadDays` days before kickoff, same
+// time of day.
+export const getVisibleAtWithLead = (kickoffDate: Date, leadDays: number): Date =>
+  new Date(kickoffDate.getTime() - leadDays * MS_PER_DAY);
+
 // visible_at's default always tracks kickoff_date: exactly 6 days earlier,
 // at the same time of day. Re-run this whenever kickoff changes, unless the
 // admin has manually edited visible_at themselves.
 export const getDefaultVisibleAt = (kickoffDate: Date): Date =>
-  new Date(kickoffDate.getTime() - VISIBLE_AT_LEAD_DAYS * MS_PER_DAY);
+  getVisibleAtWithLead(kickoffDate, VISIBLE_AT_LEAD_DAYS);
 
 export const isVisibleAtBeforeKickoff = (kickoffDate: Date, visibleAt: Date): boolean =>
   visibleAt.getTime() <= kickoffDate.getTime();
+
+// Recurring game blocks ("series"). A block repeats every 1-4 weeks from a
+// first kickoff until an end date, capped so one action can't create an
+// unbounded number of games (the create_game_series RPC enforces the same
+// cap server-side).
+export const MAX_SERIES_GAMES = 26;
+export const SERIES_INTERVAL_WEEKS_OPTIONS = [1, 2, 3, 4] as const;
+
+const seriesStartOfDay = (date: Date): number =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+
+// Every kickoff in a block: the first kickoff, then one every
+// intervalWeeks * 7 days (stepping via setDate keeps the wall-clock time
+// across DST), including any whose calendar day is on or before endDate,
+// stopping at MAX_SERIES_GAMES.
+export const generateSeriesKickoffs = (
+  firstKickoff: Date,
+  endDate: Date,
+  intervalWeeks: number
+): Date[] => {
+  const kickoffs: Date[] = [];
+  const lastDay = seriesStartOfDay(endDate);
+  const cursor = new Date(firstKickoff);
+
+  while (seriesStartOfDay(cursor) <= lastDay && kickoffs.length < MAX_SERIES_GAMES) {
+    kickoffs.push(new Date(cursor));
+    cursor.setDate(cursor.getDate() + intervalWeeks * 7);
+  }
+
+  return kickoffs;
+};
+
+// Default end date for a new block: 8 weeks after the first kickoff.
+export const getDefaultSeriesEndDate = (firstKickoff: Date): Date => {
+  const end = new Date(firstKickoff);
+  end.setDate(end.getDate() + 8 * 7);
+  return end;
+};
 
 export const getTeamCounts = (teamAssignments: Record<string, number | null>) => {
   const counts = { team1: 0, team2: 0, unassigned: 0 };

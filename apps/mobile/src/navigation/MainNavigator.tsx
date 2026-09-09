@@ -22,7 +22,7 @@ import {
   DeleteAccountScreen,
   NotificationPreferencesScreen,
 } from '@/screens/profile';
-import { MainFunctionalityScreen, CreateGameScreen } from '@/screens/main';
+import { MainFunctionalityScreen, CreateGameScreen, CreateGameSeriesScreen } from '@/screens/main';
 import {
   GroupsListScreen,
   CreateGroupScreen,
@@ -117,6 +117,7 @@ function GroupsStack({
     | 'invite'
     | 'invites'
     | 'creategame'
+    | 'createseries'
     | 'games'
     | 'members'
     | 'join'
@@ -184,6 +185,16 @@ function GroupsStack({
     );
   }
 
+  if (screen === 'createseries' && groupId) {
+    return (
+      <CreateGameSeriesScreen
+        groupId={groupId}
+        onGoBack={() => setScreen('detail')}
+        onCreated={() => setScreen('games')}
+      />
+    );
+  }
+
   if (screen === 'games' && groupId) {
     return (
       <GroupGamesScreen
@@ -211,6 +222,10 @@ function GroupsStack({
         onNavigateToCreateGame={(id) => {
           setGroupId(id);
           setScreen('creategame');
+        }}
+        onNavigateToCreateSeries={(id) => {
+          setGroupId(id);
+          setScreen('createseries');
         }}
         onNavigateToGames={() => setScreen('games')}
         onNavigateToGame={(gameId) => navigateToGame(gameId)}
