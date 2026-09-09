@@ -7,7 +7,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 test.describe('Group calendar', () => {
   test('shows a group game on its day and links through to the game', async ({ page }) => {
-    // Kickoff two days out, at a fixed time, so it lands on a known day.
     const kickoff = new Date();
     kickoff.setDate(kickoff.getDate() + 2);
     kickoff.setHours(19, 0, 0, 0);
@@ -15,35 +14,40 @@ test.describe('Group calendar', () => {
       kickoff.getDate()
     )}T19:00`;
 
-    const { groupId, team1, team2 } = await createGroupAndGame(page, 'E2E Calendar', {
+    const { groupId, team1, team2 } = await createGroupAndGame(page, 'E2E Cal', {
       kickoffDate: kickoffLocal,
     });
 
     await page.goto(`/groups/${groupId}/calendar`);
-    await expect(page.getByRole('button', { name: 'Next month' })).toBeVisible();
+    await expect(page.locator('.fc')).toBeVisible();
 
-    // The chip may be in the current month or the next one, depending on
-    // where "two days from now" falls.
-    const chip = page.getByRole('link', { name: new RegExp(`${team1} v ${team2}`) });
-    if (!(await chip.isVisible().catch(() => false))) {
-      await page.getByRole('button', { name: 'Next month' }).click();
+    const event = page.locator('.fc-event', { hasText: `${team1} v ${team2}` });
+    if (!(await event.isVisible().catch(() => false))) {
+      // "two days from now" may have rolled into next month.
+      await page.locator('.fc-next-button').click();
     }
-    await expect(chip).toBeVisible();
+    await expect(event).toBeVisible();
 
-    await chip.click();
+    await event.click();
     await page.waitForURL(/\/games\/[0-9a-f-]+$/);
     await expect(page.getByRole('heading', { name: `${team1} vs ${team2}` })).toBeVisible();
   });
 
-  test('the list/calendar toggle moves between the two views', async ({ page }) => {
-    const { groupId } = await createGroupAndGame(page, 'E2E Calendar Toggle');
+  test('switches views and moves via the list/calendar toggle', async ({ page }) => {
+    const { groupId } = await createGroupAndGame(page, 'E2E Cal Nav');
 
     await page.goto(`/groups/${groupId}/games`);
-    await page.getByRole('link', { name: 'Calendar' }).click();
+    await page.getByRole('link', { name: 'Calendar', exact: true }).click();
     await page.waitForURL(`**/groups/${groupId}/calendar`);
-    await expect(page.getByRole('button', { name: 'Next month' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'List' }).click();
+    // FullCalendar view switcher.
+    await expect(page.locator('.fc-daygrid')).toBeVisible();
+    await page.getByRole('button', { name: 'Week' }).click();
+    await expect(page.locator('.fc-timegrid')).toBeVisible();
+    await page.getByRole('button', { name: 'List' }).click();
+    await expect(page.locator('.fc-list')).toBeVisible();
+
+    await page.getByRole('link', { name: 'List', exact: true }).click();
     await page.waitForURL(`**/groups/${groupId}/games`);
   });
 });
