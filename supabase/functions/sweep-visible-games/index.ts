@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
       .select('id, group_id, group:groups(name)')
       .not('group_id', 'is', null)
       .is('visibility_notified_at', null)
+      .is('deleted_at', null)
       .lte('visible_at', new Date().toISOString())
       .limit(GAME_BATCH_SIZE);
 
