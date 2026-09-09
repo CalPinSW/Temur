@@ -34,6 +34,9 @@ yarn-error.*
 .env
 .env*.local
 
+# local-only secrets (Play Store service account key, etc.)
+_secrets/
+
 # typescript
 *.tsbuildinfo
 
