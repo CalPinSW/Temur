@@ -251,6 +251,15 @@ export const NotificationTemplates = {
     };
   },
 
+  // Single-team games: no "You're on {team}" suffix — the admin message is
+  // sent as-is (with a generic fallback).
+  squadSelected: (matchup: string, gameId: string, adminMessage?: string): NotificationPayload => ({
+    type: 'team_assigned',
+    title: 'Squad Selection',
+    body: adminMessage?.trim() ? adminMessage.trim() : `You're in the squad for ${matchup}`,
+    data: { screen: 'GameDetail', gameId },
+  }),
+
   ringersOpen: (gameId: string, adminMessage?: string): NotificationPayload => ({
     type: 'ringers_open',
     title: 'Ringers needed!',

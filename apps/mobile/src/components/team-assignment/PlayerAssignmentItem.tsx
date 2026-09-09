@@ -8,6 +8,7 @@ interface PlayerAssignmentItemProps {
   playerName: string;
   position: number;
   currentTeam: number | null;
+  singleTeam?: boolean;
   onAssignTeam: (team: number | null) => void;
 }
 
@@ -15,9 +16,36 @@ export function PlayerAssignmentItem({
   playerName,
   position,
   currentTeam,
+  singleTeam = false,
   onAssignTeam,
 }: PlayerAssignmentItemProps) {
   const { colors } = useTheme();
+
+  if (singleTeam) {
+    const inSquad = currentTeam === 1;
+    return (
+      <View style={[styles.playerItem, { borderBottomColor: colors.border }]}>
+        <View style={styles.playerInfo}>
+          <ThemedTextBox variant="body" color="primary" weight="medium">
+            {`${position}. ${playerName}`}
+          </ThemedTextBox>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.inOutButton,
+            { borderColor: colors.border },
+            inSquad && { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
+          ]}
+          onPress={() => onAssignTeam(inSquad ? null : 1)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.teamButtonText, inSquad && styles.teamButtonTextActive]}>
+            {inSquad ? 'In' : 'Out'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.playerItem, { borderBottomColor: colors.border }]}>
@@ -89,6 +117,15 @@ const styles = StyleSheet.create({
   teamButton: {
     width: 40,
     height: 40,
+    borderRadius: 8,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inOutButton: {
+    minWidth: 56,
+    height: 40,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 2,
     justifyContent: 'center',

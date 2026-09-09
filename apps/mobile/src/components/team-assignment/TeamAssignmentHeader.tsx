@@ -7,23 +7,27 @@ interface TeamAssignmentHeaderProps {
   kickoffDate: string;
   playerCount: number;
   playersPerTeam: number;
+  singleTeam?: boolean;
 }
 
 export function TeamAssignmentHeader({
   kickoffDate,
   playerCount,
   playersPerTeam,
+  singleTeam = false,
 }: TeamAssignmentHeaderProps) {
   return (
     <View style={styles.header}>
       <ThemedTextBox variant="heading" weight="bold" color="primary">
-        Assign Teams
+        {singleTeam ? 'Tactics Board' : 'Assign Teams'}
       </ThemedTextBox>
       <ThemedTextBox variant="body" color="secondary" style={styles.subtitle}>
         {formatDate(kickoffDate)} at {formatTime(kickoffDate)}
       </ThemedTextBox>
       <ThemedTextBox variant="caption" color="secondary" style={styles.capacityNote}>
-        {`Assigning ${playerCount} players (${playersPerTeam} per team)`}
+        {singleTeam
+          ? `${playerCount} signed up · squad of ${playersPerTeam}`
+          : `Assigning ${playerCount} players (${playersPerTeam} per team)`}
       </ThemedTextBox>
     </View>
   );

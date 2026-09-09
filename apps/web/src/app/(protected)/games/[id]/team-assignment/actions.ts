@@ -37,25 +37,39 @@ export async function notifyTeamAssignments(
   recipients: NotifyRecipient[],
   team1Name: string,
   team2Name: string,
-  message: string
+  message: string,
+  singleTeam = false
 ): Promise<NotifyTeamAssignmentsResult> {
   const user = await getUser();
   if (!user) return { error: 'You must be signed in.' };
-  if (recipients.length === 0) return { error: 'No players are assigned to a team yet.' };
+  if (recipients.length === 0) {
+    return {
+      error: singleTeam
+        ? 'No players are in the squad yet.'
+        : 'No players are assigned to a team yet.',
+    };
+  }
 
   const supabase = await createClient();
   const trimmedMessage = message.trim();
 
   const results = await Promise.all(
     recipients.map(({ userId, team }) => {
-      const teamName = team === 1 ? team1Name : team2Name;
-      const suffix = `You're on ${teamName}`;
-      const body = trimmedMessage ? `${trimmedMessage}\n\n${suffix}` : suffix;
+      // Single-team: the message is sent as-is (falling back to a generic
+      // line), with no "You're on {team}" suffix.
+      const suffix = singleTeam
+        ? `You're in the squad for ${team1Name} vs ${team2Name}`
+        : `You're on ${team === 1 ? team1Name : team2Name}`;
+      const body = trimmedMessage
+        ? singleTeam
+          ? trimmedMessage
+          : `${trimmedMessage}\n\n${suffix}`
+        : suffix;
       return supabase.functions.invoke('send-notification', {
         body: {
           userId,
           type: 'team_assigned',
-          title: 'Team Assignment',
+          title: singleTeam ? 'Squad Selection' : 'Team Assignment',
           body,
           data: { screen: 'GameDetail', gameId },
         },

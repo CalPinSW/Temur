@@ -35,22 +35,40 @@ describe('groupService', () => {
       });
       mockFromTables(mockSupabase, { groups: builder });
 
-      const group = await createGroup('Sunday League', null, 'user-1');
+      const group = await createGroup('Sunday League', null, 'user-1', false);
 
       expect(mockSupabase.from).toHaveBeenCalledWith('groups');
       expect(builder.insert).toHaveBeenCalledWith({
         name: 'Sunday League',
         description: null,
+        single_team: false,
         created_by: 'user-1',
       });
       expect(group).toEqual({ id: 'group-1', name: 'Sunday League', description: null });
+    });
+
+    it('records the single-team setting', async () => {
+      const builder = createQueryBuilder({
+        data: { id: 'group-2', name: 'League Side', description: null },
+        error: null,
+      });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      await createGroup('League Side', null, 'user-1', true);
+
+      expect(builder.insert).toHaveBeenCalledWith({
+        name: 'League Side',
+        description: null,
+        single_team: true,
+        created_by: 'user-1',
+      });
     });
 
     it('throws when the insert fails', async () => {
       const builder = createQueryBuilder({ data: null, error: new Error('boom') });
       mockFromTables(mockSupabase, { groups: builder });
 
-      await expect(createGroup('Sunday League', null, 'user-1')).rejects.toThrow('boom');
+      await expect(createGroup('Sunday League', null, 'user-1', false)).rejects.toThrow('boom');
     });
   });
 

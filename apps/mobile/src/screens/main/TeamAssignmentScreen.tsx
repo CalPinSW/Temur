@@ -97,6 +97,7 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
   }
 
   const teamCounts = getTeamCounts(teamAssignments);
+  const singleTeam = game.single_team;
 
   return (
     <SafeAreaView
@@ -125,6 +126,7 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
               kickoffDate={game.kickoff_date}
               playerCount={game.player_count}
               playersPerTeam={game.players_per_team}
+              singleTeam={singleTeam}
             />
 
             <ThemedCard variant="elevated">
@@ -134,6 +136,8 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
                 team1Count={teamCounts.team1}
                 team2Count={teamCounts.team2}
                 unassignedCount={teamCounts.unassigned}
+                singleTeam={singleTeam}
+                squadSize={game.players_per_team}
                 onAutoAssign={handleAutoAssign}
                 onClearAll={handleClearAll}
               />
@@ -152,11 +156,12 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
             boardPositions={boardPositions}
             team1Name={game.team1_name}
             team2Name={game.team2_name}
+            singleTeam={singleTeam}
             onMovePlayer={handleMoveOnBoard}
             onDragActiveChange={(active) => setScrollEnabled(!active)}
           />
         ) : (
-          <ThemedCard variant="elevated" title="Players">
+          <ThemedCard variant="elevated" title={singleTeam ? 'Squad' : 'Players'}>
             <View style={styles.playersList}>
               {game.player_games.map((playerGame, index) => (
                 <PlayerAssignmentItem
@@ -166,6 +171,7 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
                   }
                   position={index + 1}
                   currentTeam={teamAssignments[playerGame.id]}
+                  singleTeam={singleTeam}
                   onAssignTeam={(team) => handleAssignTeam(playerGame.id, team)}
                 />
               ))}
@@ -175,7 +181,7 @@ export function TeamAssignmentScreen({ gameId, onGoBack }: TeamAssignmentScreenP
 
         <View style={styles.saveButtonContainer}>
           <ThemedButton
-            title={isSaving ? 'Saving...' : 'Save Team Assignments'}
+            title={isSaving ? 'Saving...' : singleTeam ? 'Save Lineup' : 'Save Team Assignments'}
             variant="primary"
             onPress={() => handleSave(onGoBack)}
             disabled={isSaving}

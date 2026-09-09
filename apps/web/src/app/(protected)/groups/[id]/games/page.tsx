@@ -20,7 +20,7 @@ interface GameListItem extends GameWithPlayers {
 }
 
 function GameCard({ game }: { game: GameListItem }) {
-  const capacity = getGameCapacity(game.players_per_team);
+  const capacity = getGameCapacity(game.players_per_team, game.single_team);
 
   const content = (
     <>

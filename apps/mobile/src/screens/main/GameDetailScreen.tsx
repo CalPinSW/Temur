@@ -169,8 +169,9 @@ export function GameDetailScreen({
   const isCreator = !!user && game.created_by === user.id;
   const isPast = new Date(game.kickoff_date) < new Date();
   const isVisible = new Date(game.visible_at) <= new Date();
-  const hasTeams = game.player_games.some((pg) => pg.team !== null);
-  const capacity = getGameCapacity(game.players_per_team);
+  const hasTeams = !game.single_team && game.player_games.some((pg) => pg.team !== null);
+  const hasSquad = game.single_team && game.player_games.some((pg) => pg.team === 1);
+  const capacity = getGameCapacity(game.players_per_team, game.single_team);
   const activePlayers = getActivePlayers(game.player_games, capacity);
   const waitlistPlayers = getWaitlistPlayers(game.player_games, capacity);
 
@@ -355,7 +356,8 @@ export function GameDetailScreen({
         game.player_games,
         game.team1_name,
         game.team2_name,
-        notifyMessage.trim()
+        notifyMessage.trim(),
+        game.single_team
       );
       setIsNotifySectionOpen(false);
       Alert.alert('Success', 'Players notified!');
@@ -615,7 +617,7 @@ export function GameDetailScreen({
 
             {game.player_count > 0 && onNavigateToTeamAssignment && (
               <ThemedButton
-                title="Assign Teams"
+                title={game.single_team ? 'Tactics Board' : 'Assign Teams'}
                 variant="secondary"
                 fullWidth
                 onPress={() => onNavigateToTeamAssignment(gameId)}
@@ -683,14 +685,20 @@ export function GameDetailScreen({
               </>
             )}
 
-            {hasTeams && (
+            {(hasTeams || hasSquad) && (
               <>
                 <ThemedDivider />
                 <ThemedTextBox variant="body" weight="semibold">
-                  Notify Players
+                  {game.single_team ? 'Notify Squad' : 'Notify Players'}
                 </ThemedTextBox>
                 <ThemedButton
-                  title={isNotifySectionOpen ? 'Hide' : 'Notify Players of Teams'}
+                  title={
+                    isNotifySectionOpen
+                      ? 'Hide'
+                      : game.single_team
+                        ? 'Notify Selected Squad'
+                        : 'Notify Players of Teams'
+                  }
                   variant="outline"
                   onPress={handleToggleNotifySection}
                 />
@@ -705,7 +713,9 @@ export function GameDetailScreen({
                       editable={!isLoadingTemplate}
                     />
                     <ThemedTextBox variant="caption" color="secondary" style={styles.notifyHint}>
-                      {`Each player's team is added automatically, e.g. "You're on ${game.team1_name}".`}
+                      {game.single_team
+                        ? 'Sent to every player you’ve put in the squad.'
+                        : `Each player's team is added automatically, e.g. "You're on ${game.team1_name}".`}
                     </ThemedTextBox>
                     <ThemedButton
                       title={isNotifying ? 'Sending...' : 'Send Notifications'}

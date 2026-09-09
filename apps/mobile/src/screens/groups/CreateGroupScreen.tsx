@@ -17,6 +17,7 @@ export function CreateGroupScreen({ onGoBack, onCreated }: CreateGroupScreenProp
   const user = useAuthStore((state) => state.user);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [singleTeam, setSingleTeam] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
@@ -24,7 +25,7 @@ export function CreateGroupScreen({ onGoBack, onCreated }: CreateGroupScreenProp
 
     try {
       setIsCreating(true);
-      const group = await createGroup(name.trim(), description.trim() || null, user.id);
+      const group = await createGroup(name.trim(), description.trim() || null, user.id, singleTeam);
       onCreated(group.id);
     } catch (error) {
       console.error('Error creating group:', error);
@@ -76,6 +77,35 @@ export function CreateGroupScreen({ onGoBack, onCreated }: CreateGroupScreenProp
               multiline
             />
           </View>
+          <View style={styles.formSection}>
+            <ThemedTextBox variant="body" weight="semibold">
+              How this group plays
+            </ThemedTextBox>
+            <ThemedTextBox variant="caption" color="secondary" style={styles.helperText}>
+              This can&apos;t be changed later.
+            </ThemedTextBox>
+            <View style={styles.modeRow}>
+              <ThemedButton
+                title="Two teams"
+                variant={!singleTeam ? 'primary' : 'secondary'}
+                size="small"
+                onPress={() => setSingleTeam(false)}
+                style={styles.modeButton}
+              />
+              <ThemedButton
+                title="One team"
+                variant={singleTeam ? 'primary' : 'secondary'}
+                size="small"
+                onPress={() => setSingleTeam(true)}
+                style={styles.modeButton}
+              />
+            </View>
+            <ThemedTextBox variant="caption" color="secondary" style={styles.helperText}>
+              {singleTeam
+                ? 'A single squad playing league fixtures against other teams.'
+                : 'The group splits into two sides each game.'}
+            </ThemedTextBox>
+          </View>
           <ThemedButton
             title={isCreating ? 'Creating...' : 'Create Group'}
             variant="primary"
@@ -116,5 +146,16 @@ const styles = StyleSheet.create({
   },
   formSection: {
     marginBottom: 16,
+  },
+  helperText: {
+    marginTop: 6,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modeButton: {
+    flex: 1,
   },
 });

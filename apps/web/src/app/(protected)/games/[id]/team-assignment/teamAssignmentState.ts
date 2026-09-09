@@ -59,6 +59,18 @@ export function autoAssign(playerIds: string[]): AssignmentState {
   return { assignments, positions };
 }
 
+// Single-team: put the first `squadSize` players (by the order given) on
+// the pitch, the rest in the pool.
+export function autoFillSquad(playerIds: string[], squadSize: number): AssignmentState {
+  const assignments: Assignments = {};
+  const positions: Positions = {};
+  playerIds.forEach((id, index) => {
+    assignments[id] = index < squadSize ? 1 : null;
+    positions[id] = null;
+  });
+  return { assignments, positions };
+}
+
 export function clearAll(playerIds: string[]): AssignmentState {
   const assignments: Assignments = {};
   const positions: Positions = {};

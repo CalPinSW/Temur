@@ -22,7 +22,7 @@ export function CreateGameForm({
   existingKickoffDates,
   presetGroupId,
 }: {
-  adminGroups: { id: string; name: string }[];
+  adminGroups: { id: string; name: string; single_team: boolean }[];
   friends: Profile[];
   existingKickoffDates: string[];
   presetGroupId?: string;
@@ -32,6 +32,9 @@ export function CreateGameForm({
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(presetGroupId ?? null);
   const effectiveGroupId =
     selectedGroupId ?? (!presetGroupId && mode === 'group' ? (adminGroups[0]?.id ?? null) : null);
+  const effectiveGroup = adminGroups.find((g) => g.id === effectiveGroupId);
+  const [friendsSingleTeam, setFriendsSingleTeam] = useState(false);
+  const singleTeam = mode === 'group' ? (effectiveGroup?.single_team ?? false) : friendsSingleTeam;
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
 
   const defaultKickoff = getDefaultKickoffDate(existingKickoffDates.map((d) => new Date(d)));
@@ -52,9 +55,23 @@ export function CreateGameForm({
   };
   const [team1Name, setTeam1Name] = useState('Black');
   const [team2Name, setTeam2Name] = useState('White');
+  const [teamNamesTouched, setTeamNamesTouched] = useState(false);
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
+
+  // Sensible defaults per format, until the admin edits either name.
+  const displayTeam1Name = teamNamesTouched
+    ? team1Name
+    : singleTeam
+      ? (effectiveGroup?.name ?? 'Our team')
+      : 'Black';
+  const displayTeam2Name = teamNamesTouched ? team2Name : singleTeam ? '' : 'White';
+  const setTeamName = (which: 1 | 2, value: string) => {
+    setTeamNamesTouched(true);
+    if (which === 1) setTeam1Name(value);
+    else setTeam2Name(value);
+  };
 
   const toggleFriend = (friendId: string) => {
     setSelectedFriendIds((prev) => {
@@ -78,6 +95,11 @@ export function CreateGameForm({
       return;
     }
 
+    if (!displayTeam1Name.trim() || !displayTeam2Name.trim()) {
+      setError(singleTeam ? 'Enter your team name and the opponent.' : 'Enter both team names.');
+      return;
+    }
+
     startTransition(async () => {
       const { error } = await createGame({
         mode,
@@ -85,9 +107,10 @@ export function CreateGameForm({
         friendIds: Array.from(selectedFriendIds),
         kickoffDate: new Date(kickoffDate).toISOString(),
         visibleAt: new Date(visibleAt).toISOString(),
-        team1Name,
-        team2Name,
+        team1Name: displayTeam1Name.trim(),
+        team2Name: displayTeam2Name.trim(),
         playersPerTeam,
+        singleTeam,
       });
       if (error) setError(error);
     });
@@ -154,6 +177,42 @@ export function CreateGameForm({
       )}
 
       {mode === 'friends' && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium text-text-secondary">Format</legend>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setFriendsSingleTeam(false)}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                !friendsSingleTeam
+                  ? 'bg-primary text-white'
+                  : 'border border-border text-text-secondary hover:bg-background-secondary'
+              }`}
+            >
+              Two teams
+            </button>
+            <button
+              type="button"
+              onClick={() => setFriendsSingleTeam(true)}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                friendsSingleTeam
+                  ? 'bg-primary text-white'
+                  : 'border border-border text-text-secondary hover:bg-background-secondary'
+              }`}
+            >
+              One team vs opponent
+            </button>
+          </div>
+        </fieldset>
+      )}
+
+      {mode === 'group' && singleTeam && (
+        <p className="text-xs text-text-tertiary">
+          This is a one-team group — you&apos;re fielding a single squad against an opponent.
+        </p>
+      )}
+
+      {mode === 'friends' && (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-text-secondary">Invite Friends</h2>
           {friends.length === 0 ? (
@@ -212,7 +271,7 @@ export function CreateGameForm({
 
         <div className="flex flex-col gap-1">
           <label htmlFor="playersPerTeam" className="text-sm font-medium text-text-secondary">
-            Players per Team
+            {singleTeam ? 'Squad Size' : 'Players per Team'}
           </label>
           <select
             id="playersPerTeam"
@@ -222,7 +281,7 @@ export function CreateGameForm({
           >
             {PLAYERS_PER_TEAM_OPTIONS.map((n) => (
               <option key={n} value={n}>
-                {n} a-side
+                {singleTeam ? `${n} players` : `${n} a-side`}
               </option>
             ))}
           </select>
@@ -231,25 +290,26 @@ export function CreateGameForm({
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="team1Name" className="text-sm font-medium text-text-secondary">
-              Team 1 Name
+              {singleTeam ? 'Your Team Name' : 'Team 1 Name'}
             </label>
             <input
               id="team1Name"
               type="text"
-              value={team1Name}
-              onChange={(e) => setTeam1Name(e.target.value)}
+              value={displayTeam1Name}
+              onChange={(e) => setTeamName(1, e.target.value)}
               className="rounded-lg border border-input-border bg-input px-3 py-2 text-text outline-none focus:border-primary"
             />
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="team2Name" className="text-sm font-medium text-text-secondary">
-              Team 2 Name
+              {singleTeam ? 'Opponent' : 'Team 2 Name'}
             </label>
             <input
               id="team2Name"
               type="text"
-              value={team2Name}
-              onChange={(e) => setTeam2Name(e.target.value)}
+              value={displayTeam2Name}
+              onChange={(e) => setTeamName(2, e.target.value)}
+              placeholder={singleTeam ? 'e.g. Rovers FC' : undefined}
               className="rounded-lg border border-input-border bg-input px-3 py-2 text-text outline-none focus:border-primary"
             />
           </div>

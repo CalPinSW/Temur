@@ -49,6 +49,9 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
   // state via an effect, so it always reflects the current adminGroups.
   const effectiveGroupId =
     selectedGroupId ?? (!presetGroupId && mode === 'group' ? (adminGroups[0]?.id ?? null) : null);
+  const effectiveGroup = adminGroups.find((g) => g.id === effectiveGroupId);
+  const [friendsSingleTeam, setFriendsSingleTeam] = useState(false);
+  const singleTeam = mode === 'group' ? (effectiveGroup?.single_team ?? false) : friendsSingleTeam;
   const [selectedFriendIds, setSelectedFriendIds] = useState<Set<string>>(new Set());
 
   const [kickoffDate, setKickoffDate] = useState<Date>(getNextSaturday(new Date()));
@@ -62,7 +65,20 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
   const [isLoadingDefaults, setIsLoadingDefaults] = useState(true);
   const [team1Name, setTeam1Name] = useState('Black');
   const [team2Name, setTeam2Name] = useState('White');
+  const [teamNamesTouched, setTeamNamesTouched] = useState(false);
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
+
+  const displayTeam1Name = teamNamesTouched
+    ? team1Name
+    : singleTeam
+      ? (effectiveGroup?.name ?? 'Our team')
+      : 'Black';
+  const displayTeam2Name = teamNamesTouched ? team2Name : singleTeam ? '' : 'White';
+  const setTeamName = (which: 1 | 2, value: string) => {
+    setTeamNamesTouched(true);
+    if (which === 1) setTeam1Name(value);
+    else setTeam2Name(value);
+  };
 
   const playersPerTeamOptions: DropdownOption<number>[] = [
     { label: '5 a-side', value: 5 },
@@ -147,6 +163,14 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
       return;
     }
 
+    if (!displayTeam1Name.trim() || !displayTeam2Name.trim()) {
+      Alert.alert(
+        'Missing Names',
+        singleTeam ? 'Enter your team name and the opponent.' : 'Enter both team names.'
+      );
+      return;
+    }
+
     try {
       setIsCreating(true);
 
@@ -155,9 +179,10 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
         .insert({
           kickoff_date: kickoffDate.toISOString(),
           visible_at: visibleAt.toISOString(),
-          team1_name: team1Name,
-          team2_name: team2Name,
+          team1_name: displayTeam1Name.trim(),
+          team2_name: displayTeam2Name.trim(),
           players_per_team: playersPerTeam,
+          single_team: singleTeam,
           group_id: mode === 'group' ? effectiveGroupId : null,
           created_by: user.id,
         })
@@ -257,6 +282,33 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
         )}
 
         {mode === 'friends' && (
+          <ThemedCard title="Format" variant="elevated">
+            <View style={styles.modeToggle}>
+              <ThemedButton
+                title="Two teams"
+                variant={!friendsSingleTeam ? 'primary' : 'secondary'}
+                size="small"
+                onPress={() => setFriendsSingleTeam(false)}
+                style={styles.modeButton}
+              />
+              <ThemedButton
+                title="One team vs opponent"
+                variant={friendsSingleTeam ? 'primary' : 'secondary'}
+                size="small"
+                onPress={() => setFriendsSingleTeam(true)}
+                style={styles.modeButton}
+              />
+            </View>
+          </ThemedCard>
+        )}
+
+        {mode === 'group' && singleTeam && (
+          <ThemedTextBox variant="caption" color="secondary" style={styles.helperText}>
+            This is a one-team group — you&apos;re fielding a single squad against an opponent.
+          </ThemedTextBox>
+        )}
+
+        {mode === 'friends' && (
           <ThemedCard title="Invite Friends" variant="elevated">
             {friends.length === 0 ? (
               <ThemedTextBox variant="body" color="secondary">
@@ -306,10 +358,10 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
 
           <View style={styles.formSection}>
             <ThemedTextBox variant="caption" color="secondary" style={styles.helperText}>
-              Players per team
+              {singleTeam ? 'How big is the squad?' : 'Players per team'}
             </ThemedTextBox>
             <ThemedDropdown
-              label="Players per Team"
+              label={singleTeam ? 'Squad Size' : 'Players per Team'}
               value={playersPerTeam}
               options={playersPerTeamOptions}
               onChange={setPlayersPerTeam}
@@ -317,14 +369,23 @@ export function CreateGameScreen({ presetGroupId, onGoBack, onCreated }: CreateG
           </View>
           <View style={styles.formSection}>
             <ThemedTextBox variant="caption" color="secondary" style={styles.helperText}>
-              What colours should the teams be?
+              {singleTeam ? 'Who are you playing?' : 'What colours should the teams be?'}
             </ThemedTextBox>
             <View style={styles.teamNameContainer}>
               <View style={styles.teamInputWrapper}>
-                <ThemedInput label="Team 1 Name" value={team1Name} onChangeText={setTeam1Name} />
+                <ThemedInput
+                  label={singleTeam ? 'Your Team Name' : 'Team 1 Name'}
+                  value={displayTeam1Name}
+                  onChangeText={(v) => setTeamName(1, v)}
+                />
               </View>
               <View style={styles.teamInputWrapper}>
-                <ThemedInput label="Team 2 Name" value={team2Name} onChangeText={setTeam2Name} />
+                <ThemedInput
+                  label={singleTeam ? 'Opponent' : 'Team 2 Name'}
+                  value={displayTeam2Name}
+                  onChangeText={(v) => setTeamName(2, v)}
+                  placeholder={singleTeam ? 'e.g. Rovers FC' : undefined}
+                />
               </View>
             </View>
           </View>

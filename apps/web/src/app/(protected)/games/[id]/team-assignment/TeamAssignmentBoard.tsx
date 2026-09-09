@@ -9,7 +9,11 @@ import {
   useSensors,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { getPlayerDisplayName, type BoardPosition, type PlayerGameWithProfile } from '@temur/shared';
+import {
+  getPlayerDisplayName,
+  type BoardPosition,
+  type PlayerGameWithProfile,
+} from '@temur/shared';
 import { computeNormalizedPosition, fallbackPosition } from './boardGeometry';
 
 type BoxId = 'pool' | 'team1' | 'team2';
@@ -81,6 +85,7 @@ export function TeamAssignmentBoard({
   positions,
   team1Name,
   team2Name,
+  singleTeam = false,
   onMovePlayer,
 }: {
   players: PlayerGameWithProfile[];
@@ -88,6 +93,7 @@ export function TeamAssignmentBoard({
   positions: Record<string, BoardPosition | null>;
   team1Name: string;
   team2Name: string;
+  singleTeam?: boolean;
   onMovePlayer: (playerGameId: string, team: number | null, position: BoardPosition | null) => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -141,11 +147,17 @@ export function TeamAssignmentBoard({
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-3">
-        <p className="text-xs text-text-tertiary">Drag players between the boxes to set up teams</p>
+        <p className="text-xs text-text-tertiary">
+          {singleTeam
+            ? 'Drag players onto the pitch to set the lineup'
+            : 'Drag players between the boxes to set up teams'}
+        </p>
 
         <Box id="pool" label="" borderClassName="border-dashed border-border-light">
           {poolPlayers.length === 0 ? (
-            <span className="text-xs text-text-tertiary">All players assigned</span>
+            <span className="text-xs text-text-tertiary">
+              {singleTeam ? 'Everyone on the pitch' : 'All players assigned'}
+            </span>
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-2 py-1">
               {poolPlayers.map((pg) => (
@@ -156,12 +168,24 @@ export function TeamAssignmentBoard({
         </Box>
 
         <div className="flex flex-col gap-3">
-          <Box id="team1" label={team1Name} borderClassName="border-[#3B82F6]" height={BOX_HEIGHT}>
+          <Box
+            id="team1"
+            label={singleTeam ? team1Name || 'Lineup' : team1Name}
+            borderClassName="border-[#3B82F6]"
+            height={singleTeam ? BOX_HEIGHT * 1.75 : BOX_HEIGHT}
+          >
             {renderBoxPlayers(team1Players)}
           </Box>
-          <Box id="team2" label={team2Name} borderClassName="border-[#EF4444]" height={BOX_HEIGHT}>
-            {renderBoxPlayers(team2Players)}
-          </Box>
+          {!singleTeam && (
+            <Box
+              id="team2"
+              label={team2Name}
+              borderClassName="border-[#EF4444]"
+              height={BOX_HEIGHT}
+            >
+              {renderBoxPlayers(team2Players)}
+            </Box>
+          )}
         </div>
       </div>
     </DndContext>

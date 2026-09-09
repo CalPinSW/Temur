@@ -18,6 +18,9 @@ export interface CreateGameInput {
   team1Name: string;
   team2Name: string;
   playersPerTeam: number;
+  // For a friend game this is honoured as-is; for a group game the DB
+  // trigger overwrites it with the group's own setting.
+  singleTeam: boolean;
 }
 
 export async function createGame(input: CreateGameInput): Promise<CreateGameState> {
@@ -42,6 +45,7 @@ export async function createGame(input: CreateGameInput): Promise<CreateGameStat
       team1_name: input.team1Name,
       team2_name: input.team2Name,
       players_per_team: input.playersPerTeam,
+      single_team: input.singleTeam,
       group_id: input.mode === 'group' ? input.groupId : null,
       created_by: user.id,
     })
