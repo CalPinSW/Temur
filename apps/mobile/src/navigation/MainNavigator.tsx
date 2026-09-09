@@ -30,6 +30,7 @@ import {
   InvitePlayerScreen,
   GroupInvitesScreen,
   GroupGamesScreen,
+  GroupCalendarScreen,
   GroupMembersScreen,
   JoinGroupScreen,
 } from '@/screens/groups';
@@ -119,6 +120,7 @@ function GroupsStack({
     | 'creategame'
     | 'createseries'
     | 'games'
+    | 'calendar'
     | 'members'
     | 'join'
   >(screenParam || 'list');
@@ -201,6 +203,17 @@ function GroupsStack({
         groupId={groupId}
         onGoBack={() => setScreen('detail')}
         onNavigateToGame={(gameId) => navigateToGame(gameId)}
+        onNavigateToCalendar={() => setScreen('calendar')}
+      />
+    );
+  }
+
+  if (screen === 'calendar' && groupId) {
+    return (
+      <GroupCalendarScreen
+        groupId={groupId}
+        onGoBack={() => setScreen('detail')}
+        onNavigateToGame={(gameId) => navigateToGame(gameId)}
       />
     );
   }
@@ -228,6 +241,7 @@ function GroupsStack({
           setScreen('createseries');
         }}
         onNavigateToGames={() => setScreen('games')}
+        onNavigateToCalendar={() => setScreen('calendar')}
         onNavigateToGame={(gameId) => navigateToGame(gameId)}
         onNavigateToMembers={() => setScreen('members')}
       />
