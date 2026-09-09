@@ -97,7 +97,18 @@ export default async function GroupGamesPage({ params }: PageProps<'/groups/[id]
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
-      <h1 className="text-lg font-semibold text-text">Upcoming Games — {group.name}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-lg font-semibold text-text">{group.name}</h1>
+        <div className="flex overflow-hidden rounded-lg border border-border text-sm">
+          <span className="bg-background-secondary px-3 py-1.5 font-medium text-text">List</span>
+          <Link
+            href={`/groups/${groupId}/calendar`}
+            className="border-l border-border px-3 py-1.5 font-medium text-text-secondary transition-colors hover:bg-background-secondary"
+          >
+            Calendar
+          </Link>
+        </div>
+      </div>
       {upcomingGames.length === 0 ? (
         <p className="text-sm text-text-secondary">
           This group doesn&apos;t have any games scheduled yet.

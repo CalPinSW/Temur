@@ -111,14 +111,22 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
                 ? `${formatDate(games[0].kickoff_date)} at ${formatTime(games[0].kickoff_date)}`
                 : `${games.length} games scheduled`}
           </span>
-          {games.length > 0 && (
+          <div className="flex gap-3">
+            {games.length > 0 && (
+              <Link
+                href={games.length === 1 ? `/games/${games[0].id}` : `/groups/${groupId}/games`}
+                className="text-sm font-medium text-primary hover:text-primary-hover"
+              >
+                {games.length === 1 ? 'View Game' : 'View Games'}
+              </Link>
+            )}
             <Link
-              href={games.length === 1 ? `/games/${games[0].id}` : `/groups/${groupId}/games`}
+              href={`/groups/${groupId}/calendar`}
               className="text-sm font-medium text-primary hover:text-primary-hover"
             >
-              {games.length === 1 ? 'View Game' : 'View Games'}
+              Calendar
             </Link>
-          )}
+          </div>
         </div>
       </div>
 

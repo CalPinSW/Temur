@@ -4,5 +4,6 @@ export { GroupDetailScreen } from './GroupDetailScreen';
 export { InvitePlayerScreen } from './InvitePlayerScreen';
 export { GroupInvitesScreen } from './GroupInvitesScreen';
 export { GroupGamesScreen } from './GroupGamesScreen';
+export { GroupCalendarScreen } from './GroupCalendarScreen';
 export { GroupMembersScreen } from './GroupMembersScreen';
 export { JoinGroupScreen } from './JoinGroupScreen';

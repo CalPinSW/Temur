@@ -12,9 +12,15 @@ interface GroupGamesScreenProps {
   groupId: string;
   onGoBack: () => void;
   onNavigateToGame: (gameId: string) => void;
+  onNavigateToCalendar: () => void;
 }
 
-export function GroupGamesScreen({ groupId, onGoBack, onNavigateToGame }: GroupGamesScreenProps) {
+export function GroupGamesScreen({
+  groupId,
+  onGoBack,
+  onNavigateToGame,
+  onNavigateToCalendar,
+}: GroupGamesScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
   const { upcomingGames, isLoading } = useGroupUpcomingGames(groupId, user?.id);
@@ -46,7 +52,7 @@ export function GroupGamesScreen({ groupId, onGoBack, onNavigateToGame }: GroupG
         <ThemedTextBox variant="subheading" weight="semibold">
           Upcoming Games
         </ThemedTextBox>
-        <View style={styles.placeholder} />
+        <ThemedButton variant="ghost" onPress={onNavigateToCalendar} title="Calendar" />
       </View>
 
       {isLoading ? (
@@ -81,9 +87,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-  },
-  placeholder: {
-    width: 50,
   },
   list: {
     padding: 16,

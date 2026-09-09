@@ -25,6 +25,7 @@ interface GroupDetailScreenProps {
   onNavigateToCreateGame: (groupId: string) => void;
   onNavigateToCreateSeries: (groupId: string) => void;
   onNavigateToGames: (groupId: string) => void;
+  onNavigateToCalendar: (groupId: string) => void;
   onNavigateToGame: (gameId: string) => void;
   onNavigateToMembers: (groupId: string) => void;
 }
@@ -36,6 +37,7 @@ export function GroupDetailScreen({
   onNavigateToCreateGame,
   onNavigateToCreateSeries,
   onNavigateToGames,
+  onNavigateToCalendar,
   onNavigateToGame,
   onNavigateToMembers,
 }: GroupDetailScreenProps) {
@@ -304,6 +306,12 @@ export function GroupDetailScreen({
                 size="small"
                 onPress={handleUpcomingGamesPress}
                 disabled={upcomingGames.length === 0}
+              />
+              <ThemedButton
+                title="Calendar"
+                variant="ghost"
+                size="small"
+                onPress={() => onNavigateToCalendar(groupId)}
               />
             </ThemedCard>
           </View>
