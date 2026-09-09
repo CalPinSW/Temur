@@ -123,7 +123,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const isPast = new Date(game.kickoff_date) < new Date();
 
   let invitableFriends: Profile[] = [];
-  if (isAdmin) {
+  if (isAdmin && !isPast) {
     const [{ data: sentFriendships }, { data: receivedFriendships }, { data: groupMemberRows }] =
       await Promise.all([
         supabase
@@ -303,15 +303,17 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
             )}
           </div>
 
-          <div className="border-t border-border-light pt-4">
-            <InviteFriendsSection
-              gameId={game.id}
-              invitableFriends={invitableFriends}
-              isGroupGame={!!game.group_id}
-            />
-          </div>
+          {!isPast && (
+            <div className="border-t border-border-light pt-4">
+              <InviteFriendsSection
+                gameId={game.id}
+                invitableFriends={invitableFriends}
+                isGroupGame={!!game.group_id}
+              />
+            </div>
+          )}
 
-          {!!game.group_id && !visibility.isPreview && (
+          {!!game.group_id && !visibility.isPreview && !isPast && (
             <div className="border-t border-border-light pt-4">
               {game.ringers_opened_at ? (
                 <p className="text-sm text-text-secondary">
