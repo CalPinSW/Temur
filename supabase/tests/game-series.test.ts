@@ -131,10 +131,17 @@ Deno.test("create_game_series - a group admin schedules a block of games", async
     assertEquals(games?.length, 6);
     assertEquals(games?.[0].team1_name, "Black");
     assertEquals(games?.[0].players_per_team, 6);
-    // One week apart, visible_at six days before each kickoff.
+    // One week apart, visible_at six days before each kickoff. Compare as
+    // instants — Postgres round-trips timestamptz as "+00:00", not "Z".
     for (let i = 0; i < 6; i++) {
-      assertEquals(games?.[i].kickoff_date, kickoffs[i]);
-      assertEquals(games?.[i].visible_at, visibleAts[i]);
+      assertEquals(
+        new Date(games![i].kickoff_date).getTime(),
+        new Date(kickoffs[i]).getTime()
+      );
+      assertEquals(
+        new Date(games![i].visible_at).getTime(),
+        new Date(visibleAts[i]).getTime()
+      );
     }
 
     // Below the minimum of 2 is rejected.
