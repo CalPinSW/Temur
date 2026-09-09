@@ -15,6 +15,9 @@ import {
   getDefaultKickoffDate,
   getDefaultVisibleAt,
   isVisibleAtBeforeKickoff,
+  generateSeriesKickoffs,
+  getDefaultSeriesEndDate,
+  MAX_SERIES_GAMES,
 } from '../utils/gameUtils';
 import { PlayerGameWithProfile } from '../types/game';
 
@@ -286,6 +289,61 @@ describe('gameUtils', () => {
       expect(
         isVisibleAtBeforeKickoff(new Date('2026-03-07T10:45:00.000Z'), new Date('2026-03-14T10:45:00.000Z'))
       ).toBe(false);
+    });
+  });
+
+  describe('generateSeriesKickoffs', () => {
+    // Local date parts, since generateSeriesKickoffs steps calendar days in
+    // local time (DST-safe) and the machine timezone is not pinned here.
+    const parts = (d: Date) => [d.getFullYear(), d.getMonth() + 1, d.getDate(), d.getHours()];
+
+    it('steps weekly from the first kickoff up to and including the end date', () => {
+      const first = new Date(2026, 3, 11, 10, 45);
+      const end = new Date(2026, 4, 9);
+      const kickoffs = generateSeriesKickoffs(first, end, 1);
+      expect(kickoffs.map(parts)).toEqual([
+        [2026, 4, 11, 10],
+        [2026, 4, 18, 10],
+        [2026, 4, 25, 10],
+        [2026, 5, 2, 10],
+        [2026, 5, 9, 10],
+      ]);
+    });
+
+    it('includes a kickoff whose calendar day equals the end date even if later in the day', () => {
+      const first = new Date(2026, 3, 11, 18, 0);
+      const end = new Date(2026, 3, 25, 9, 0);
+      const kickoffs = generateSeriesKickoffs(first, end, 1);
+      expect(kickoffs).toHaveLength(3);
+      expect(parts(kickoffs[2])).toEqual([2026, 4, 25, 18]);
+    });
+
+    it('honours a multi-week interval', () => {
+      const first = new Date(2026, 3, 11, 10, 45);
+      const end = new Date(2026, 5, 30);
+      const kickoffs = generateSeriesKickoffs(first, end, 2);
+      expect(kickoffs.map((d) => d.getDate())).toEqual([11, 25, 9, 23, 6, 20]);
+      expect(kickoffs).toHaveLength(6);
+    });
+
+    it('caps the block at MAX_SERIES_GAMES', () => {
+      const first = new Date(2026, 0, 3, 10, 45);
+      const end = new Date(2030, 0, 1);
+      expect(generateSeriesKickoffs(first, end, 1)).toHaveLength(MAX_SERIES_GAMES);
+    });
+
+    it('returns just the first kickoff when the end date is before the next interval', () => {
+      const first = new Date(2026, 3, 11, 10, 45);
+      const end = new Date(2026, 3, 15);
+      expect(generateSeriesKickoffs(first, end, 1)).toHaveLength(1);
+    });
+  });
+
+  describe('getDefaultSeriesEndDate', () => {
+    it('is 8 weeks after the first kickoff', () => {
+      const first = new Date(2026, 3, 11, 10, 45);
+      const end = getDefaultSeriesEndDate(first);
+      expect([end.getFullYear(), end.getMonth() + 1, end.getDate()]).toEqual([2026, 6, 6]);
     });
   });
 });

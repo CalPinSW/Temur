@@ -6,3 +6,5 @@ export { CreateGameScreen } from './CreateGameScreen';
 export { GameResultScreen } from './GameResultScreen';
 export { EditGameScreen } from './EditGameScreen';
 export { JoinGameScreen } from './JoinGameScreen';
+export { CreateGameSeriesScreen } from './CreateGameSeriesScreen';
+export { EditGameSeriesScreen } from './EditGameSeriesScreen';

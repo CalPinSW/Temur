@@ -64,18 +64,26 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
       />
 
       {isAdmin && (
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <Link
+              href={`/groups/${groupId}/invite`}
+              className="flex-1 rounded-lg border border-primary px-4 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+            >
+              Invite Player
+            </Link>
+            <Link
+              href={`/games/new?group=${groupId}`}
+              className="flex-1 rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+            >
+              Create Game
+            </Link>
+          </div>
           <Link
-            href={`/groups/${groupId}/invite`}
-            className="flex-1 rounded-lg border border-primary px-4 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+            href={`/groups/${groupId}/series/new`}
+            className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
           >
-            Invite Player
-          </Link>
-          <Link
-            href={`/games/new?group=${groupId}`}
-            className="flex-1 rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-          >
-            Create Game
+            Schedule recurring games
           </Link>
         </div>
       )}

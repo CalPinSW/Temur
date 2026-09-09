@@ -5,6 +5,7 @@ import { TeamAssignmentScreen } from './TeamAssignmentScreen';
 import { CreateGameScreen } from './CreateGameScreen';
 import { GameResultScreen } from './GameResultScreen';
 import { EditGameScreen } from './EditGameScreen';
+import { EditGameSeriesScreen } from './EditGameSeriesScreen';
 import { JoinGameScreen } from './JoinGameScreen';
 
 interface MainFunctionalityScreenProps {
@@ -13,9 +14,10 @@ interface MainFunctionalityScreenProps {
 
 export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps) {
   const [currentScreen, setCurrentScreen] = useState<
-    'list' | 'detail' | 'teamAssignment' | 'create' | 'result' | 'edit' | 'join'
+    'list' | 'detail' | 'teamAssignment' | 'create' | 'result' | 'edit' | 'editSeries' | 'join'
   >('list');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
 
   useEffect(() => {
     if (route?.params?.screen === 'detail' && route.params.gameId) {
@@ -67,6 +69,11 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     setCurrentScreen('edit');
   };
 
+  const handleNavigateToEditSeries = (seriesId: string) => {
+    setSelectedSeriesId(seriesId);
+    setCurrentScreen('editSeries');
+  };
+
   if (currentScreen === 'join' && route?.params?.token) {
     return (
       <JoinGameScreen
@@ -94,6 +101,16 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     );
   }
 
+  if (currentScreen === 'editSeries' && selectedSeriesId) {
+    return (
+      <EditGameSeriesScreen
+        seriesId={selectedSeriesId}
+        onGoBack={handleBackToDetail}
+        onSaved={handleBackToDetail}
+      />
+    );
+  }
+
   if (currentScreen === 'teamAssignment' && selectedGameId) {
     return <TeamAssignmentScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
   }
@@ -110,6 +127,7 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
         onNavigateToTeamAssignment={handleNavigateToTeamAssignment}
         onNavigateToGameResult={handleNavigateToGameResult}
         onNavigateToEditGame={handleNavigateToEditGame}
+        onNavigateToEditSeries={handleNavigateToEditSeries}
       />
     );
   }

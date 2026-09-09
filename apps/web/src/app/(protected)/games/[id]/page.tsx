@@ -23,6 +23,7 @@ import { RemoveRingerButton } from './RemoveRingerButton';
 import { DeleteGameButton } from './DeleteGameButton';
 import { PublishGameButton } from './PublishGameButton';
 import { InviteFriendsSection } from './InviteFriendsSection';
+import { CancelSeriesButton } from './CancelSeriesButton';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
@@ -110,6 +111,15 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const game = data as RawGame;
   const adminGroupIds = new Set((adminGroups ?? []).map((row) => row.group_id));
   const isAdmin = isGameAdmin(game, user.id, adminGroupIds);
+
+  const { data: series } = game.series_id
+    ? await supabase
+        .from('game_series')
+        .select('id, deleted_at')
+        .eq('id', game.series_id)
+        .maybeSingle()
+    : { data: null };
+  const inActiveSeries = !!series && !series.deleted_at;
 
   // Not yet visible and this user isn't an admin who gets an early preview
   // — can_view_game's RLS doesn't consider visible_at at all (only group
@@ -213,6 +223,9 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
         <p className="text-sm text-text-secondary">
           {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
         </p>
+        {game.series_id && (
+          <p className="text-xs text-text-tertiary">Part of a recurring block</p>
+        )}
       </div>
 
       {!visibility.isPreview && !isPast && !isSignedUp && (
@@ -324,6 +337,19 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
               ) : (
                 <OpenRingersSection gameId={game.id} groupId={game.group_id} />
               )}
+            </div>
+          )}
+
+          {inActiveSeries && !isPast && game.group_id && (
+            <div className="flex flex-col items-start gap-2 border-t border-border-light pt-4">
+              <p className="text-sm font-semibold text-text-secondary">Recurring block</p>
+              <Link
+                href={`/groups/${game.group_id}/series/${game.series_id}/edit`}
+                className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+              >
+                Edit upcoming games in this block
+              </Link>
+              <CancelSeriesButton seriesId={game.series_id!} groupId={game.group_id} />
             </div>
           )}
 

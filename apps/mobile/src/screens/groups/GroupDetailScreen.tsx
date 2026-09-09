@@ -23,6 +23,7 @@ interface GroupDetailScreenProps {
   onGoBack: () => void;
   onNavigateToInvite: (groupId: string, groupName: string, existingMemberIds: string[]) => void;
   onNavigateToCreateGame: (groupId: string) => void;
+  onNavigateToCreateSeries: (groupId: string) => void;
   onNavigateToGames: (groupId: string) => void;
   onNavigateToGame: (gameId: string) => void;
   onNavigateToMembers: (groupId: string) => void;
@@ -33,6 +34,7 @@ export function GroupDetailScreen({
   onGoBack,
   onNavigateToInvite,
   onNavigateToCreateGame,
+  onNavigateToCreateSeries,
   onNavigateToGames,
   onNavigateToGame,
   onNavigateToMembers,
@@ -259,6 +261,12 @@ export function GroupDetailScreen({
               onPress={() => onNavigateToCreateGame(groupId)}
               style={styles.adminActionButton}
             />
+            <ThemedButton
+              title="Schedule Recurring Games"
+              variant="outline"
+              onPress={() => onNavigateToCreateSeries(groupId)}
+              style={styles.adminActionButtonFull}
+            />
           </View>
         )}
 
@@ -374,10 +382,14 @@ const styles = StyleSheet.create({
   },
   adminActions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   adminActionButton: {
     flex: 1,
+  },
+  adminActionButtonFull: {
+    width: '100%',
   },
   summaryCards: {
     flexDirection: 'row',
