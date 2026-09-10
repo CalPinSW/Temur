@@ -27,26 +27,36 @@
 
 ## Building
 
-### Development Build (for testing push notifications)
+`npm run build:*` goes through `scripts/eas-build.js`, which runs the EAS
+build and drops the finished artifact into `apps/mobile/builds/` (gitignored)
+named `temur-<appVersion>-<buildNumber>-<platform>-<profile>.<ext>` — e.g.
+`temur-1.0.0-11-ios-preview.ipa`. `buildNumber` is the value EAS
+auto-increments (`autoIncrement` is on for every profile in `eas.json`), so
+cloud-build filenames never collide; a `.json` sidecar records the build id,
+git commit and artifact URL.
+
 ```bash
-# iOS Simulator
-eas build --profile development --platform ios
+npm run build:ios:dev          # dev-client build for a physical iOS device
+npm run build:ios:preview      # internal-distribution iOS build
+npm run build:android:preview  # internal-distribution Android APK
 
-# Physical iOS device
-eas build --profile development --platform ios --local
+# any platform/profile combo:
+npm run build -- --platform android --profile production
 
-# Android
-eas build --profile development --platform android
+# compile on this machine instead of EAS servers (needs the full native
+# toolchain; the remote build number isn't bumped, so repeated local builds
+# overwrite temur-<version>-<n>-<platform>-<profile>-local.<ext>):
+npm run build:ios:preview -- --local
 ```
 
-### Preview Build (internal testing)
-```bash
-eas build --profile preview --platform all
-```
+Under the hood these are `eas build --platform <p> --profile <profile>`
+(remote) or `… --local`; you can still call `eas` directly if you don't want
+the artifact filed under `builds/`.
 
 ### Production Build
 ```bash
-eas build --profile production --platform all
+npm run build -- --platform ios --profile production
+npm run build -- --platform android --profile production
 ```
 
 ## Submitting to App Stores
