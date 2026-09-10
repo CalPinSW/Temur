@@ -7,8 +7,13 @@ export interface Game {
   created_at: string;
   updated_at: string;
   team1_name: string;
+  // For a single-team game this is the opponent's name.
   team2_name: string;
   players_per_team: number;
+  // One squad vs an opponent (a league fixture) rather than the group
+  // splitting into two teams. Immutable; for a group game it mirrors the
+  // group's `single_team` setting.
+  single_team: boolean;
   group_id: string | null;
   // Not a real games column — populated by callers that join groups(name)
   // for display, since a game itself doesn't own its group's name.

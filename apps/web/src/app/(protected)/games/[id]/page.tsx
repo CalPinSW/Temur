@@ -46,15 +46,16 @@ function PlayerRow({
   gameId,
   currentUserId,
   isAdmin,
+  showTeam,
 }: {
   player: PlayerGameWithProfile;
   position: number;
   gameId: string;
   currentUserId: string;
   isAdmin: boolean;
+  showTeam: boolean;
 }) {
-  const canRemoveRinger =
-    player.is_ringer && (player.added_by === currentUserId || isAdmin);
+  const canRemoveRinger = player.is_ringer && (player.added_by === currentUserId || isAdmin);
 
   return (
     <li className="flex items-center gap-3 rounded-lg border border-border-light px-3 py-2 text-sm">
@@ -70,7 +71,7 @@ function PlayerRow({
           ★ {player.average_rating.toFixed(1)} ({player.rating_count})
         </span>
       )}
-      {player.team != null && (
+      {showTeam && player.team != null && (
         <span className="text-xs text-text-tertiary">Team {player.team}</span>
       )}
       {canRemoveRinger && (
@@ -196,7 +197,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
     }
   }
 
-  const capacity = getGameCapacity(game.players_per_team);
+  const capacity = getGameCapacity(game.players_per_team, game.single_team);
   const activePlayers = getActivePlayers(players, capacity);
   const waitlistPlayers = getWaitlistPlayers(players, capacity);
   const isSignedUp = players.some((p) => p.user_id === user.id);
@@ -217,15 +218,11 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
             </span>
           )}
         </div>
-        {game.group?.name && (
-          <p className="text-sm font-medium text-primary">{game.group.name}</p>
-        )}
+        {game.group?.name && <p className="text-sm font-medium text-primary">{game.group.name}</p>}
         <p className="text-sm text-text-secondary">
           {formatDate(game.kickoff_date)} · {formatTime(game.kickoff_date)}
         </p>
-        {game.series_id && (
-          <p className="text-xs text-text-tertiary">Part of a recurring block</p>
-        )}
+        {game.series_id && <p className="text-xs text-text-tertiary">Part of a recurring block</p>}
       </div>
 
       {!visibility.isPreview && !isPast && !isSignedUp && (
@@ -265,6 +262,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
               gameId={game.id}
               currentUserId={user.id}
               isAdmin={isAdmin}
+              showTeam={!game.single_team}
             />
           ))}
         </ul>
@@ -288,6 +286,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
                 gameId={game.id}
                 currentUserId={user.id}
                 isAdmin={isAdmin}
+                showTeam={!game.single_team}
               />
             ))}
           </ul>
@@ -311,7 +310,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
                 href={`/games/${game.id}/team-assignment`}
                 className="rounded-lg border border-primary px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
               >
-                Assign Teams
+                {game.single_team ? 'Tactics Board' : 'Assign Teams'}
               </Link>
             )}
           </div>

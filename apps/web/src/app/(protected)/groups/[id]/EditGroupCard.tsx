@@ -8,12 +8,14 @@ export function EditGroupCard({
   name,
   description,
   messageTemplate,
+  singleTeam,
   isAdmin,
 }: {
   groupId: string;
   name: string;
   description: string;
   messageTemplate: string;
+  singleTeam: boolean;
   isAdmin: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -36,6 +38,11 @@ export function EditGroupCard({
           )}
         </div>
         {description && <p className="mt-2 text-sm text-text-secondary">{description}</p>}
+        <p className="mt-2 text-xs text-text-tertiary">
+          {singleTeam
+            ? 'One team — league fixtures against other teams'
+            : 'Two teams — the group splits into sides each game'}
+        </p>
       </div>
     );
   }
@@ -93,7 +100,7 @@ export function EditGroupCard({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="messageTemplate" className="text-sm font-medium text-text-secondary">
-          Default Team Assignment Message
+          {singleTeam ? 'Default Squad Notification Message' : 'Default Team Assignment Message'}
         </label>
         <textarea
           id="messageTemplate"
@@ -103,8 +110,9 @@ export function EditGroupCard({
           className="rounded-lg border border-input-border bg-input px-3 py-2 text-text outline-none focus:border-primary"
         />
         <p className="text-xs text-text-tertiary">
-          Pre-fills the message when an admin notifies players of their team. &quot;You&apos;re on
-          {' {team}'}&quot; is always appended automatically.
+          {singleTeam
+            ? 'Pre-fills the message when an admin notifies the selected squad.'
+            : `Pre-fills the message when an admin notifies players of their team. "You're on {team}" is always appended automatically.`}
         </p>
       </div>
 

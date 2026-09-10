@@ -5,6 +5,9 @@ export interface Group {
   name: string;
   description: string | null;
   team_assignment_message_template: string | null;
+  // The group runs one team in a league (fixtures vs opponents) rather
+  // than splitting into two teams each game. Chosen at creation, permanent.
+  single_team: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

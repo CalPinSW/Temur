@@ -20,6 +20,7 @@ interface TeamAssignmentBoardProps {
   boardPositions: Record<string, BoardPosition | null>;
   team1Name: string;
   team2Name: string;
+  singleTeam?: boolean;
   onMovePlayer: (playerGameId: string, team: number | null, position: BoardPosition | null) => void;
   onDragActiveChange: (active: boolean) => void;
 }
@@ -42,6 +43,7 @@ export function TeamAssignmentBoard({
   boardPositions,
   team1Name,
   team2Name,
+  singleTeam = false,
   onMovePlayer,
   onDragActiveChange,
 }: TeamAssignmentBoardProps) {
@@ -67,8 +69,9 @@ export function TeamAssignmentBoard({
   }, []);
 
   const remeasureAll = useCallback(() => {
-    (['pool', 'team1', 'team2'] as BoxId[]).forEach(measureBox);
-  }, [measureBox]);
+    const boxes: BoxId[] = singleTeam ? ['pool', 'team1'] : ['pool', 'team1', 'team2'];
+    boxes.forEach(measureBox);
+  }, [measureBox, singleTeam]);
 
   const handleTeamBoxLayout = useCallback(
     (id: BoxId) => (event: LayoutChangeEvent) => {
@@ -144,7 +147,9 @@ export function TeamAssignmentBoard({
   return (
     <View style={styles.container}>
       <ThemedTextBox variant="caption" color="secondary" style={styles.hint}>
-        Drag players between the boxes to set up teams
+        {singleTeam
+          ? 'Drag players onto the pitch to set the lineup'
+          : 'Drag players between the boxes to set up teams'}
       </ThemedTextBox>
 
       <View
@@ -158,7 +163,7 @@ export function TeamAssignmentBoard({
       >
         {poolPlayers.length === 0 ? (
           <ThemedTextBox variant="caption" color="tertiary">
-            All players assigned
+            {singleTeam ? 'Everyone on the pitch' : 'All players assigned'}
           </ThemedTextBox>
         ) : (
           poolPlayers.map((pg) => (
@@ -184,25 +189,27 @@ export function TeamAssignmentBoard({
           ]}
         >
           <ThemedTextBox variant="caption" weight="semibold" style={styles.boxLabel}>
-            {team1Name}
+            {singleTeam ? team1Name || 'Lineup' : team1Name}
           </ThemedTextBox>
           {renderBoxPlayers(team1Players, 'team1')}
         </View>
 
-        <View
-          ref={team2Ref}
-          onLayout={handleTeamBoxLayout('team2')}
-          style={[
-            styles.teamBox,
-            { borderColor: '#EF4444', backgroundColor: colors.backgroundSecondary },
-            draggingBoxId === 'team2' && styles.dragging,
-          ]}
-        >
-          <ThemedTextBox variant="caption" weight="semibold" style={styles.boxLabel}>
-            {team2Name}
-          </ThemedTextBox>
-          {renderBoxPlayers(team2Players, 'team2')}
-        </View>
+        {!singleTeam && (
+          <View
+            ref={team2Ref}
+            onLayout={handleTeamBoxLayout('team2')}
+            style={[
+              styles.teamBox,
+              { borderColor: '#EF4444', backgroundColor: colors.backgroundSecondary },
+              draggingBoxId === 'team2' && styles.dragging,
+            ]}
+          >
+            <ThemedTextBox variant="caption" weight="semibold" style={styles.boxLabel}>
+              {team2Name}
+            </ThemedTextBox>
+            {renderBoxPlayers(team2Players, 'team2')}
+          </View>
+        )}
       </View>
     </View>
   );

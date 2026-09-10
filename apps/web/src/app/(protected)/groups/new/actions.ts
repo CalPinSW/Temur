@@ -17,6 +17,7 @@ export async function createGroup(
 
   const name = String(formData.get('name') ?? '').trim();
   const description = String(formData.get('description') ?? '').trim();
+  const singleTeam = formData.get('teamMode') === 'single';
 
   if (!name) {
     return { error: 'Group name is required.' };
@@ -25,7 +26,12 @@ export async function createGroup(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('groups')
-    .insert({ name, description: description || null, created_by: user.id })
+    .insert({
+      name,
+      description: description || null,
+      single_team: singleTeam,
+      created_by: user.id,
+    })
     .select('id')
     .single();
 

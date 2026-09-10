@@ -22,10 +22,15 @@ export async function joinGroupViaLink(token: string): Promise<string> {
   return data as string;
 }
 
-export async function createGroup(name: string, description: string | null, createdBy: string) {
+export async function createGroup(
+  name: string,
+  description: string | null,
+  createdBy: string,
+  singleTeam: boolean
+) {
   const { data, error } = await supabase
     .from('groups')
-    .insert({ name, description, created_by: createdBy })
+    .insert({ name, description, single_team: singleTeam, created_by: createdBy })
     .select()
     .single();
 

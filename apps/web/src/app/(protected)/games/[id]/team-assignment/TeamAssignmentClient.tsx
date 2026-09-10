@@ -7,6 +7,7 @@ import {
   assignTeam,
   moveOnBoard,
   autoAssign,
+  autoFillSquad,
   clearAll,
   buildSavePayload,
   buildNotifyRecipients,
@@ -21,12 +22,16 @@ export function TeamAssignmentClient({
   players,
   team1Name,
   team2Name,
+  singleTeam,
+  squadSize,
   defaultNotifyMessage,
 }: {
   gameId: string;
   players: PlayerGameWithProfile[];
   team1Name: string;
   team2Name: string;
+  singleTeam: boolean;
+  squadSize: number;
   defaultNotifyMessage: string;
 }) {
   const playerIds = players.map((p) => p.id);
@@ -58,12 +63,19 @@ export function TeamAssignmentClient({
   };
 
   const handleAutoAssign = () => {
-    setState(autoAssign(playerIds));
+    setState(singleTeam ? autoFillSquad(playerIds, squadSize) : autoAssign(playerIds));
     setIsDirty(true);
   };
 
   const handleClearAll = () => {
-    if (!window.confirm('Are you sure you want to clear all team assignments?')) return;
+    if (
+      !window.confirm(
+        singleTeam
+          ? 'Take everyone off the pitch?'
+          : 'Are you sure you want to clear all team assignments?'
+      )
+    )
+      return;
     setState(clearAll(playerIds));
     setIsDirty(true);
   };
@@ -93,7 +105,8 @@ export function TeamAssignmentClient({
         recipients,
         team1Name,
         team2Name,
-        notifyMessage
+        notifyMessage,
+        singleTeam
       );
       if (error) {
         setNotifyError(error);
@@ -106,15 +119,26 @@ export function TeamAssignmentClient({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4">
-        <span className="flex items-center gap-2 text-sm text-text">
-          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#3B82F6' }} />
-          {team1Name}: {teamCounts.team1}
-        </span>
-        <span className="flex items-center gap-2 text-sm text-text">
-          <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#EF4444' }} />
-          {team2Name}: {teamCounts.team2}
-        </span>
-        <span className="text-sm text-text-secondary">Unassigned: {teamCounts.unassigned}</span>
+        {singleTeam ? (
+          <>
+            <span className="text-sm text-text">
+              In the squad: {teamCounts.team1} / {squadSize}
+            </span>
+            <span className="text-sm text-text-secondary">Out: {teamCounts.unassigned}</span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-2 text-sm text-text">
+              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#3B82F6' }} />
+              {team1Name}: {teamCounts.team1}
+            </span>
+            <span className="flex items-center gap-2 text-sm text-text">
+              <span className="h-3 w-3 rounded-full" style={{ backgroundColor: '#EF4444' }} />
+              {team2Name}: {teamCounts.team2}
+            </span>
+            <span className="text-sm text-text-secondary">Unassigned: {teamCounts.unassigned}</span>
+          </>
+        )}
 
         <div className="ml-auto flex gap-2">
           <button
@@ -122,7 +146,7 @@ export function TeamAssignmentClient({
             onClick={handleAutoAssign}
             className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
           >
-            Auto-Assign (Alternate)
+            {singleTeam ? 'Fill Squad' : 'Auto-Assign (Alternate)'}
           </button>
           <button
             type="button"
@@ -150,6 +174,7 @@ export function TeamAssignmentClient({
           positions={state.positions}
           team1Name={team1Name}
           team2Name={team2Name}
+          singleTeam={singleTeam}
           onMovePlayer={handleMoveOnBoard}
         />
       ) : (
@@ -160,6 +185,7 @@ export function TeamAssignmentClient({
               playerName={getPlayerDisplayName(pg) + (pg.is_ringer ? ' (Ringer)' : '')}
               position={index + 1}
               currentTeam={state.assignments[pg.id]}
+              singleTeam={singleTeam}
               onAssignTeam={(team) => handleAssignTeam(pg.id, team)}
             />
           ))}
@@ -174,15 +200,27 @@ export function TeamAssignmentClient({
         disabled={isPending}
         className="rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
-        {isPending ? 'Saving…' : isDirty ? 'Save Team Assignments' : 'Save Team Assignments (no changes)'}
+        {isPending
+          ? 'Saving…'
+          : singleTeam
+            ? isDirty
+              ? 'Save Lineup'
+              : 'Save Lineup (no changes)'
+            : isDirty
+              ? 'Save Team Assignments'
+              : 'Save Team Assignments (no changes)'}
       </button>
 
       {teamCounts.team1 + teamCounts.team2 > 0 && (
         <section className="flex flex-col gap-3 rounded-lg border border-border-light px-3 py-2">
-          <h2 className="text-sm font-semibold text-text-secondary">Notify Players</h2>
+          <h2 className="text-sm font-semibold text-text-secondary">
+            {singleTeam ? 'Notify Squad' : 'Notify Players'}
+          </h2>
           {isDirty ? (
             <p className="text-xs text-text-tertiary">
-              Save your team assignments before notifying players.
+              {singleTeam
+                ? 'Save the lineup before notifying players.'
+                : 'Save your team assignments before notifying players.'}
             </p>
           ) : (
             <>
@@ -191,7 +229,11 @@ export function TeamAssignmentClient({
                 onClick={() => setNotifyOpen((v) => !v)}
                 className="self-start rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
               >
-                {notifyOpen ? 'Hide' : 'Notify Players of Teams'}
+                {notifyOpen
+                  ? 'Hide'
+                  : singleTeam
+                    ? 'Notify Selected Squad'
+                    : 'Notify Players of Teams'}
               </button>
 
               {notifyOpen && (
@@ -204,7 +246,9 @@ export function TeamAssignmentClient({
                     className="rounded-lg border border-input-border bg-input px-3 py-2 text-sm text-text outline-none focus:border-primary"
                   />
                   <p className="text-xs text-text-tertiary">
-                    {`Each player's team is added automatically, e.g. "You're on ${team1Name}".`}
+                    {singleTeam
+                      ? 'Sent to every player you’ve put in the squad.'
+                      : `Each player's team is added automatically, e.g. "You're on ${team1Name}".`}
                   </p>
                   {notifyError && <p className="text-sm text-error">{notifyError}</p>}
                   {notifySent && !notifyError && (

@@ -7,9 +7,7 @@ interface RawFriendship {
   friend: Profile | Profile[];
 }
 
-export default async function CreateGamePage({
-  searchParams,
-}: PageProps<'/games/new'>) {
+export default async function CreateGamePage({ searchParams }: PageProps<'/games/new'>) {
   const { group: presetGroupId } = await searchParams;
   const user = await getUser();
   if (!user) redirect('/login');
@@ -23,7 +21,7 @@ export default async function CreateGamePage({
   ] = await Promise.all([
     supabase
       .from('group_members')
-      .select('group:groups(id, name)')
+      .select('group:groups(id, name, single_team)')
       .eq('user_id', user.id)
       .eq('role', 'admin'),
     supabase
@@ -44,7 +42,9 @@ export default async function CreateGamePage({
   ]);
 
   const adminGroups = (
-    (adminGroupRows ?? []) as unknown as { group: { id: string; name: string } }[]
+    (adminGroupRows ?? []) as unknown as {
+      group: { id: string; name: string; single_team: boolean };
+    }[]
   ).map((row) => row.group);
 
   const toProfile = (item: RawFriendship) =>

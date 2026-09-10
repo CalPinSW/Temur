@@ -4,13 +4,37 @@ export function PlayerAssignmentRow({
   playerName,
   position,
   currentTeam,
+  singleTeam = false,
   onAssignTeam,
 }: {
   playerName: string;
   position: number;
   currentTeam: number | null;
+  singleTeam?: boolean;
   onAssignTeam: (team: number | null) => void;
 }) {
+  if (singleTeam) {
+    const inSquad = currentTeam === 1;
+    return (
+      <div className="flex items-center justify-between gap-3 border-b border-border-light py-3 last:border-b-0">
+        <span className="flex-1 text-sm text-text">
+          {position}. {playerName}
+        </span>
+        <button
+          type="button"
+          onClick={() => onAssignTeam(inSquad ? null : 1)}
+          className={`rounded-lg border-2 px-3 py-1.5 text-xs font-semibold transition-colors ${
+            inSquad
+              ? 'border-[#3B82F6] bg-[#3B82F6] text-white'
+              : 'border-border text-text-secondary hover:bg-background-secondary'
+          }`}
+        >
+          {inSquad ? 'In' : 'Out'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border-light py-3 last:border-b-0">
       <span className="flex-1 text-sm text-text">

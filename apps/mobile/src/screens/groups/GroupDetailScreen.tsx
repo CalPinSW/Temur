@@ -202,11 +202,19 @@ export function GroupDetailScreen({
               />
               <View style={styles.editSpacer} />
               <ThemedInput
-                label="Default Team Assignment Message"
+                label={
+                  group.single_team
+                    ? 'Default Squad Notification Message'
+                    : 'Default Team Assignment Message'
+                }
                 value={editMessageTemplate}
                 onChangeText={setEditMessageTemplate}
                 multiline
-                hint={`Pre-fills the message when an admin notifies players of their team. "You're on {team}" is always appended automatically.`}
+                hint={
+                  group.single_team
+                    ? 'Pre-fills the message when an admin notifies the selected squad.'
+                    : `Pre-fills the message when an admin notifies players of their team. "You're on {team}" is always appended automatically.`
+                }
               />
               <View style={styles.editActions}>
                 <ThemedButton
@@ -239,6 +247,11 @@ export function GroupDetailScreen({
                   {group.description}
                 </ThemedTextBox>
               )}
+              <ThemedTextBox variant="caption" color="secondary" style={styles.description}>
+                {group.single_team
+                  ? 'One team — league fixtures against other teams'
+                  : 'Two teams — the group splits into sides each game'}
+              </ThemedTextBox>
             </View>
           )}
         </ThemedCard>

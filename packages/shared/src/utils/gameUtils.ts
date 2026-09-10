@@ -89,8 +89,11 @@ export const parseDateTimeLocalInputValue = (
   return new Date(guess.getTime() - offsetMinutes * 60000);
 };
 
-export const getGameCapacity = (playersPerTeam: number) => {
-  return playersPerTeam * 2;
+// Total sign-up capacity before players are waitlisted. A single-team game
+// (a league fixture — one squad vs an opponent) fills to players_per_team;
+// a two-team game to players_per_team * 2, since the group splits itself.
+export const getGameCapacity = (playersPerTeam: number, singleTeam = false) => {
+  return singleTeam ? playersPerTeam : playersPerTeam * 2;
 };
 
 export const getActivePlayers = (players: PlayerGameWithProfile[], capacity: number) => {

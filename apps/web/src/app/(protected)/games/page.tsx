@@ -12,7 +12,8 @@ import {
 import { createClient, getUser } from '@/lib/supabase/server';
 
 interface RawGame extends Game {
-  player_games: Pick<PlayerGameWithProfile, 'id' | 'user_id' | 'signup_order' | 'team' | 'profile'>[] | null;
+  player_games:
+    Pick<PlayerGameWithProfile, 'id' | 'user_id' | 'signup_order' | 'team' | 'profile'>[] | null;
   group: { name: string } | null;
 }
 
@@ -62,7 +63,7 @@ async function loadGames(userId: string) {
 }
 
 function GameCard({ game }: { game: GameListItem }) {
-  const capacity = getGameCapacity(game.players_per_team);
+  const capacity = getGameCapacity(game.players_per_team, game.single_team);
 
   const content = (
     <>

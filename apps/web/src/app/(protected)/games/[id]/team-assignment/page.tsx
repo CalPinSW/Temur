@@ -55,7 +55,7 @@ export default async function TeamAssignmentPage({
     defaultNotifyMessage = group?.team_assignment_message_template ?? '';
   }
 
-  const capacity = getGameCapacity(game.players_per_team);
+  const capacity = getGameCapacity(game.players_per_team, game.single_team);
   const sortedPlayers = (game.player_games ?? [])
     .slice()
     .sort((a, b) => a.signup_order - b.signup_order);
@@ -64,12 +64,16 @@ export default async function TeamAssignmentPage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold text-text">Assign Teams</h1>
+        <h1 className="text-lg font-semibold text-text">
+          {game.single_team ? 'Tactics Board' : 'Assign Teams'}
+        </h1>
         <p className="text-sm text-text-secondary">
           {formatDate(game.kickoff_date)} at {formatTime(game.kickoff_date)}
         </p>
         <p className="text-xs text-text-tertiary">
-          Assigning {activePlayers.length} players ({game.players_per_team} per team)
+          {game.single_team
+            ? `${activePlayers.length} signed up · squad of ${game.players_per_team}`
+            : `Assigning ${activePlayers.length} players (${game.players_per_team} per team)`}
         </p>
       </div>
 
@@ -78,6 +82,8 @@ export default async function TeamAssignmentPage({
         players={activePlayers}
         team1Name={game.team1_name}
         team2Name={game.team2_name}
+        singleTeam={game.single_team}
+        squadSize={game.players_per_team}
         defaultNotifyMessage={defaultNotifyMessage}
       />
     </div>

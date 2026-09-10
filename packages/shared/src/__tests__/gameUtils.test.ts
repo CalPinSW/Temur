@@ -82,9 +82,15 @@ describe('gameUtils', () => {
   });
 
   describe('getGameCapacity', () => {
-    it('doubles players per team to get total capacity', () => {
+    it('doubles players per team for a two-team game', () => {
       expect(getGameCapacity(7)).toBe(14);
       expect(getGameCapacity(0)).toBe(0);
+      expect(getGameCapacity(7, false)).toBe(14);
+    });
+
+    it('fills to the squad size for a single-team game', () => {
+      expect(getGameCapacity(7, true)).toBe(7);
+      expect(getGameCapacity(11, true)).toBe(11);
     });
   });
 

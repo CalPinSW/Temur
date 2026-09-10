@@ -10,6 +10,8 @@ interface TeamStatsCardProps {
   team1Count: number;
   team2Count: number;
   unassignedCount: number;
+  singleTeam?: boolean;
+  squadSize?: number;
   onAutoAssign: () => void;
   onClearAll: () => void;
 }
@@ -20,6 +22,8 @@ export function TeamStatsCard({
   team1Count,
   team2Count,
   unassignedCount,
+  singleTeam = false,
+  squadSize = 0,
   onAutoAssign,
   onClearAll,
 }: TeamStatsCardProps) {
@@ -28,36 +32,55 @@ export function TeamStatsCard({
   return (
     <View>
       <View style={styles.statsRow}>
-        <View style={styles.statItem}>
-          <View style={[styles.teamIndicator, { backgroundColor: '#3B82F6' }]} />
-          <ThemedTextBox variant="body" color="primary">
-            {`${team1Name}: ${team1Count}`}
-          </ThemedTextBox>
-        </View>
-        <View style={styles.statItem}>
-          <View style={[styles.teamIndicator, { backgroundColor: '#EF4444' }]} />
-          <ThemedTextBox variant="body" color="primary">
-            {`${team2Name}: ${team2Count}`}
-          </ThemedTextBox>
-        </View>
-        <View style={styles.statItem}>
-          <MaterialIcons name="help-outline" size={20} color={colors.textSecondary} />
-          <ThemedTextBox variant="body" color="secondary">
-            {`Unassigned: ${unassignedCount}`}
-          </ThemedTextBox>
-        </View>
+        {singleTeam ? (
+          <>
+            <View style={styles.statItem}>
+              <View style={[styles.teamIndicator, { backgroundColor: '#3B82F6' }]} />
+              <ThemedTextBox variant="body" color="primary">
+                {`In the squad: ${team1Count} / ${squadSize}`}
+              </ThemedTextBox>
+            </View>
+            <View style={styles.statItem}>
+              <MaterialIcons name="help-outline" size={20} color={colors.textSecondary} />
+              <ThemedTextBox variant="body" color="secondary">
+                {`Out: ${unassignedCount}`}
+              </ThemedTextBox>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.statItem}>
+              <View style={[styles.teamIndicator, { backgroundColor: '#3B82F6' }]} />
+              <ThemedTextBox variant="body" color="primary">
+                {`${team1Name}: ${team1Count}`}
+              </ThemedTextBox>
+            </View>
+            <View style={styles.statItem}>
+              <View style={[styles.teamIndicator, { backgroundColor: '#EF4444' }]} />
+              <ThemedTextBox variant="body" color="primary">
+                {`${team2Name}: ${team2Count}`}
+              </ThemedTextBox>
+            </View>
+            <View style={styles.statItem}>
+              <MaterialIcons name="help-outline" size={20} color={colors.textSecondary} />
+              <ThemedTextBox variant="body" color="secondary">
+                {`Unassigned: ${unassignedCount}`}
+              </ThemedTextBox>
+            </View>
+          </>
+        )}
       </View>
 
       <View style={styles.quickActions}>
         <ThemedButton
-          title="Auto-Assign (Alternate)"
+          title={singleTeam ? 'Fill Squad' : 'Auto-Assign (Alternate)'}
           variant="secondary"
           size="small"
           onPress={onAutoAssign}
           style={styles.quickActionButton}
         />
         <ThemedButton
-          title="Clear All"
+          title={singleTeam ? 'Clear' : 'Clear All'}
           variant="ghost"
           size="small"
           onPress={onClearAll}

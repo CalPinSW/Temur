@@ -3,6 +3,7 @@ import {
   assignTeam,
   moveOnBoard,
   autoAssign,
+  autoFillSquad,
   clearAll,
   buildSavePayload,
   buildNotifyRecipients,
@@ -94,6 +95,24 @@ describe('autoAssign', () => {
 
   it('handles an empty player list', () => {
     expect(autoAssign([])).toEqual({ assignments: {}, positions: {} });
+  });
+});
+
+describe('autoFillSquad', () => {
+  it('puts the first squadSize players on the pitch (team 1), the rest in the pool', () => {
+    const state = autoFillSquad(['pg-1', 'pg-2', 'pg-3', 'pg-4'], 2);
+    expect(state.assignments).toEqual({ 'pg-1': 1, 'pg-2': 1, 'pg-3': null, 'pg-4': null });
+    expect(state.positions).toEqual({
+      'pg-1': null,
+      'pg-2': null,
+      'pg-3': null,
+      'pg-4': null,
+    });
+  });
+
+  it('puts everyone on the pitch when there are fewer players than the squad size', () => {
+    const state = autoFillSquad(['pg-1', 'pg-2'], 5);
+    expect(state.assignments).toEqual({ 'pg-1': 1, 'pg-2': 1 });
   });
 });
 

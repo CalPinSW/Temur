@@ -60,6 +60,7 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
         name={(group as Group).name}
         description={(group as Group).description ?? ''}
         messageTemplate={(group as Group).team_assignment_message_template ?? ''}
+        singleTeam={(group as Group).single_team}
         isAdmin={isAdmin}
       />
 

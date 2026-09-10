@@ -92,10 +92,7 @@ export async function backdateGameToPast(gameId: string): Promise<void> {
 // after sending one but before it's accepted would otherwise leave a
 // pending row neither side can clear, breaking every later spec that
 // assumes primary/secondary start out as strangers.
-export async function removeFriendshipBetween(
-  usernameA: string,
-  usernameB: string
-): Promise<void> {
+export async function removeFriendshipBetween(usernameA: string, usernameB: string): Promise<void> {
   const admin = getAdminClient();
   const { data: profiles } = await admin
     .from('profiles')
@@ -120,12 +117,15 @@ export async function removeFriendshipBetween(
 export async function createGroupAndGame(
   page: Page,
   namePrefix: string,
-  options: { kickoffDate?: string } = {}
+  options: { kickoffDate?: string; singleTeam?: boolean } = {}
 ): Promise<{ groupId: string; team1: string; team2: string }> {
   const groupName = `${namePrefix} Group ${Date.now()}`;
 
   await page.goto('/groups/new');
   await page.getByLabel('Group Name').fill(groupName);
+  if (options.singleTeam) {
+    await page.getByRole('radio', { name: /One team/ }).check();
+  }
   await page.getByRole('button', { name: 'Create Group' }).click();
   await page.waitForURL(/\/groups\/([0-9a-f-]+)$/);
   const groupId = new URL(page.url()).pathname.split('/').pop()!;
@@ -139,8 +139,8 @@ export async function createGroupAndGame(
   }
   const recentPast = new Date(Date.now() - 5 * 60 * 1000).toISOString().slice(0, 16);
   await page.getByLabel('Visible From').fill(recentPast);
-  await page.getByLabel('Team 1 Name').fill(team1);
-  await page.getByLabel('Team 2 Name').fill(team2);
+  await page.getByLabel(options.singleTeam ? 'Your Team Name' : 'Team 1 Name').fill(team1);
+  await page.getByLabel(options.singleTeam ? 'Opponent' : 'Team 2 Name').fill(team2);
   await page.getByRole('button', { name: 'Create Game' }).click();
   await page.waitForURL(/\/games\/[0-9a-f-]+$/);
 

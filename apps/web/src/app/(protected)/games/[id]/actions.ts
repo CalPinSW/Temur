@@ -20,13 +20,11 @@ export async function signUpForGame(
 
   const supabase = await createClient();
 
-  const [
-    { data: existingPlayers, error: fetchError },
-    { data: game, error: gameError },
-  ] = await Promise.all([
-    supabase.from('player_games').select('signup_order').eq('game_id', gameId),
-    supabase.from('games').select('players_per_team').eq('id', gameId).single(),
-  ]);
+  const [{ data: existingPlayers, error: fetchError }, { data: game, error: gameError }] =
+    await Promise.all([
+      supabase.from('player_games').select('signup_order').eq('game_id', gameId),
+      supabase.from('games').select('players_per_team, single_team').eq('id', gameId).single(),
+    ]);
 
   if (fetchError || gameError) {
     return { error: 'Failed to sign up. Please try again.' };
@@ -47,7 +45,7 @@ export async function signUpForGame(
     return { error: 'Failed to sign up. Please try again.' };
   }
 
-  const capacity = getGameCapacity(game.players_per_team);
+  const capacity = getGameCapacity(game.players_per_team, game.single_team);
   await trackEvent(AnalyticsEvent.SignedUpForGame, {
     waitlisted: nextSignupOrder > capacity,
   });

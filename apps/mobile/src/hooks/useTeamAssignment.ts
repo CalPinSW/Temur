@@ -77,7 +77,7 @@ export function useTeamAssignment(gameId: string) {
         (a, b) => a.signup_order - b.signup_order
       );
 
-      const capacity = getGameCapacity(gameData.players_per_team);
+      const capacity = getGameCapacity(gameData.players_per_team, gameData.single_team);
       // This query doesn't select game_id/created_at/updated_at (only the game
       // detail screen needs those), so RawPlayerGame is a subset of PlayerGameWithProfile.
       const activePlayers = getActivePlayers(
@@ -150,11 +150,12 @@ export function useTeamAssignment(gameId: string) {
     if (!game) return;
 
     const players = game.player_games;
+    const squadSize = game.players_per_team;
     const newAssignments: Record<string, number | null> = {};
     const newPositions: Record<string, BoardPosition | null> = {};
 
     players.forEach((pg, index) => {
-      newAssignments[pg.id] = (index % 2) + 1;
+      newAssignments[pg.id] = game.single_team ? (index < squadSize ? 1 : null) : (index % 2) + 1;
       newPositions[pg.id] = null;
     });
 
@@ -164,25 +165,31 @@ export function useTeamAssignment(gameId: string) {
   };
 
   const handleClearAll = () => {
-    Alert.alert('Clear All Assignments', 'Are you sure you want to clear all team assignments?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear',
-        style: 'destructive',
-        onPress: () => {
-          if (!game) return;
-          const newAssignments: Record<string, number | null> = {};
-          const newPositions: Record<string, BoardPosition | null> = {};
-          game.player_games.forEach((pg) => {
-            newAssignments[pg.id] = null;
-            newPositions[pg.id] = null;
-          });
-          setTeamAssignments(newAssignments);
-          setBoardPositions(newPositions);
-          setIsDirty(true);
+    Alert.alert(
+      game?.single_team ? 'Clear Lineup' : 'Clear All Assignments',
+      game?.single_team
+        ? 'Take everyone off the pitch?'
+        : 'Are you sure you want to clear all team assignments?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            if (!game) return;
+            const newAssignments: Record<string, number | null> = {};
+            const newPositions: Record<string, BoardPosition | null> = {};
+            game.player_games.forEach((pg) => {
+              newAssignments[pg.id] = null;
+              newPositions[pg.id] = null;
+            });
+            setTeamAssignments(newAssignments);
+            setBoardPositions(newPositions);
+            setIsDirty(true);
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const handleSave = async (onSuccess: () => void) => {
