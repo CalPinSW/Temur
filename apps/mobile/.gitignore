@@ -44,7 +44,8 @@ _secrets/
 /ios
 /android
 
-# local build artifacts
+# local build artifacts (scripts/eas-build.js writes here)
+builds/
 *.ipa
 *.apk
 *.aab
