@@ -68,6 +68,7 @@ interface GameDetailScreenProps {
   onNavigateToGameResult?: (gameId: string) => void;
   onNavigateToEditGame?: (gameId: string) => void;
   onNavigateToEditSeries?: (seriesId: string) => void;
+  onNavigateToActivityLog?: (gameId: string) => void;
 }
 
 export function GameDetailScreen({
@@ -77,6 +78,7 @@ export function GameDetailScreen({
   onNavigateToGameResult,
   onNavigateToEditGame,
   onNavigateToEditSeries,
+  onNavigateToActivityLog,
 }: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -621,6 +623,15 @@ export function GameDetailScreen({
                 variant="secondary"
                 fullWidth
                 onPress={() => onNavigateToTeamAssignment(gameId)}
+              />
+            )}
+
+            {onNavigateToActivityLog && (
+              <ThemedButton
+                title="Activity Log"
+                variant="outline"
+                fullWidth
+                onPress={() => onNavigateToActivityLog(gameId)}
               />
             )}
 

@@ -313,6 +313,12 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
                 {game.single_team ? 'Tactics Board' : 'Assign Teams'}
               </Link>
             )}
+            <Link
+              href={`/games/${game.id}/activity`}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
+            >
+              Activity Log
+            </Link>
           </div>
 
           {!isPast && (
