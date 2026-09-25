@@ -1,3 +1,5 @@
+import { Profile } from './auth';
+
 export type GameOutcome = 'team1_win' | 'team2_win' | 'draw';
 
 export interface Game {
@@ -114,4 +116,22 @@ export interface GameSeries {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type GameSignupEventType =
+  'joined' | 'withdrew' | 'removed' | 'ringer_added' | 'ringer_removed' | 'account_deleted';
+
+type EventProfile = Pick<Profile, 'id' | 'username' | 'display_name'>;
+
+export interface GameSignupEvent {
+  id: string;
+  game_id: string;
+  event_type: GameSignupEventType;
+  user_id: string | null;
+  guest_name: string | null;
+  actor_id: string | null;
+  waitlisted: boolean | null;
+  created_at: string;
+  user: EventProfile | null;
+  actor: EventProfile | null;
 }
