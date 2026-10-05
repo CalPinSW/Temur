@@ -5,6 +5,7 @@ import {
   DEFAULT_TEAM_SHEET_TEMPLATE,
   buildTeamSheetMessage,
   formatTeamSheetTime,
+  getTeamSheetTemplateHelpText,
   normalizeTeamSheetTemplateForSave,
   resolveTeamSheetTemplate,
 } from '../utils/teamSheetUtils';
@@ -121,6 +122,15 @@ describe('teamSheetUtils', () => {
 
     it('keeps a customised template, trimmed', () => {
       expect(normalizeTeamSheetTemplateForSave('  Hi {team1}\n', false)).toBe('Hi {team1}');
+    });
+  });
+
+  describe('getTeamSheetTemplateHelpText', () => {
+    it('explains the templating and lists every placeholder', () => {
+      const help = getTeamSheetTemplateHelpText();
+      expect(help).toContain('curly braces');
+      expect(help).toContain('{team1_players} — Team 1 players, one per line');
+      expect(help).toContain('{kickoff_time-5}');
     });
   });
 });

@@ -4,9 +4,11 @@ import { useState, useTransition } from 'react';
 import {
   MAX_TEAM_SHEET_TEMPLATE_LENGTH,
   TEAM_SHEET_PLACEHOLDERS,
+  TEAM_SHEET_TEMPLATE_HELP,
   getDefaultTeamSheetTemplate,
   resolveTeamSheetTemplate,
 } from '@temur/shared';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { updateGroup } from './actions';
 
 export function EditGroupCard({
@@ -134,9 +136,25 @@ export function EditGroupCard({
 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
-          <label htmlFor="teamSheetTemplate" className="text-sm font-medium text-text-secondary">
-            {singleTeam ? 'Squad Sheet Message' : 'Team Sheet Message'}
-          </label>
+          <div className="flex items-center gap-2">
+            <label htmlFor="teamSheetTemplate" className="text-sm font-medium text-text-secondary">
+              {singleTeam ? 'Squad Sheet Message' : 'Team Sheet Message'}
+            </label>
+            <InfoTooltip label="How the team sheet template works">
+              <span className="flex flex-col gap-2">
+                {TEAM_SHEET_TEMPLATE_HELP.map((paragraph) => (
+                  <span key={paragraph}>{paragraph}</span>
+                ))}
+                <span className="flex flex-col gap-0.5">
+                  {TEAM_SHEET_PLACEHOLDERS.map(({ token, description }) => (
+                    <span key={token}>
+                      <code className="font-mono text-primary">{token}</code> — {description}
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </InfoTooltip>
+          </div>
           <button
             type="button"
             onClick={() => setTeamSheetDraft(getDefaultTeamSheetTemplate(singleTeam))}
@@ -156,15 +174,8 @@ export function EditGroupCard({
         />
         <p className="text-xs text-text-tertiary">
           Copied from a game page once {singleTeam ? 'the squad is picked' : 'teams are set'}, for
-          pasting into your group chat. Wrap text in *asterisks* for bold in WhatsApp.
+          pasting into your group chat. Hover or tap ? for the placeholders you can use.
         </p>
-        <ul className="text-xs text-text-tertiary">
-          {TEAM_SHEET_PLACEHOLDERS.map(({ token, description }) => (
-            <li key={token}>
-              <code className="text-text-secondary">{token}</code> — {description}
-            </li>
-          ))}
-        </ul>
       </div>
 
       {error && <p className="text-sm text-error">{error}</p>}

@@ -29,6 +29,20 @@ export const TEAM_SHEET_PLACEHOLDERS = [
   { token: '{date}', description: 'Game date, e.g. Saturday 10 October 2026' },
 ] as const;
 
+export const TEAM_SHEET_TEMPLATE_HELP = [
+  'Write the message exactly as you want it to read. When you copy it from a game, each placeholder in {curly braces} is swapped for that game’s details.',
+  'Team player lists put one name per line, in signup order. Wrap text in *asterisks* to make it bold in WhatsApp.',
+  'Leave it blank or reset it to use the default message.',
+] as const;
+
+export const getTeamSheetTemplateHelpText = (): string =>
+  [
+    ...TEAM_SHEET_TEMPLATE_HELP,
+    TEAM_SHEET_PLACEHOLDERS.map(({ token, description }) => `${token} — ${description}`).join(
+      '\n'
+    ),
+  ].join('\n\n');
+
 export const getDefaultTeamSheetTemplate = (singleTeam: boolean): string =>
   singleTeam ? DEFAULT_SINGLE_TEAM_SHEET_TEMPLATE : DEFAULT_TEAM_SHEET_TEMPLATE;
 

@@ -36,6 +36,8 @@ test.describe('Team sheet message', () => {
     await page.goto(`/groups/${groupId}`);
     await page.getByRole('button', { name: 'Edit' }).click();
     await expect(page.getByLabel('Team Sheet Message')).toHaveValue(/^Teams are set:/);
+    await page.getByRole('button', { name: 'How the team sheet template works' }).hover();
+    await expect(page.getByRole('tooltip')).toContainText('{kickoff_time-5}');
     await page.getByLabel('Team Sheet Message').fill('Line-up for {team1}:\n{team1_players}');
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();

@@ -18,10 +18,10 @@ import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { updateGroup, leaveGroup, deleteGroup } from '@/services/groupService';
 import {
   MAX_TEAM_SHEET_TEMPLATE_LENGTH,
-  TEAM_SHEET_PLACEHOLDERS,
   formatDate,
   formatTime,
   getDefaultTeamSheetTemplate,
+  getTeamSheetTemplateHelpText,
   normalizeTeamSheetTemplateForSave,
   resolveTeamSheetTemplate,
 } from '@temur/shared';
@@ -239,17 +239,24 @@ export function GroupDetailScreen({
                 onChangeText={setEditTeamSheetTemplate}
                 multiline
                 maxLength={MAX_TEAM_SHEET_TEMPLATE_LENGTH}
-                hint={`Copied from a game once ${group.single_team ? 'the squad is picked' : 'teams are set'}, for pasting into your group chat. Wrap text in *asterisks* for bold in WhatsApp.\n\n${TEAM_SHEET_PLACEHOLDERS.map(({ token, description }) => `${token} — ${description}`).join('\n')}`}
+                hint={`Copied from a game once ${group.single_team ? 'the squad is picked' : 'teams are set'}, for pasting into your group chat.`}
               />
-              <ThemedButton
-                title="Reset to default"
-                variant="ghost"
-                size="small"
-                onPress={() =>
-                  setEditTeamSheetTemplate(getDefaultTeamSheetTemplate(group.single_team))
-                }
-                style={styles.resetTemplateButton}
-              />
+              <View style={styles.templateActions}>
+                <ThemedButton
+                  title="ⓘ How templates work"
+                  variant="ghost"
+                  size="small"
+                  onPress={() => Alert.alert('Team sheet template', getTeamSheetTemplateHelpText())}
+                />
+                <ThemedButton
+                  title="Reset to default"
+                  variant="ghost"
+                  size="small"
+                  onPress={() =>
+                    setEditTeamSheetTemplate(getDefaultTeamSheetTemplate(group.single_team))
+                  }
+                />
+              </View>
               <View style={styles.editActions}>
                 <ThemedButton
                   title="Cancel"
@@ -429,8 +436,9 @@ const styles = StyleSheet.create({
   editSpacer: {
     height: 4,
   },
-  resetTemplateButton: {
-    alignSelf: 'flex-start',
+  templateActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   editActions: {
     flexDirection: 'row',
