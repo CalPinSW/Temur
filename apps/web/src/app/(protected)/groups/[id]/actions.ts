@@ -2,12 +2,15 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { MAX_TEAM_SHEET_TEMPLATE_LENGTH, normalizeTeamSheetTemplateForSave } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 
 export interface UpdateGroupInput {
   name: string;
   description: string;
   messageTemplate: string;
+  teamSheetTemplate: string;
+  singleTeam: boolean;
 }
 
 export async function updateGroup(
@@ -17,9 +20,18 @@ export async function updateGroup(
   const name = input.name.trim();
   const description = input.description.trim();
   const messageTemplate = input.messageTemplate.trim();
+  const teamSheetTemplate = normalizeTeamSheetTemplateForSave(
+    input.teamSheetTemplate,
+    input.singleTeam
+  );
 
   if (!name) {
     return { error: 'Group name is required.' };
+  }
+  if ((teamSheetTemplate?.length ?? 0) > MAX_TEAM_SHEET_TEMPLATE_LENGTH) {
+    return {
+      error: `Team sheet message must be ${MAX_TEAM_SHEET_TEMPLATE_LENGTH} characters or fewer.`,
+    };
   }
 
   const supabase = await createClient();
@@ -29,6 +41,7 @@ export async function updateGroup(
       name,
       description: description || null,
       team_assignment_message_template: messageTemplate || null,
+      team_sheet_message_template: teamSheetTemplate,
     })
     .eq('id', groupId);
 

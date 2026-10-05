@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import {
+  MAX_TEAM_SHEET_TEMPLATE_LENGTH,
+  TEAM_SHEET_PLACEHOLDERS,
+  getDefaultTeamSheetTemplate,
+  resolveTeamSheetTemplate,
+} from '@temur/shared';
 import { updateGroup } from './actions';
 
 export function EditGroupCard({
@@ -8,6 +14,7 @@ export function EditGroupCard({
   name,
   description,
   messageTemplate,
+  teamSheetTemplate,
   singleTeam,
   isAdmin,
 }: {
@@ -15,12 +22,19 @@ export function EditGroupCard({
   name: string;
   description: string;
   messageTemplate: string;
+  teamSheetTemplate: string | null;
   singleTeam: boolean;
   isAdmin: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [teamSheetDraft, setTeamSheetDraft] = useState('');
+
+  const startEditing = () => {
+    setTeamSheetDraft(resolveTeamSheetTemplate(teamSheetTemplate, singleTeam));
+    setIsEditing(true);
+  };
 
   if (!isEditing) {
     return (
@@ -30,7 +44,7 @@ export function EditGroupCard({
           {isAdmin && (
             <button
               type="button"
-              onClick={() => setIsEditing(true)}
+              onClick={startEditing}
               className="text-sm font-medium text-primary hover:text-primary-hover"
             >
               Edit
@@ -57,6 +71,8 @@ export function EditGroupCard({
         name: String(formData.get('name') ?? ''),
         description: String(formData.get('description') ?? ''),
         messageTemplate: String(formData.get('messageTemplate') ?? ''),
+        teamSheetTemplate: teamSheetDraft,
+        singleTeam,
       });
       if (error) {
         setError(error);
@@ -114,6 +130,41 @@ export function EditGroupCard({
             ? 'Pre-fills the message when an admin notifies the selected squad.'
             : `Pre-fills the message when an admin notifies players of their team. "You're on {team}" is always appended automatically.`}
         </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor="teamSheetTemplate" className="text-sm font-medium text-text-secondary">
+            {singleTeam ? 'Squad Sheet Message' : 'Team Sheet Message'}
+          </label>
+          <button
+            type="button"
+            onClick={() => setTeamSheetDraft(getDefaultTeamSheetTemplate(singleTeam))}
+            className="text-xs font-medium text-primary hover:text-primary-hover"
+          >
+            Reset to default
+          </button>
+        </div>
+        <textarea
+          id="teamSheetTemplate"
+          name="teamSheetTemplate"
+          rows={10}
+          maxLength={MAX_TEAM_SHEET_TEMPLATE_LENGTH}
+          value={teamSheetDraft}
+          onChange={(e) => setTeamSheetDraft(e.target.value)}
+          className="rounded-lg border border-input-border bg-input px-3 py-2 font-mono text-sm text-text outline-none focus:border-primary"
+        />
+        <p className="text-xs text-text-tertiary">
+          Copied from a game page once {singleTeam ? 'the squad is picked' : 'teams are set'}, for
+          pasting into your group chat. Wrap text in *asterisks* for bold in WhatsApp.
+        </p>
+        <ul className="text-xs text-text-tertiary">
+          {TEAM_SHEET_PLACEHOLDERS.map(({ token, description }) => (
+            <li key={token}>
+              <code className="text-text-secondary">{token}</code> — {description}
+            </li>
+          ))}
+        </ul>
       </div>
 
       {error && <p className="text-sm text-error">{error}</p>}

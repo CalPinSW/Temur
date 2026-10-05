@@ -16,7 +16,15 @@ import { useGroupDetails } from '@/hooks/useGroupDetails';
 import { useGroupUpcomingGames } from '@/hooks/useGroupUpcomingGames';
 import { useRefreshControl } from '@/hooks/useRefreshControl';
 import { updateGroup, leaveGroup, deleteGroup } from '@/services/groupService';
-import { formatDate, formatTime } from '@temur/shared';
+import {
+  MAX_TEAM_SHEET_TEMPLATE_LENGTH,
+  TEAM_SHEET_PLACEHOLDERS,
+  formatDate,
+  formatTime,
+  getDefaultTeamSheetTemplate,
+  normalizeTeamSheetTemplateForSave,
+  resolveTeamSheetTemplate,
+} from '@temur/shared';
 
 interface GroupDetailScreenProps {
   groupId: string;
@@ -50,6 +58,7 @@ export function GroupDetailScreen({
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editMessageTemplate, setEditMessageTemplate] = useState('');
+  const [editTeamSheetTemplate, setEditTeamSheetTemplate] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -89,6 +98,9 @@ export function GroupDetailScreen({
     setEditName(group.name);
     setEditDescription(group.description || '');
     setEditMessageTemplate(group.team_assignment_message_template || '');
+    setEditTeamSheetTemplate(
+      resolveTeamSheetTemplate(group.team_sheet_message_template, group.single_team)
+    );
     setIsEditing(true);
   };
 
@@ -101,6 +113,10 @@ export function GroupDetailScreen({
         name: editName.trim(),
         description: editDescription.trim() || null,
         team_assignment_message_template: editMessageTemplate.trim() || null,
+        team_sheet_message_template: normalizeTeamSheetTemplateForSave(
+          editTeamSheetTemplate,
+          group.single_team
+        ),
       });
       setIsEditing(false);
       refetch();
@@ -215,6 +231,24 @@ export function GroupDetailScreen({
                     ? 'Pre-fills the message when an admin notifies the selected squad.'
                     : `Pre-fills the message when an admin notifies players of their team. "You're on {team}" is always appended automatically.`
                 }
+              />
+              <View style={styles.editSpacer} />
+              <ThemedInput
+                label={group.single_team ? 'Squad Sheet Message' : 'Team Sheet Message'}
+                value={editTeamSheetTemplate}
+                onChangeText={setEditTeamSheetTemplate}
+                multiline
+                maxLength={MAX_TEAM_SHEET_TEMPLATE_LENGTH}
+                hint={`Copied from a game once ${group.single_team ? 'the squad is picked' : 'teams are set'}, for pasting into your group chat. Wrap text in *asterisks* for bold in WhatsApp.\n\n${TEAM_SHEET_PLACEHOLDERS.map(({ token, description }) => `${token} — ${description}`).join('\n')}`}
+              />
+              <ThemedButton
+                title="Reset to default"
+                variant="ghost"
+                size="small"
+                onPress={() =>
+                  setEditTeamSheetTemplate(getDefaultTeamSheetTemplate(group.single_team))
+                }
+                style={styles.resetTemplateButton}
               />
               <View style={styles.editActions}>
                 <ThemedButton
@@ -394,6 +428,9 @@ const styles = StyleSheet.create({
   },
   editSpacer: {
     height: 4,
+  },
+  resetTemplateButton: {
+    alignSelf: 'flex-start',
   },
   editActions: {
     flexDirection: 'row',

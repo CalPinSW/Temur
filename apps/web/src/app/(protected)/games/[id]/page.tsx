@@ -14,6 +14,8 @@ import {
   getPlayerDisplayName,
   isGameAdmin,
   getGameVisibilityStatus,
+  buildTeamSheetMessage,
+  resolveTeamSheetTemplate,
 } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { SignupActions } from './SignupActions';
@@ -24,10 +26,11 @@ import { DeleteGameButton } from './DeleteGameButton';
 import { PublishGameButton } from './PublishGameButton';
 import { InviteFriendsSection } from './InviteFriendsSection';
 import { CancelSeriesButton } from './CancelSeriesButton';
+import { CopyTeamSheetSection } from './CopyTeamSheetSection';
 
 interface RawGame extends Game {
   player_games: PlayerGameWithProfile[] | null;
-  group: { name: string } | null;
+  group: { name: string; team_sheet_message_template: string | null } | null;
 }
 
 interface RawFriendship {
@@ -95,7 +98,7 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
     supabase
       .from('games')
       .select(
-        `*, group:groups(name), player_games (
+        `*, group:groups(name, team_sheet_message_template), player_games (
           id, user_id, signup_order, team, created_at, is_ringer, guest_name, added_by,
           profile:profiles!player_games_user_id_fkey ( id, username, display_name, avatar_url )
         )`
@@ -204,6 +207,14 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
   const isCreator = game.created_by === user.id;
   const resultOutcome = game.result_outcome as GameOutcome | null;
   const hasResult = game.result_team1_score !== null || resultOutcome !== null;
+  const teamSheetMessage =
+    isAdmin && players.some((p) => p.team !== null)
+      ? buildTeamSheetMessage(
+          resolveTeamSheetTemplate(game.group?.team_sheet_message_template, game.single_team),
+          game,
+          players
+        )
+      : null;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
@@ -320,6 +331,12 @@ export default async function GameDetailPage({ params }: PageProps<'/games/[id]'
               Activity Log
             </Link>
           </div>
+
+          {teamSheetMessage && (
+            <div className="border-t border-border-light pt-4">
+              <CopyTeamSheetSection message={teamSheetMessage} singleTeam={game.single_team} />
+            </div>
+          )}
 
           {!isPast && (
             <div className="border-t border-border-light pt-4">
