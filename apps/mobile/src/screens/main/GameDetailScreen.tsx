@@ -39,7 +39,7 @@ import {
   notifyTeamAssignments,
   notifyGroupMembersRingersOpen,
 } from '@/services/gameNotificationService';
-import { getGroupMessageTemplate } from '@/services/groupService';
+import { getGroupMessageTemplate, getGroupTeamSheetTemplate } from '@/services/groupService';
 import { openGameToRingers, getSavedRingers } from '@/services/ringerService';
 import { supabase } from '@/services/supabase';
 import {
@@ -51,6 +51,8 @@ import {
   isGameAdmin,
   getGameVisibilityStatus,
   formatGameResult,
+  buildTeamSheetMessage,
+  resolveTeamSheetTemplate,
 } from '@temur/shared';
 import {
   GameHeader,
@@ -68,6 +70,7 @@ interface GameDetailScreenProps {
   onNavigateToGameResult?: (gameId: string) => void;
   onNavigateToEditGame?: (gameId: string) => void;
   onNavigateToEditSeries?: (seriesId: string) => void;
+  onNavigateToActivityLog?: (gameId: string) => void;
 }
 
 export function GameDetailScreen({
@@ -77,6 +80,7 @@ export function GameDetailScreen({
   onNavigateToGameResult,
   onNavigateToEditGame,
   onNavigateToEditSeries,
+  onNavigateToActivityLog,
 }: GameDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -86,6 +90,7 @@ export function GameDetailScreen({
   const [selectedInviteFriendIds, setSelectedInviteFriendIds] = useState<Set<string>>(new Set());
   const [isInviting, setIsInviting] = useState(false);
   const [isCopyingJoinLink, setIsCopyingJoinLink] = useState(false);
+  const [isCopyingTeamSheet, setIsCopyingTeamSheet] = useState(false);
   const [isNotifySectionOpen, setIsNotifySectionOpen] = useState(false);
   const [notifyMessage, setNotifyMessage] = useState('');
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
@@ -274,6 +279,26 @@ export function GameDetailScreen({
       Alert.alert('Error', 'Failed to create join link');
     } finally {
       setIsCopyingJoinLink(false);
+    }
+  };
+
+  const handleCopyTeamSheet = async () => {
+    setIsCopyingTeamSheet(true);
+    try {
+      const groupTemplate = game.group_id ? await getGroupTeamSheetTemplate(game.group_id) : null;
+      const message = buildTeamSheetMessage(
+        resolveTeamSheetTemplate(groupTemplate, game.single_team),
+        game,
+        game.player_games
+      );
+      await Clipboard.setStringAsync(message);
+      Alert.alert('Copied', message);
+    } catch (error) {
+      console.error('Copy team sheet error:', error);
+      Sentry.captureException(error);
+      Alert.alert('Error', 'Failed to copy the team sheet');
+    } finally {
+      setIsCopyingTeamSheet(false);
     }
   };
 
@@ -624,6 +649,15 @@ export function GameDetailScreen({
               />
             )}
 
+            {onNavigateToActivityLog && (
+              <ThemedButton
+                title="Activity Log"
+                variant="outline"
+                fullWidth
+                onPress={() => onNavigateToActivityLog(gameId)}
+              />
+            )}
+
             {!isPast && (
               <>
                 <ThemedDivider />
@@ -689,8 +723,20 @@ export function GameDetailScreen({
               <>
                 <ThemedDivider />
                 <ThemedTextBox variant="body" weight="semibold">
-                  {game.single_team ? 'Notify Squad' : 'Notify Players'}
+                  {game.single_team ? 'Share Squad' : 'Share Teams'}
                 </ThemedTextBox>
+                <ThemedButton
+                  title={
+                    isCopyingTeamSheet
+                      ? 'Copying…'
+                      : game.single_team
+                        ? 'Copy Squad Sheet'
+                        : 'Copy Team Sheet'
+                  }
+                  variant="outline"
+                  onPress={handleCopyTeamSheet}
+                  disabled={isCopyingTeamSheet}
+                />
                 <ThemedButton
                   title={
                     isNotifySectionOpen

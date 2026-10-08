@@ -11,6 +11,7 @@ import {
   createGroup,
   updateGroup,
   getGroupMessageTemplate,
+  getGroupTeamSheetTemplate,
   inviteToGroup,
   acceptGroupInvitation,
   declineGroupInvitation,
@@ -127,6 +128,39 @@ describe('groupService', () => {
       mockFromTables(mockSupabase, { groups: builder });
 
       await expect(getGroupMessageTemplate('group-1')).rejects.toThrow('boom');
+    });
+  });
+
+  describe('getGroupTeamSheetTemplate', () => {
+    it('returns the stored template', async () => {
+      const builder = createQueryBuilder({
+        data: { team_sheet_message_template: 'Teams: {team1_players}' },
+        error: null,
+      });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      const result = await getGroupTeamSheetTemplate('group-1');
+
+      expect(builder.select).toHaveBeenCalledWith('team_sheet_message_template');
+      expect(builder.eq).toHaveBeenCalledWith('id', 'group-1');
+      expect(result).toBe('Teams: {team1_players}');
+    });
+
+    it('returns null when no template is set', async () => {
+      const builder = createQueryBuilder({
+        data: { team_sheet_message_template: null },
+        error: null,
+      });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      expect(await getGroupTeamSheetTemplate('group-1')).toBeNull();
+    });
+
+    it('throws when the fetch fails', async () => {
+      const builder = createQueryBuilder({ data: null, error: new Error('boom') });
+      mockFromTables(mockSupabase, { groups: builder });
+
+      await expect(getGroupTeamSheetTemplate('group-1')).rejects.toThrow('boom');
     });
   });
 

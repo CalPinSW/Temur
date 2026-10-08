@@ -44,6 +44,7 @@ export async function updateGroup(
     name?: string;
     description?: string | null;
     team_assignment_message_template?: string | null;
+    team_sheet_message_template?: string | null;
   }
 ): Promise<void> {
   const { error } = await supabase.from('groups').update(updates).eq('id', groupId);
@@ -59,6 +60,17 @@ export async function getGroupMessageTemplate(groupId: string): Promise<string |
 
   if (error) throw error;
   return data?.team_assignment_message_template ?? null;
+}
+
+export async function getGroupTeamSheetTemplate(groupId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('groups')
+    .select('team_sheet_message_template')
+    .eq('id', groupId)
+    .single();
+
+  if (error) throw error;
+  return data?.team_sheet_message_template ?? null;
 }
 
 export async function inviteToGroup(

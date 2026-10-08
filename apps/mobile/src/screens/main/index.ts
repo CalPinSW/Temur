@@ -8,3 +8,4 @@ export { EditGameScreen } from './EditGameScreen';
 export { JoinGameScreen } from './JoinGameScreen';
 export { CreateGameSeriesScreen } from './CreateGameSeriesScreen';
 export { EditGameSeriesScreen } from './EditGameSeriesScreen';
+export { GameActivityLogScreen } from './GameActivityLogScreen';

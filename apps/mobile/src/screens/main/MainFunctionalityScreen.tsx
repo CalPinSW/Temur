@@ -7,6 +7,7 @@ import { GameResultScreen } from './GameResultScreen';
 import { EditGameScreen } from './EditGameScreen';
 import { EditGameSeriesScreen } from './EditGameSeriesScreen';
 import { JoinGameScreen } from './JoinGameScreen';
+import { GameActivityLogScreen } from './GameActivityLogScreen';
 
 interface MainFunctionalityScreenProps {
   route?: { params?: { screen?: 'detail' | 'join'; gameId?: string; token?: string } };
@@ -14,7 +15,15 @@ interface MainFunctionalityScreenProps {
 
 export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps) {
   const [currentScreen, setCurrentScreen] = useState<
-    'list' | 'detail' | 'teamAssignment' | 'create' | 'result' | 'edit' | 'editSeries' | 'join'
+    | 'list'
+    | 'detail'
+    | 'teamAssignment'
+    | 'create'
+    | 'result'
+    | 'edit'
+    | 'editSeries'
+    | 'join'
+    | 'activityLog'
   >('list');
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
@@ -50,6 +59,11 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
   const handleNavigateToGameResult = (gameId: string) => {
     setSelectedGameId(gameId);
     setCurrentScreen('result');
+  };
+
+  const handleNavigateToActivityLog = (gameId: string) => {
+    setSelectedGameId(gameId);
+    setCurrentScreen('activityLog');
   };
 
   const handleBackToDetail = () => {
@@ -119,6 +133,10 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
     return <GameResultScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
   }
 
+  if (currentScreen === 'activityLog' && selectedGameId) {
+    return <GameActivityLogScreen gameId={selectedGameId} onGoBack={handleBackToDetail} />;
+  }
+
   if (currentScreen === 'detail' && selectedGameId) {
     return (
       <GameDetailScreen
@@ -128,6 +146,7 @@ export function MainFunctionalityScreen({ route }: MainFunctionalityScreenProps)
         onNavigateToGameResult={handleNavigateToGameResult}
         onNavigateToEditGame={handleNavigateToEditGame}
         onNavigateToEditSeries={handleNavigateToEditSeries}
+        onNavigateToActivityLog={handleNavigateToActivityLog}
       />
     );
   }
