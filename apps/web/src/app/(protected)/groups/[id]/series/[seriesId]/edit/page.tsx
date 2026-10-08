@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { DEFAULT_VISIBLE_AT_LEAD_DAYS } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { EditSeriesForm } from './EditSeriesForm';
 
@@ -26,7 +25,9 @@ export default async function EditSeriesPage({
 
   const { data: upcoming } = await supabase
     .from('games')
-    .select('kickoff_date, visible_at, team1_name, team2_name, players_per_team, game_description')
+    .select(
+      'id, kickoff_date, visible_at, team1_name, team2_name, players_per_team, game_description'
+    )
     .eq('series_id', seriesId)
     .is('deleted_at', null)
     .gte('kickoff_date', new Date().toISOString())
@@ -52,10 +53,6 @@ export default async function EditSeriesPage({
   }
 
   const next = games[0];
-  const nextKickoff = new Date(next.kickoff_date);
-  const leadMs = nextKickoff.getTime() - new Date(next.visible_at).getTime();
-  const leadDays =
-    Math.max(0, Math.round(leadMs / (24 * 60 * 60 * 1000))) || DEFAULT_VISIBLE_AT_LEAD_DAYS;
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8">
@@ -69,11 +66,12 @@ export default async function EditSeriesPage({
       <EditSeriesForm
         groupId={groupId}
         seriesId={seriesId}
+        games={games.map((g) => ({
+          id: g.id,
+          kickoffDate: g.kickoff_date,
+          visibleAt: g.visible_at,
+        }))}
         initial={{
-          kickoffTime: `${String(nextKickoff.getHours()).padStart(2, '0')}:${String(
-            nextKickoff.getMinutes()
-          ).padStart(2, '0')}`,
-          visibleLeadDays: leadDays,
           team1Name: next.team1_name,
           team2Name: next.team2_name,
           playersPerTeam: next.players_per_team,
