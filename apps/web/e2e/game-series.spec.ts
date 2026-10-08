@@ -29,9 +29,12 @@ test.describe('Recurring game blocks', () => {
     await page.goto(`/groups/${groupId}/series/new`);
     await page.getByLabel('First Kickoff').fill(datetimeLocal(first));
     await page.getByLabel('Until').fill(dateInput(until));
+    await page.getByLabel('Visible From', { exact: true }).fill('2');
+    await page.getByLabel('Visible From Time').fill('17:30');
     await page.getByLabel('Team 1 Name').fill('E2E Reds');
     await page.getByLabel('Team 2 Name').fill('E2E Blues');
     await expect(page.getByText('Creates 5 games')).toBeVisible();
+    await expect(page.getByText(/visible .* · 17:30/)).toHaveCount(5);
     await page.getByRole('button', { name: 'Schedule Games' }).click();
 
     await page.waitForURL(`**/groups/${groupId}/games`);
@@ -44,6 +47,8 @@ test.describe('Recurring game blocks', () => {
     await page.waitForURL(/\/games\/[0-9a-f-]+$/);
     await page.getByRole('link', { name: 'Edit upcoming games in this block' }).click();
     await page.waitForURL(new RegExp(`/groups/${groupId}/series/[0-9a-f-]+/edit$`));
+    await expect(page.getByLabel('Visible From', { exact: true })).toHaveValue('2');
+    await expect(page.getByLabel('Visible From Time')).toHaveValue('17:30');
     await page.getByLabel('Team 1 Name').fill('E2E Greens');
     await page.getByRole('button', { name: 'Save Changes to Block' }).click();
 

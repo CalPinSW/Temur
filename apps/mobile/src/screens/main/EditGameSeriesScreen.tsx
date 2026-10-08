@@ -12,7 +12,16 @@ import {
   ThemedDropdown,
   DropdownOption,
 } from '@/components/themed';
-import { DEFAULT_VISIBLE_AT_LEAD_DAYS, getVisibleAtWithLead } from '@temur/shared';
+import {
+  DEFAULT_VISIBLE_AT_LEAD_DAYS,
+  WallClockTime,
+  getSeriesVisibility,
+  getSeriesVisibleAt,
+  getSeriesVisibleDaysBeforeOptions,
+  getWallClockTime,
+  isVisibleAtBeforeKickoff,
+  setWallClockTime,
+} from '@temur/shared';
 import { supabase } from '@/services/supabase';
 
 interface EditGameSeriesScreenProps {
@@ -36,10 +45,18 @@ const playersPerTeamOptions: DropdownOption<number>[] = [5, 6, 7, 8, 9, 10, 11].
   value: n,
 }));
 
-const visibleLeadOptions: DropdownOption<number>[] = [2, 3, 4, 5, 6, 7, 10, 14].map((n) => ({
-  label: `${n} days before`,
-  value: n,
-}));
+// The time pickers work in device-local Dates; this keeps their displayed
+// time equal to the game's UK wall-clock time.
+const toPickerTime = ({ hours, minutes }: WallClockTime): Date => {
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+};
+
+const fromPickerTime = (date: Date): WallClockTime => ({
+  hours: date.getHours(),
+  minutes: date.getMinutes(),
+});
 
 export function EditGameSeriesScreen({ seriesId, onGoBack, onSaved }: EditGameSeriesScreenProps) {
   const { colors } = useTheme();
@@ -49,7 +66,8 @@ export function EditGameSeriesScreen({ seriesId, onGoBack, onSaved }: EditGameSe
   const [isSaving, setIsSaving] = useState(false);
 
   const [kickoffTime, setKickoffTime] = useState<Date>(new Date());
-  const [visibleLeadDays, setVisibleLeadDays] = useState(DEFAULT_VISIBLE_AT_LEAD_DAYS);
+  const [visibleDaysBefore, setVisibleDaysBefore] = useState(DEFAULT_VISIBLE_AT_LEAD_DAYS);
+  const [visibleTime, setVisibleTime] = useState<Date>(new Date());
   const [team1Name, setTeam1Name] = useState('');
   const [team2Name, setTeam2Name] = useState('');
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
@@ -76,15 +94,15 @@ export function EditGameSeriesScreen({ seriesId, onGoBack, onSaved }: EditGameSe
 
         const next = upcoming[0];
         if (next) {
-          setKickoffTime(new Date(next.kickoff_date));
+          const nextKickoff = new Date(next.kickoff_date);
+          setKickoffTime(toPickerTime(getWallClockTime(nextKickoff)));
           setTeam1Name(next.team1_name);
           setTeam2Name(next.team2_name);
           setPlayersPerTeam(next.players_per_team);
           setGameDescription(next.game_description ?? '');
-          const leadMs =
-            new Date(next.kickoff_date).getTime() - new Date(next.visible_at).getTime();
-          const leadDays = Math.max(0, Math.round(leadMs / (24 * 60 * 60 * 1000)));
-          setVisibleLeadDays(leadDays || DEFAULT_VISIBLE_AT_LEAD_DAYS);
+          const visibility = getSeriesVisibility(nextKickoff, new Date(next.visible_at));
+          setVisibleDaysBefore(visibility.daysBefore);
+          setVisibleTime(toPickerTime(visibility));
         }
       } catch (error) {
         console.error('Error loading recurring block:', error);
@@ -101,25 +119,25 @@ export function EditGameSeriesScreen({ seriesId, onGoBack, onSaved }: EditGameSe
   const handleSave = async () => {
     if (games.length === 0) return;
 
+    const kickoffs = games.map((g) =>
+      setWallClockTime(new Date(g.kickoff_date), fromPickerTime(kickoffTime))
+    );
+    const visibleAts = kickoffs.map((k) =>
+      getSeriesVisibleAt(k, { daysBefore: visibleDaysBefore, ...fromPickerTime(visibleTime) })
+    );
+    if (kickoffs.some((k, i) => !isVisibleAtBeforeKickoff(k, visibleAts[i]))) {
+      Alert.alert('Check visibility', 'Each game must become visible before it kicks off.');
+      return;
+    }
+
     try {
       setIsSaving(true);
 
-      const gameIds: string[] = [];
-      const kickoffs: string[] = [];
-      const visibleAts: string[] = [];
-      for (const g of games) {
-        const d = new Date(g.kickoff_date);
-        d.setHours(kickoffTime.getHours(), kickoffTime.getMinutes(), 0, 0);
-        gameIds.push(g.id);
-        kickoffs.push(d.toISOString());
-        visibleAts.push(getVisibleAtWithLead(d, visibleLeadDays).toISOString());
-      }
-
       const { error } = await supabase.rpc('update_game_series_future', {
         p_series_id: seriesId,
-        p_game_ids: gameIds,
-        p_kickoffs: kickoffs,
-        p_visible_ats: visibleAts,
+        p_game_ids: games.map((g) => g.id),
+        p_kickoffs: kickoffs.map((d) => d.toISOString()),
+        p_visible_ats: visibleAts.map((d) => d.toISOString()),
         p_team1_name: team1Name,
         p_team2_name: team2Name,
         p_players_per_team: playersPerTeam,
@@ -196,9 +214,18 @@ export function EditGameSeriesScreen({ seriesId, onGoBack, onSaved }: EditGameSe
               <View style={styles.formSection}>
                 <ThemedDropdown
                   label="Visible From"
-                  value={visibleLeadDays}
-                  options={visibleLeadOptions}
-                  onChange={setVisibleLeadDays}
+                  value={visibleDaysBefore}
+                  options={getSeriesVisibleDaysBeforeOptions(visibleDaysBefore)}
+                  onChange={setVisibleDaysBefore}
+                />
+              </View>
+
+              <View style={styles.formSection}>
+                <ThemedDateTimePicker
+                  label="Visible From Time"
+                  value={visibleTime}
+                  mode="time"
+                  onChange={setVisibleTime}
                 />
               </View>
 

@@ -21,7 +21,9 @@ import {
   generateSeriesKickoffs,
   getDefaultSeriesEndDate,
   getNextSaturday,
-  getVisibleAtWithLead,
+  getSeriesVisibleAt,
+  getSeriesVisibleDaysBeforeOptions,
+  isVisibleAtBeforeKickoff,
 } from '@temur/shared';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -42,10 +44,7 @@ const intervalOptions: DropdownOption<number>[] = SERIES_INTERVAL_WEEKS_OPTIONS.
   value: n,
 }));
 
-const visibleLeadOptions: DropdownOption<number>[] = [2, 3, 4, 5, 6, 7, 10, 14].map((n) => ({
-  label: `${n} days before`,
-  value: n,
-}));
+const visibleDaysBeforeOptions: DropdownOption<number>[] = getSeriesVisibleDaysBeforeOptions();
 
 export function CreateGameSeriesScreen({
   groupId,
@@ -60,7 +59,9 @@ export function CreateGameSeriesScreen({
   const [endDate, setEndDate] = useState<Date>(getDefaultSeriesEndDate(defaultFirst));
   const [endDateTouched, setEndDateTouched] = useState(false);
   const [intervalWeeks, setIntervalWeeks] = useState(1);
-  const [visibleLeadDays, setVisibleLeadDays] = useState(DEFAULT_VISIBLE_AT_LEAD_DAYS);
+  const [visibleDaysBefore, setVisibleDaysBefore] = useState(DEFAULT_VISIBLE_AT_LEAD_DAYS);
+  const [visibleTime, setVisibleTime] = useState<Date>(defaultFirst);
+  const [visibleTimeTouched, setVisibleTimeTouched] = useState(false);
   const [team1Name, setTeam1Name] = useState('Black');
   const [team2Name, setTeam2Name] = useState('White');
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
@@ -71,6 +72,9 @@ export function CreateGameSeriesScreen({
     if (!endDateTouched) {
       setEndDate(getDefaultSeriesEndDate(date));
     }
+    if (!visibleTimeTouched) {
+      setVisibleTime(date);
+    }
   };
 
   const kickoffs = useMemo(
@@ -78,8 +82,21 @@ export function CreateGameSeriesScreen({
     [firstKickoff, endDate, intervalWeeks]
   );
 
+  const visibleAts = useMemo(
+    () =>
+      kickoffs.map((k) =>
+        getSeriesVisibleAt(k, {
+          daysBefore: visibleDaysBefore,
+          hours: visibleTime.getHours(),
+          minutes: visibleTime.getMinutes(),
+        })
+      ),
+    [kickoffs, visibleDaysBefore, visibleTime]
+  );
+
   const tooFew = kickoffs.length < 2;
   const tooMany = kickoffs.length > MAX_SERIES_GAMES;
+  const visibleAfterKickoff = kickoffs.some((k, i) => !isVisibleAtBeforeKickoff(k, visibleAts[i]));
 
   const handleCreate = async () => {
     if (!user) return;
@@ -95,10 +112,13 @@ export function CreateGameSeriesScreen({
       );
       return;
     }
+    if (visibleAfterKickoff) {
+      Alert.alert('Check visibility', 'Each game must become visible before it kicks off.');
+      return;
+    }
 
     try {
       setIsCreating(true);
-      const visibleAts = kickoffs.map((k) => getVisibleAtWithLead(k, visibleLeadDays));
 
       const { error } = await supabase.rpc('create_game_series', {
         p_group_id: groupId,
@@ -183,9 +203,21 @@ export function CreateGameSeriesScreen({
             </ThemedTextBox>
             <ThemedDropdown
               label="Visible From"
-              value={visibleLeadDays}
-              options={visibleLeadOptions}
-              onChange={setVisibleLeadDays}
+              value={visibleDaysBefore}
+              options={visibleDaysBeforeOptions}
+              onChange={setVisibleDaysBefore}
+            />
+          </View>
+
+          <View style={styles.formSection}>
+            <ThemedDateTimePicker
+              label="Visible From Time"
+              value={visibleTime}
+              mode="time"
+              onChange={(date) => {
+                setVisibleTimeTouched(true);
+                setVisibleTime(date);
+              }}
             />
           </View>
 
@@ -222,16 +254,23 @@ export function CreateGameSeriesScreen({
                   ? 'Only 1 game in this range — extend the end date'
                   : `${kickoffs.length} games${tooMany ? ` (over the ${MAX_SERIES_GAMES} limit)` : ''}`}
               </ThemedTextBox>
-              {kickoffs.slice(0, 6).map((k) => (
+              {kickoffs.slice(0, 6).map((k, i) => (
                 <ThemedTextBox
                   key={k.toISOString()}
                   variant="caption"
                   color="secondary"
                   style={styles.previewRow}
                 >
-                  {`${formatDate(k.toISOString())} · ${formatTime(k.toISOString())}`}
+                  {`${formatDate(k.toISOString())} · ${formatTime(k.toISOString())}\nVisible ${formatDate(
+                    visibleAts[i].toISOString()
+                  )} · ${formatTime(visibleAts[i].toISOString())}`}
                 </ThemedTextBox>
               ))}
+              {visibleAfterKickoff && (
+                <ThemedTextBox variant="caption" color="error" style={styles.previewRow}>
+                  Each game must become visible before it kicks off.
+                </ThemedTextBox>
+              )}
               {kickoffs.length > 6 && (
                 <ThemedTextBox variant="caption" color="secondary" style={styles.previewRow}>
                   {`…and ${kickoffs.length - 6} more`}
@@ -246,7 +285,7 @@ export function CreateGameSeriesScreen({
             title={isCreating ? 'Scheduling...' : 'Schedule Games'}
             variant="primary"
             onPress={handleCreate}
-            disabled={isCreating || tooFew || tooMany}
+            disabled={isCreating || tooFew || tooMany || visibleAfterKickoff}
           />
           {isCreating && (
             <View style={styles.loadingContainer}>

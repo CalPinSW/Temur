@@ -1,7 +1,14 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import {
+  getSeriesVisibility,
+  getSeriesVisibleAt,
+  getWallClockTime,
+  setWallClockTime,
+} from '@temur/shared';
 import { updateGameSeriesFuture } from '../../actions';
+import { VisibleFromField, parseTimeInput, toTimeInput } from '../../VisibleFromField';
 
 const PLAYERS_PER_TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11];
 
@@ -11,21 +18,26 @@ const inputClass =
 export function EditSeriesForm({
   groupId,
   seriesId,
+  games,
   initial,
 }: {
   groupId: string;
   seriesId: string;
+  games: { id: string; kickoffDate: string; visibleAt: string }[];
   initial: {
-    kickoffTime: string;
-    visibleLeadDays: number;
     team1Name: string;
     team2Name: string;
     playersPerTeam: number;
     gameDescription: string;
   };
 }) {
-  const [kickoffTime, setKickoffTime] = useState(initial.kickoffTime);
-  const [visibleLeadDays, setVisibleLeadDays] = useState(initial.visibleLeadDays);
+  const [kickoffTime, setKickoffTime] = useState(() => {
+    const { hours, minutes } = getWallClockTime(new Date(games[0].kickoffDate));
+    return toTimeInput(hours, minutes);
+  });
+  const [visibility, setVisibility] = useState(() =>
+    getSeriesVisibility(new Date(games[0].kickoffDate), new Date(games[0].visibleAt))
+  );
   const [team1Name, setTeam1Name] = useState(initial.team1Name);
   const [team2Name, setTeam2Name] = useState(initial.team2Name);
   const [playersPerTeam, setPlayersPerTeam] = useState(initial.playersPerTeam);
@@ -35,12 +47,22 @@ export function EditSeriesForm({
 
   const handleSubmit = () => {
     setError('');
+    const time = parseTimeInput(kickoffTime);
+    if (!time) {
+      setError('Enter a valid kickoff time.');
+      return;
+    }
+
+    const kickoffs = games.map((g) => setWallClockTime(new Date(g.kickoffDate), time));
+    const visibleAts = kickoffs.map((k) => getSeriesVisibleAt(k, visibility));
+
     startTransition(async () => {
       const result = await updateGameSeriesFuture({
         seriesId,
         groupId,
-        kickoffTime,
-        visibleLeadDays,
+        gameIds: games.map((g) => g.id),
+        kickoffs: kickoffs.map((d) => d.toISOString()),
+        visibleAts: visibleAts.map((d) => d.toISOString()),
         team1Name,
         team2Name,
         playersPerTeam,
@@ -79,23 +101,11 @@ export function EditSeriesForm({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="visibleLeadDays" className="text-sm font-medium text-text-secondary">
-          Visible From
-        </label>
-        <div className="flex items-center gap-2">
-          <input
-            id="visibleLeadDays"
-            type="number"
-            min={0}
-            max={60}
-            value={visibleLeadDays}
-            onChange={(e) => setVisibleLeadDays(Math.max(0, Number(e.target.value)))}
-            className={`${inputClass} w-24`}
-          />
-          <span className="text-sm text-text-secondary">days before each kickoff</span>
-        </div>
-      </div>
+      <VisibleFromField
+        visibility={visibility}
+        onDaysBeforeChange={(daysBefore) => setVisibility((v) => ({ ...v, daysBefore }))}
+        onTimeChange={(time) => setVisibility((v) => ({ ...v, ...time }))}
+      />
 
       <div className="flex flex-col gap-1">
         <label htmlFor="playersPerTeam" className="text-sm font-medium text-text-secondary">

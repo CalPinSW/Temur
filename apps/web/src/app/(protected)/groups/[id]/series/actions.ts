@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { MAX_SERIES_GAMES, generateSeriesKickoffs, getVisibleAtWithLead } from '@temur/shared';
+import { MAX_SERIES_GAMES, isVisibleAtBeforeKickoff } from '@temur/shared';
 import { createClient, getUser } from '@/lib/supabase/server';
 import { trackEvent, AnalyticsEvent } from '@/lib/analytics';
 
@@ -10,12 +10,29 @@ export interface SeriesActionState {
   error?: string;
 }
 
-export interface CreateGameSeriesInput {
+// Kickoff and visible-from timestamps are computed in the browser, since
+// they're wall-clock times in the admin's own timezone and this server
+// runs in UTC.
+interface SeriesSchedule {
+  kickoffs: string[];
+  visibleAts: string[];
+}
+
+const getScheduleError = ({ kickoffs, visibleAts }: SeriesSchedule): string | null => {
+  if (kickoffs.length !== visibleAts.length) return 'Enter a valid schedule.';
+  const pairs = kickoffs.map((k, i) => [new Date(k), new Date(visibleAts[i])] as const);
+  if (pairs.some(([k, v]) => Number.isNaN(k.getTime()) || Number.isNaN(v.getTime()))) {
+    return 'Enter a valid schedule.';
+  }
+  if (pairs.some(([k, v]) => !isVisibleAtBeforeKickoff(k, v))) {
+    return 'Each game must become visible before it kicks off.';
+  }
+  return null;
+};
+
+export interface CreateGameSeriesInput extends SeriesSchedule {
   groupId: string;
-  firstKickoff: string; // ISO
-  endDate: string; // ISO (a calendar day; time part ignored by generateSeriesKickoffs)
   intervalWeeks: number;
-  visibleLeadDays: number;
   team1Name: string;
   team2Name: string;
   playersPerTeam: number;
@@ -25,32 +42,25 @@ export async function createGameSeries(input: CreateGameSeriesInput): Promise<Se
   const user = await getUser();
   if (!user) return { error: 'You must be signed in.' };
 
-  const first = new Date(input.firstKickoff);
-  const end = new Date(input.endDate);
-  if (Number.isNaN(first.getTime()) || Number.isNaN(end.getTime())) {
-    return { error: 'Enter a valid first kickoff and end date.' };
-  }
-
-  const kickoffs = generateSeriesKickoffs(first, end, input.intervalWeeks);
-  if (kickoffs.length < 2) {
+  const scheduleError = getScheduleError(input);
+  if (scheduleError) return { error: scheduleError };
+  if (input.kickoffs.length < 2) {
     return {
       error: 'That range only covers one game — pick a later end date.',
     };
   }
-  if (kickoffs.length > MAX_SERIES_GAMES) {
+  if (input.kickoffs.length > MAX_SERIES_GAMES) {
     return {
       error: `A recurring block can have at most ${MAX_SERIES_GAMES} games.`,
     };
   }
 
-  const visibleAts = kickoffs.map((k) => getVisibleAtWithLead(k, input.visibleLeadDays));
-
   const supabase = await createClient();
   const { error } = await supabase.rpc('create_game_series', {
     p_group_id: input.groupId,
     p_interval_weeks: input.intervalWeeks,
-    p_kickoffs: kickoffs.map((d) => d.toISOString()),
-    p_visible_ats: visibleAts.map((d) => d.toISOString()),
+    p_kickoffs: input.kickoffs,
+    p_visible_ats: input.visibleAts,
     p_team1_name: input.team1Name,
     p_team2_name: input.team2Name,
     p_players_per_team: input.playersPerTeam,
@@ -62,7 +72,7 @@ export async function createGameSeries(input: CreateGameSeriesInput): Promise<Se
 
   await trackEvent(AnalyticsEvent.GameSeriesCreated, {
     intervalWeeks: input.intervalWeeks,
-    gameCount: kickoffs.length,
+    gameCount: input.kickoffs.length,
   });
 
   revalidatePath(`/groups/${input.groupId}/games`);
@@ -70,11 +80,10 @@ export async function createGameSeries(input: CreateGameSeriesInput): Promise<Se
   redirect(`/groups/${input.groupId}/games`);
 }
 
-export interface UpdateGameSeriesInput {
+export interface UpdateGameSeriesInput extends SeriesSchedule {
   seriesId: string;
   groupId: string;
-  kickoffTime: string; // "HH:mm"
-  visibleLeadDays: number;
+  gameIds: string[];
   team1Name: string;
   team2Name: string;
   playersPerTeam: number;
@@ -87,42 +96,18 @@ export async function updateGameSeriesFuture(
   const user = await getUser();
   if (!user) return { error: 'You must be signed in.' };
 
-  const [hh, mm] = input.kickoffTime.split(':').map(Number);
-  if (!Number.isInteger(hh) || !Number.isInteger(mm)) {
-    return { error: 'Enter a valid kickoff time.' };
-  }
-
-  const supabase = await createClient();
-
-  const nowIso = new Date().toISOString();
-  const { data: games, error: fetchError } = await supabase
-    .from('games')
-    .select('id, kickoff_date')
-    .eq('series_id', input.seriesId)
-    .is('deleted_at', null)
-    .gte('kickoff_date', nowIso)
-    .order('kickoff_date', { ascending: true });
-
-  if (fetchError) return { error: 'Failed to load the block. Please try again.' };
-  if (!games || games.length === 0) {
+  const scheduleError = getScheduleError(input);
+  if (scheduleError) return { error: scheduleError };
+  if (input.gameIds.length === 0 || input.gameIds.length !== input.kickoffs.length) {
     return { error: 'This block has no upcoming games left to edit.' };
   }
 
-  // Keep each game's own date, apply the new wall-clock time.
-  const kickoffs: string[] = [];
-  const visibleAts: string[] = [];
-  for (const g of games) {
-    const d = new Date(g.kickoff_date);
-    d.setHours(hh, mm, 0, 0);
-    kickoffs.push(d.toISOString());
-    visibleAts.push(getVisibleAtWithLead(d, input.visibleLeadDays).toISOString());
-  }
-
+  const supabase = await createClient();
   const { error } = await supabase.rpc('update_game_series_future', {
     p_series_id: input.seriesId,
-    p_game_ids: games.map((g) => g.id),
-    p_kickoffs: kickoffs,
-    p_visible_ats: visibleAts,
+    p_game_ids: input.gameIds,
+    p_kickoffs: input.kickoffs,
+    p_visible_ats: input.visibleAts,
     p_team1_name: input.team1Name,
     p_team2_name: input.team2Name,
     p_players_per_team: input.playersPerTeam,

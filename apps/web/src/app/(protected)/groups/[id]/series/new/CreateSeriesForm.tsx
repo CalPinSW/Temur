@@ -10,8 +10,11 @@ import {
   generateSeriesKickoffs,
   getDefaultSeriesEndDate,
   getNextSaturday,
+  getSeriesVisibleAt,
+  isVisibleAtBeforeKickoff,
 } from '@temur/shared';
 import { createGameSeries } from '../actions';
+import { VisibleFromField } from '../VisibleFromField';
 
 const PLAYERS_PER_TEAM_OPTIONS = [5, 6, 7, 8, 9, 10, 11];
 
@@ -31,7 +34,12 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
   const [endDate, setEndDate] = useState(toDateInput(getDefaultSeriesEndDate(defaultFirst)));
   const [endDateTouched, setEndDateTouched] = useState(false);
   const [intervalWeeks, setIntervalWeeks] = useState(1);
-  const [visibleLeadDays, setVisibleLeadDays] = useState(DEFAULT_VISIBLE_AT_LEAD_DAYS);
+  const [visibleDaysBefore, setVisibleDaysBefore] = useState(DEFAULT_VISIBLE_AT_LEAD_DAYS);
+  const [visibleTime, setVisibleTime] = useState({
+    hours: defaultFirst.getHours(),
+    minutes: defaultFirst.getMinutes(),
+  });
+  const [visibleTimeTouched, setVisibleTimeTouched] = useState(false);
   const [team1Name, setTeam1Name] = useState('Black');
   const [team2Name, setTeam2Name] = useState('White');
   const [playersPerTeam, setPlayersPerTeam] = useState(6);
@@ -40,8 +48,13 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
 
   const handleFirstKickoffChange = (value: string) => {
     setFirstKickoff(value);
-    if (!endDateTouched && value) {
-      setEndDate(toDateInput(getDefaultSeriesEndDate(new Date(value))));
+    const first = new Date(value);
+    if (Number.isNaN(first.getTime())) return;
+    if (!endDateTouched) {
+      setEndDate(toDateInput(getDefaultSeriesEndDate(first)));
+    }
+    if (!visibleTimeTouched) {
+      setVisibleTime({ hours: first.getHours(), minutes: first.getMinutes() });
     }
   };
 
@@ -52,8 +65,12 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
     return generateSeriesKickoffs(first, end, intervalWeeks);
   }, [firstKickoff, endDate, intervalWeeks]);
 
+  const visibility = { daysBefore: visibleDaysBefore, ...visibleTime };
+  const visibleAts = kickoffs.map((k) => getSeriesVisibleAt(k, visibility));
+
   const tooMany = kickoffs.length > MAX_SERIES_GAMES;
   const tooFew = kickoffs.length < 2;
+  const visibleAfterKickoff = kickoffs.some((k, i) => !isVisibleAtBeforeKickoff(k, visibleAts[i]));
 
   const handleSubmit = () => {
     setError('');
@@ -65,14 +82,17 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
       setError(`A recurring block can have at most ${MAX_SERIES_GAMES} games.`);
       return;
     }
+    if (visibleAfterKickoff) {
+      setError('Each game must become visible before it kicks off.');
+      return;
+    }
 
     startTransition(async () => {
       const result = await createGameSeries({
         groupId,
-        firstKickoff: new Date(firstKickoff).toISOString(),
-        endDate: new Date(endDate).toISOString(),
+        kickoffs: kickoffs.map((d) => d.toISOString()),
+        visibleAts: visibleAts.map((d) => d.toISOString()),
         intervalWeeks,
-        visibleLeadDays,
         team1Name,
         team2Name,
         playersPerTeam,
@@ -130,26 +150,14 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="visibleLeadDays" className="text-sm font-medium text-text-secondary">
-          Visible From
-        </label>
-        <p className="text-xs text-text-tertiary">
-          How many days before each kickoff players can see and sign up for that game.
-        </p>
-        <div className="flex items-center gap-2">
-          <input
-            id="visibleLeadDays"
-            type="number"
-            min={0}
-            max={60}
-            value={visibleLeadDays}
-            onChange={(e) => setVisibleLeadDays(Math.max(0, Number(e.target.value)))}
-            className={`${inputClass} w-24`}
-          />
-          <span className="text-sm text-text-secondary">days before</span>
-        </div>
-      </div>
+      <VisibleFromField
+        visibility={visibility}
+        onDaysBeforeChange={setVisibleDaysBefore}
+        onTimeChange={(time) => {
+          setVisibleTimeTouched(true);
+          setVisibleTime(time);
+        }}
+      />
 
       <div className="flex flex-col gap-1">
         <label htmlFor="playersPerTeam" className="text-sm font-medium text-text-secondary">
@@ -209,9 +217,14 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
                   }`}
             </p>
             <ul className="mt-1 flex flex-col gap-0.5 text-sm text-text-tertiary">
-              {kickoffs.slice(0, 6).map((k) => (
+              {kickoffs.slice(0, 6).map((k, i) => (
                 <li key={k.toISOString()}>
                   {formatDate(k.toISOString())} · {formatTime(k.toISOString())}
+                  <span className="text-text-tertiary/80">
+                    {' '}
+                    — visible {formatDate(visibleAts[i].toISOString())} ·{' '}
+                    {formatTime(visibleAts[i].toISOString())}
+                  </span>
                 </li>
               ))}
               {kickoffs.length > 6 && <li>…and {kickoffs.length - 6} more</li>}
@@ -220,12 +233,15 @@ export function CreateSeriesForm({ groupId }: { groupId: string }) {
         )}
       </div>
 
-      {error && <p className="text-sm text-error">{error}</p>}
+      {visibleAfterKickoff && (
+        <p className="text-sm text-error">Each game must become visible before it kicks off.</p>
+      )}
+      {error && !visibleAfterKickoff && <p className="text-sm text-error">{error}</p>}
 
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={isPending || tooFew || tooMany}
+        disabled={isPending || tooFew || tooMany || visibleAfterKickoff}
         className="rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-60"
       >
         {isPending ? 'Scheduling…' : 'Schedule Games'}

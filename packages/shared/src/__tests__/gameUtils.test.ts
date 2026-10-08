@@ -16,6 +16,11 @@ import {
   getDefaultVisibleAt,
   isVisibleAtBeforeKickoff,
   generateSeriesKickoffs,
+  getSeriesVisibleAt,
+  getSeriesVisibility,
+  getSeriesVisibleDaysBeforeOptions,
+  getWallClockTime,
+  setWallClockTime,
   getDefaultSeriesEndDate,
   MAX_SERIES_GAMES,
 } from '../utils/gameUtils';
@@ -342,6 +347,106 @@ describe('gameUtils', () => {
       const first = new Date(2026, 3, 11, 10, 45);
       const end = new Date(2026, 3, 15);
       expect(generateSeriesKickoffs(first, end, 1)).toHaveLength(1);
+    });
+  });
+
+  describe('getSeriesVisibleAt', () => {
+    // Explicit UTC instants, asserted as UK wall-clock time, so these hold
+    // whatever timezone the test machine is in.
+    const ukWallClock = (d: Date) => formatDateTimeLocalInputValue(d.toISOString());
+
+    it('opens a set number of calendar days before kickoff at a fixed time of day', () => {
+      const saturdayKickoff = new Date('2026-10-17T09:45:00.000Z');
+      const visibleAt = getSeriesVisibleAt(saturdayKickoff, {
+        daysBefore: 6,
+        hours: 17,
+        minutes: 0,
+      });
+      expect(ukWallClock(visibleAt)).toBe('2026-10-11T17:00');
+      expect(visibleAt.toISOString()).toBe('2026-10-11T16:00:00.000Z');
+    });
+
+    it('keeps the wall-clock time across the end of BST', () => {
+      const kickoff = new Date('2026-10-31T10:45:00.000Z');
+      const visibleAt = getSeriesVisibleAt(kickoff, {
+        daysBefore: 6,
+        hours: 17,
+        minutes: 0,
+      });
+      expect(visibleAt.toISOString()).toBe('2026-10-25T17:00:00.000Z');
+    });
+
+    it('crosses a month boundary', () => {
+      const kickoff = new Date('2026-11-03T19:30:00.000Z');
+      const visibleAt = getSeriesVisibleAt(kickoff, {
+        daysBefore: 7,
+        hours: 9,
+        minutes: 15,
+      });
+      expect(ukWallClock(visibleAt)).toBe('2026-10-27T09:15');
+    });
+
+    it('uses the UK calendar day of a late-evening kickoff, not the UTC one', () => {
+      const kickoff = new Date('2026-07-04T23:30:00.000Z');
+      const visibleAt = getSeriesVisibleAt(kickoff, {
+        daysBefore: 1,
+        hours: 12,
+        minutes: 0,
+      });
+      expect(ukWallClock(visibleAt)).toBe('2026-07-04T12:00');
+    });
+
+    it('can land after kickoff on the same day, for the caller to reject', () => {
+      const kickoff = new Date('2026-10-17T09:45:00.000Z');
+      const visibleAt = getSeriesVisibleAt(kickoff, {
+        daysBefore: 0,
+        hours: 17,
+        minutes: 0,
+      });
+      expect(isVisibleAtBeforeKickoff(kickoff, visibleAt)).toBe(false);
+    });
+  });
+
+  describe('getSeriesVisibility', () => {
+    it('round-trips with getSeriesVisibleAt', () => {
+      const kickoff = new Date('2026-10-31T10:45:00.000Z');
+      const visibility = { daysBefore: 6, hours: 17, minutes: 0 };
+      expect(getSeriesVisibility(kickoff, getSeriesVisibleAt(kickoff, visibility))).toEqual(
+        visibility
+      );
+    });
+
+    it('counts calendar days, not 24-hour periods', () => {
+      const kickoff = new Date('2026-10-17T09:45:00.000Z');
+      const visibleAt = new Date('2026-10-16T21:00:00.000Z');
+      expect(getSeriesVisibility(kickoff, visibleAt)).toEqual({
+        daysBefore: 1,
+        hours: 22,
+        minutes: 0,
+      });
+    });
+  });
+
+  describe('getSeriesVisibleDaysBeforeOptions', () => {
+    it('labels same-day and single-day leads', () => {
+      const options = getSeriesVisibleDaysBeforeOptions();
+      expect(options[0]).toEqual({ label: 'Same day', value: 0 });
+      expect(options[1]).toEqual({ label: '1 day before', value: 1 });
+    });
+
+    it('includes an unlisted current value in order', () => {
+      const values = getSeriesVisibleDaysBeforeOptions(9).map((o) => o.value);
+      expect(values).toContain(9);
+      expect(values).toEqual([...values].sort((a, b) => a - b));
+    });
+  });
+
+  describe('setWallClockTime / getWallClockTime', () => {
+    it('sets a UK time of day on the same UK date', () => {
+      const date = new Date('2026-07-04T23:30:00.000Z');
+      const updated = setWallClockTime(date, { hours: 19, minutes: 0 });
+      expect(updated.toISOString()).toBe('2026-07-05T18:00:00.000Z');
+      expect(getWallClockTime(updated)).toEqual({ hours: 19, minutes: 0 });
     });
   });
 

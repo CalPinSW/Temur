@@ -200,9 +200,7 @@ export const getDefaultKickoffDate = (existingKickoffDates: Date[]): Date => {
 
 export const DEFAULT_VISIBLE_AT_LEAD_DAYS = VISIBLE_AT_LEAD_DAYS;
 
-// visible_at for a given lead time: `leadDays` days before kickoff, same
-// time of day.
-export const getVisibleAtWithLead = (kickoffDate: Date, leadDays: number): Date =>
+const getVisibleAtWithLead = (kickoffDate: Date, leadDays: number): Date =>
   new Date(kickoffDate.getTime() - leadDays * MS_PER_DAY);
 
 // visible_at's default always tracks kickoff_date: exactly 6 days earlier,
@@ -244,6 +242,96 @@ export const generateSeriesKickoffs = (
 
   return kickoffs;
 };
+
+export interface WallClockTime {
+  hours: number;
+  minutes: number;
+}
+
+export interface SeriesVisibility extends WallClockTime {
+  daysBefore: number;
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const parseWallClock = (date: Date, timeZone: string) => {
+  const [datePart, timePart] = formatDateTimeLocalInputValue(date.toISOString(), timeZone).split(
+    'T'
+  );
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  return { year, month, day, hours, minutes };
+};
+
+// The UK wall-clock time of day an instant falls on, independent of the
+// runtime's own timezone (a Server Component renders in UTC).
+export const getWallClockTime = (date: Date, timeZone: string = APP_TIME_ZONE): WallClockTime => {
+  const { hours, minutes } = parseWallClock(date, timeZone);
+  return { hours, minutes };
+};
+
+// `date` moved `dayOffset` calendar days (negative = earlier) and set to a
+// given wall-clock time, both in `timeZone` — so the result lands on the
+// intended day and time across a BST/GMT change.
+export const setWallClockTime = (
+  date: Date,
+  time: WallClockTime,
+  dayOffset = 0,
+  timeZone: string = APP_TIME_ZONE
+): Date => {
+  const { year, month, day } = parseWallClock(date, timeZone);
+  const shifted = new Date(Date.UTC(year, month - 1, day + dayOffset));
+  return parseDateTimeLocalInputValue(
+    `${shifted.getUTCFullYear()}-${pad2(shifted.getUTCMonth() + 1)}-${pad2(
+      shifted.getUTCDate()
+    )}T${pad2(time.hours)}:${pad2(time.minutes)}`,
+    timeZone
+  );
+};
+
+// A series game's visible_at: `daysBefore` calendar days before its kickoff
+// at a fixed wall-clock time — e.g. a Saturday 10:45 kickoff with
+// { daysBefore: 6, hours: 17, minutes: 0 } opens the Sunday before at 17:00.
+export const getSeriesVisibleAt = (
+  kickoffDate: Date,
+  visibility: SeriesVisibility,
+  timeZone: string = APP_TIME_ZONE
+): Date => setWallClockTime(kickoffDate, visibility, -visibility.daysBefore, timeZone);
+
+// Inverse of getSeriesVisibleAt, for pre-filling an edit form from an
+// existing game.
+export const getSeriesVisibility = (
+  kickoffDate: Date,
+  visibleAt: Date,
+  timeZone: string = APP_TIME_ZONE
+): SeriesVisibility => {
+  const kickoff = parseWallClock(kickoffDate, timeZone);
+  const visible = parseWallClock(visibleAt, timeZone);
+  const dayDiff =
+    (Date.UTC(kickoff.year, kickoff.month - 1, kickoff.day) -
+      Date.UTC(visible.year, visible.month - 1, visible.day)) /
+    MS_PER_DAY;
+  return {
+    daysBefore: Math.max(0, dayDiff),
+    hours: visible.hours,
+    minutes: visible.minutes,
+  };
+};
+
+const SERIES_VISIBLE_DAYS_BEFORE_PRESETS = [0, 1, 2, 3, 4, 5, 6, 7, 10, 14];
+
+// Dropdown choices for "visible N days before", always including `current`
+// so a block set to an unlisted value elsewhere (web takes any 0-60) still
+// shows it.
+export const getSeriesVisibleDaysBeforeOptions = (
+  current?: number
+): { label: string; value: number }[] =>
+  [...new Set([...SERIES_VISIBLE_DAYS_BEFORE_PRESETS, ...(current === undefined ? [] : [current])])]
+    .sort((a, b) => a - b)
+    .map((n) => ({
+      label: n === 0 ? 'Same day' : n === 1 ? '1 day before' : `${n} days before`,
+      value: n,
+    }));
 
 // Default end date for a new block: 8 weeks after the first kickoff.
 export const getDefaultSeriesEndDate = (firstKickoff: Date): Date => {
