@@ -95,6 +95,19 @@ describe('socialAuthService', () => {
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
 
+    it('returns a retry message when iOS cannot present the sign-in sheet, still reporting to Sentry', async () => {
+      const presentationError = new Error(
+        'RNGoogleSignIn: Unknown error in google sign in., Error Domain=com.google.GIDSignIn Code=-1 "Unable to open Safari." UserInfo={NSLocalizedDescription=Unable to open Safari.}'
+      );
+      mockGoogleSignin.signIn.mockRejectedValue(presentationError);
+
+      const result = await signInWithGoogle();
+
+      expect(result.data).toBeNull();
+      expect(result.error?.message).toBe("Couldn't open Google sign-in. Please try again.");
+      expect(mockCaptureException).toHaveBeenCalledWith(presentationError);
+    });
+
     it('returns an error when Supabase rejects the ID token', async () => {
       mockGoogleSignin.signIn.mockResolvedValue({
         data: { idToken: 'google-id-token' },

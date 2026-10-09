@@ -38,6 +38,14 @@ export async function signInWithGoogle() {
     }
     console.error('[SocialAuth] Google sign-in error:', error);
     Sentry.captureException(error);
+
+    // iOS refused to present the Google sign-in sheet, usually because the
+    // app wasn't fully foregrounded or a previous sheet was still dismissing.
+    // A retry almost always works, so say that instead of the SDK's raw text.
+    if ((error as { message?: string }).message?.includes('Unable to open Safari')) {
+      return { data: null, error: new Error("Couldn't open Google sign-in. Please try again.") };
+    }
+
     return { data: null, error: error as Error };
   }
 }
