@@ -82,6 +82,12 @@ export default async function GroupDetailPage({ params }: PageProps<'/groups/[id
             </Link>
           </div>
           <Link
+            href={`/groups/${groupId}/stats`}
+            className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
+          >
+            Player Stats
+          </Link>
+          <Link
             href={`/groups/${groupId}/series/new`}
             className="rounded-lg border border-border px-4 py-2 text-center text-sm font-medium text-text-secondary transition-colors hover:bg-background-secondary"
           >

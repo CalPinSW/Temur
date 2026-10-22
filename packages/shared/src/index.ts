@@ -11,3 +11,5 @@ export * from './utils/errorCapture';
 export * from './utils/notificationUtils';
 export * from './utils/signupEventUtils';
 export * from './utils/teamSheetUtils';
+export * from './types/groupStats';
+export * from './utils/groupStatsUtils';

@@ -7,3 +7,4 @@ export { GroupGamesScreen } from './GroupGamesScreen';
 export { GroupCalendarScreen } from './GroupCalendarScreen';
 export { GroupMembersScreen } from './GroupMembersScreen';
 export { JoinGroupScreen } from './JoinGroupScreen';
+export { GroupStatsScreen } from './GroupStatsScreen';
