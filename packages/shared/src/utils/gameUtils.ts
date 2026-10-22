@@ -20,6 +20,15 @@ export const formatDate = (dateString: string) => {
   });
 };
 
+export const formatShortDate = (dateString: string) =>
+  new Date(dateString).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: APP_TIME_ZONE,
+  });
+
 export const formatTime = (dateString: string) => {
   const date = new Date(dateString);
   return date.toLocaleTimeString('en-GB', {

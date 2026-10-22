@@ -20,6 +20,7 @@ import {
   formatDate,
   formatGoalDifference,
   formatPlayerNames,
+  formatShortDate,
   formatRating,
   formatRecord,
   formatStreak,
@@ -290,6 +291,35 @@ export function GroupStatsScreen({ groupId, onGoBack, onNavigateToGame }: GroupS
                   title={`Biggest win: ${summary.biggestWin.winnerScore}–${summary.biggestWin.loserScore} on ${formatDate(summary.biggestWin.kickoffDate)}`}
                   onPress={() => onNavigateToGame(summary.biggestWin!.gameId)}
                 />
+              )}
+
+              {summary.gamesWithoutResult.length > 0 && (
+                <ThemedCard
+                  variant="outlined"
+                  title={
+                    summary.gamesWithoutResult.length === 1
+                      ? '1 game has no result'
+                      : `${summary.gamesWithoutResult.length} games have no result`
+                  }
+                >
+                  <View style={styles.list}>
+                    <ThemedTextBox variant="caption" color="secondary">
+                      Players still get an appearance and ratings, but it won’t count towards
+                      records, goal difference or awards until a result is entered.
+                    </ThemedTextBox>
+                    <View style={styles.chips}>
+                      {summary.gamesWithoutResult.map((game) => (
+                        <ThemedButton
+                          key={game.gameId}
+                          title={formatShortDate(game.kickoffDate)}
+                          size="small"
+                          variant="outline"
+                          onPress={() => onNavigateToGame(game.gameId)}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                </ThemedCard>
               )}
 
               {stats.awards.length > 0 && (

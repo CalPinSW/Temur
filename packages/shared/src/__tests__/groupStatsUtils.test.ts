@@ -176,6 +176,9 @@ describe('computeGroupStats', () => {
       biggestWin: { gameId: 'g1', winnerScore: 5, loserScore: 1 },
     });
     expect(stats.summary.averageGoalsPerGame).toBeCloseTo(13 / 3);
+    expect(stats.summary.gamesWithoutResult).toEqual([
+      { gameId: 'g5', kickoffDate: expect.any(String) },
+    ]);
     expect(stats.summary.mostGamesPlayed?.games).toBe(5);
     expect(stats.summary.mostGamesPlayed?.players.map((p) => p.userId)).toEqual([
       'a',
@@ -225,6 +228,17 @@ describe('computeGroupStats', () => {
       losses: 1,
       goalDifference: -1,
     });
+  });
+
+  it('lists games still missing a result, newest first', () => {
+    const missing = computeGroupStats(
+      build(
+        { id: 'old', daysAgo: 9, team1: ['a'], team2: ['b'] },
+        { id: 'scored', daysAgo: 5, team1: ['a'], team2: ['b'], score: [1, 0] },
+        { id: 'new', daysAgo: 2, team1: ['a'], team2: ['b'] }
+      )
+    );
+    expect(missing.summary.gamesWithoutResult.map((g) => g.gameId)).toEqual(['new', 'old']);
   });
 
   it('handles no games', () => {
