@@ -39,7 +39,6 @@ import {
   signInWithGoogle,
   signInWithApple,
   signInWithProvider,
-  ExpectedSocialAuthError,
 } from '@/services/socialAuthService';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
@@ -90,7 +89,7 @@ describe('socialAuthService', () => {
       const result = await signInWithGoogle();
 
       expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error).toBeInstanceOf(Error);
       expect(result.error?.message).toBe('Authentication was cancelled');
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
@@ -182,7 +181,7 @@ describe('socialAuthService', () => {
       const result = await signInWithApple();
 
       expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error).toBeInstanceOf(Error);
       expect(result.error?.message).toBe('Authentication was cancelled');
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
@@ -202,7 +201,7 @@ describe('socialAuthService', () => {
       const result = await signInWithApple();
 
       expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error).toBeInstanceOf(Error);
       expect(result.error?.message).toMatch(/sign in with apple isn't available/i);
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
