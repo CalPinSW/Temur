@@ -197,6 +197,7 @@ const buildSummary = (
   players: PlayerStats[]
 ): GroupStatsSummary => {
   let gamesWithResult = 0;
+  const gamesWithoutResult: GroupStatsSummary['gamesWithoutResult'] = [];
   let draws = 0;
   let totalGoals = 0;
   let scoredGames = 0;
@@ -204,7 +205,10 @@ const buildSummary = (
 
   for (const [gameId, rows] of games) {
     const result = getGameResult(rows[0]);
-    if (!result.hasResult) continue;
+    if (!result.hasResult) {
+      gamesWithoutResult.unshift({ gameId, kickoffDate: rows[0].kickoff_date });
+      continue;
+    }
     gamesWithResult += 1;
     if (result.winningTeam === null) draws += 1;
     if (result.team1 === null || result.team2 === null) continue;
@@ -227,6 +231,7 @@ const buildSummary = (
   return {
     gamesPlayed: games.size,
     gamesWithResult,
+    gamesWithoutResult,
     playerCount: players.length,
     mostGamesPlayed: getMostGamesPlayed(players),
     totalGoals,

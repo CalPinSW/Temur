@@ -7,6 +7,7 @@ import {
   formatDate,
   formatGoalDifference,
   formatPlayerNames,
+  formatShortDate,
   formatRecord,
   formatWinRate,
   parseGroupStatsRange,
@@ -119,10 +120,33 @@ export default async function GroupStatsPage({
                 {summary.biggestWin.winnerScore}–{summary.biggestWin.loserScore} on{' '}
                 {formatDate(summary.biggestWin.kickoffDate)}
               </Link>
-              {summary.gamesWithResult < summary.gamesPlayed && (
-                <> · {summary.gamesPlayed - summary.gamesWithResult} games have no result entered</>
-              )}
             </p>
+          )}
+
+          {summary.gamesWithoutResult.length > 0 && (
+            <section className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4">
+              <h2 className="text-sm font-semibold text-text">
+                {summary.gamesWithoutResult.length === 1
+                  ? '1 game has no result'
+                  : `${summary.gamesWithoutResult.length} games have no result`}
+              </h2>
+              <p className="text-sm text-text-secondary">
+                Players still get an appearance and ratings, but it won’t count towards records,
+                goal difference or awards until a result is entered.
+              </p>
+              <ul className="flex flex-wrap gap-2">
+                {summary.gamesWithoutResult.map((game) => (
+                  <li key={game.gameId}>
+                    <Link
+                      href={`/games/${game.gameId}/result`}
+                      className="inline-block rounded-full border border-primary px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                    >
+                      {formatShortDate(game.kickoffDate)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {stats.awards.length > 0 && (

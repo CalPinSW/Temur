@@ -1,5 +1,6 @@
 import {
   formatDate,
+  formatShortDate,
   formatTime,
   formatDateTimeLocalInputValue,
   parseDateTimeLocalInputValue,
@@ -54,6 +55,13 @@ describe('gameUtils', () => {
   describe('formatDate', () => {
     it('formats an ISO date as a long UK-style date', () => {
       expect(formatDate('2026-03-05T18:30:00.000Z')).toBe('Thursday, 5 March 2026');
+    });
+  });
+
+  describe('formatShortDate', () => {
+    it('formats an ISO date as a short UK-style date in UK time', () => {
+      expect(formatShortDate('2026-03-05T18:30:00.000Z')).toBe('Thu, 5 Mar 2026');
+      expect(formatShortDate('2026-07-04T23:30:00.000Z')).toBe('Sun, 5 Jul 2026');
     });
   });
 

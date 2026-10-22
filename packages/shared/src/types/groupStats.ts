@@ -84,6 +84,8 @@ export interface RivalryStats {
 export interface GroupStatsSummary {
   gamesPlayed: number;
   gamesWithResult: number;
+  // Played games nobody has entered a result for yet, newest first.
+  gamesWithoutResult: { gameId: string; kickoffDate: string }[];
   playerCount: number;
   // Everyone tied on the most appearances.
   mostGamesPlayed: {
