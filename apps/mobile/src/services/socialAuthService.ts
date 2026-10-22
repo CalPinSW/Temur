@@ -10,12 +10,6 @@ GoogleSignin.configure({
 
 type Provider = 'google' | 'apple';
 
-// Marks a social sign-in failure as a known, user-side condition (cancelled
-// the prompt, or their Apple ID isn't set up for Sign In with Apple) rather
-// than an app bug — callers use this to skip Sentry reporting for it, since
-// reporting it would just be noise, not something fixable in this codebase.
-export class ExpectedSocialAuthError extends Error {}
-
 export async function signInWithGoogle() {
   try {
     await GoogleSignin.hasPlayServices();
@@ -34,10 +28,18 @@ export async function signInWithGoogle() {
     return { data, error: null };
   } catch (error) {
     if ((error as { code?: string }).code === statusCodes.SIGN_IN_CANCELLED) {
-      return { data: null, error: new ExpectedSocialAuthError('Authentication was cancelled') };
+      return { data: null, error: new Error('Authentication was cancelled') };
     }
     console.error('[SocialAuth] Google sign-in error:', error);
     Sentry.captureException(error);
+
+    // iOS refused to present the Google sign-in sheet, usually because the
+    // app wasn't fully foregrounded or a previous sheet was still dismissing.
+    // A retry almost always works, so say that instead of the SDK's raw text.
+    if ((error as { message?: string }).message?.includes('Unable to open Safari')) {
+      return { data: null, error: new Error("Couldn't open Google sign-in. Please try again.") };
+    }
+
     return { data: null, error: error as Error };
   }
 }
@@ -79,7 +81,7 @@ export async function signInWithApple() {
     const code = (error as { code?: string }).code;
 
     if (code === 'ERR_REQUEST_CANCELED') {
-      return { data: null, error: new ExpectedSocialAuthError('Authentication was cancelled') };
+      return { data: null, error: new Error('Authentication was cancelled') };
     }
 
     // Apple's generic native failure code, thrown by ASAuthorizationController
@@ -90,7 +92,7 @@ export async function signInWithApple() {
     if (code === 'ERR_REQUEST_UNKNOWN') {
       return {
         data: null,
-        error: new ExpectedSocialAuthError(
+        error: new Error(
           "Sign in with Apple isn't available right now. Make sure you're signed in to iCloud with two-factor authentication enabled, then try again."
         ),
       };

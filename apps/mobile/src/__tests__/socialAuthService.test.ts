@@ -39,7 +39,6 @@ import {
   signInWithGoogle,
   signInWithApple,
   signInWithProvider,
-  ExpectedSocialAuthError,
 } from '@/services/socialAuthService';
 
 const mockSupabase = supabase as unknown as SupabaseMock;
@@ -90,9 +89,22 @@ describe('socialAuthService', () => {
       const result = await signInWithGoogle();
 
       expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error).toBeInstanceOf(Error);
       expect(result.error?.message).toBe('Authentication was cancelled');
       expect(mockCaptureException).not.toHaveBeenCalled();
+    });
+
+    it('returns a retry message when iOS cannot present the sign-in sheet, still reporting to Sentry', async () => {
+      const presentationError = new Error(
+        'RNGoogleSignIn: Unknown error in google sign in., Error Domain=com.google.GIDSignIn Code=-1 "Unable to open Safari." UserInfo={NSLocalizedDescription=Unable to open Safari.}'
+      );
+      mockGoogleSignin.signIn.mockRejectedValue(presentationError);
+
+      const result = await signInWithGoogle();
+
+      expect(result.data).toBeNull();
+      expect(result.error?.message).toBe("Couldn't open Google sign-in. Please try again.");
+      expect(mockCaptureException).toHaveBeenCalledWith(presentationError);
     });
 
     it('returns an error when Supabase rejects the ID token', async () => {
@@ -169,7 +181,7 @@ describe('socialAuthService', () => {
       const result = await signInWithApple();
 
       expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error).toBeInstanceOf(Error);
       expect(result.error?.message).toBe('Authentication was cancelled');
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
@@ -189,7 +201,7 @@ describe('socialAuthService', () => {
       const result = await signInWithApple();
 
       expect(result.data).toBeNull();
-      expect(result.error).toBeInstanceOf(ExpectedSocialAuthError);
+      expect(result.error).toBeInstanceOf(Error);
       expect(result.error?.message).toMatch(/sign in with apple isn't available/i);
       expect(mockCaptureException).not.toHaveBeenCalled();
     });
