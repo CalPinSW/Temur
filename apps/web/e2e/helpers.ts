@@ -86,6 +86,28 @@ export async function backdateGameToPast(gameId: string): Promise<void> {
   if (error) throw new Error(`Failed to backdate game ${gameId}: ${error.message}`);
 }
 
+// Puts every signed-up player on team 1 and records a scoreline — the
+// team-assignment board and result form have their own specs, so stats
+// specs set the end state directly rather than re-driving both UIs.
+export async function setPlayedGameOutcome(
+  gameId: string,
+  team1Score: number,
+  team2Score: number
+): Promise<void> {
+  const admin = getAdminClient();
+  const { error: teamError } = await admin
+    .from('player_games')
+    .update({ team: 1 })
+    .eq('game_id', gameId);
+  if (teamError) throw new Error(`Failed to assign teams for ${gameId}: ${teamError.message}`);
+
+  const { error } = await admin
+    .from('games')
+    .update({ result_team1_score: team1Score, result_team2_score: team2Score })
+    .eq('id', gameId);
+  if (error) throw new Error(`Failed to set result for ${gameId}: ${error.message}`);
+}
+
 // Direct DB cleanup (not via the UI) so a test can guarantee no dangling
 // friendship/pending-request survives it regardless of where it failed —
 // the app has no "cancel my own sent request" UI, so a test that fails

@@ -36,6 +36,7 @@ interface GroupDetailScreenProps {
   onNavigateToCalendar: (groupId: string) => void;
   onNavigateToGame: (gameId: string) => void;
   onNavigateToMembers: (groupId: string) => void;
+  onNavigateToStats: (groupId: string) => void;
 }
 
 export function GroupDetailScreen({
@@ -48,6 +49,7 @@ export function GroupDetailScreen({
   onNavigateToCalendar,
   onNavigateToGame,
   onNavigateToMembers,
+  onNavigateToStats,
 }: GroupDetailScreenProps) {
   const { colors } = useTheme();
   const user = useAuthStore((state) => state.user);
@@ -316,6 +318,12 @@ export function GroupDetailScreen({
               variant="primary"
               onPress={() => onNavigateToCreateGame(groupId)}
               style={styles.adminActionButton}
+            />
+            <ThemedButton
+              title="Player Stats"
+              variant="outline"
+              onPress={() => onNavigateToStats(groupId)}
+              style={styles.adminActionButtonFull}
             />
             <ThemedButton
               title="Schedule Recurring Games"

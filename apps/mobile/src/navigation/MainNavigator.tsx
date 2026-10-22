@@ -32,6 +32,7 @@ import {
   GroupGamesScreen,
   GroupCalendarScreen,
   GroupMembersScreen,
+  GroupStatsScreen,
   JoinGroupScreen,
 } from '@/screens/groups';
 
@@ -122,6 +123,7 @@ function GroupsStack({
     | 'games'
     | 'calendar'
     | 'members'
+    | 'stats'
     | 'join'
   >(screenParam || 'list');
   const [groupId, setGroupId] = useState<string | null>(null);
@@ -222,6 +224,16 @@ function GroupsStack({
     return <GroupMembersScreen groupId={groupId} onGoBack={() => setScreen('detail')} />;
   }
 
+  if (screen === 'stats' && groupId) {
+    return (
+      <GroupStatsScreen
+        groupId={groupId}
+        onGoBack={() => setScreen('detail')}
+        onNavigateToGame={(gameId) => navigateToGame(gameId)}
+      />
+    );
+  }
+
   if (screen === 'detail' && groupId) {
     return (
       <GroupDetailScreen
@@ -244,6 +256,7 @@ function GroupsStack({
         onNavigateToCalendar={() => setScreen('calendar')}
         onNavigateToGame={(gameId) => navigateToGame(gameId)}
         onNavigateToMembers={() => setScreen('members')}
+        onNavigateToStats={() => setScreen('stats')}
       />
     );
   }
