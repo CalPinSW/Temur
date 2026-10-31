@@ -1,5 +1,10 @@
 import { Alert } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 import { renderHook, act, waitFor } from '@testing-library/react-native';
+
+jest.mock('@sentry/react-native', () => ({
+  captureException: jest.fn(),
+}));
 
 jest.mock('@/services/supabase', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories can't reference outer imports (hoisting)
@@ -118,5 +123,66 @@ describe('usePlayerRatings', () => {
 
     expect(onSuccess).not.toHaveBeenCalled();
     expect(alertSpy).toHaveBeenCalledWith('Error', expect.any(String));
+  });
+
+  it('reports a genuine save failure to Sentry', async () => {
+    const readBuilder = createQueryBuilder({ data: [], error: null });
+    mockFromTables(mockSupabase, { player_ratings: readBuilder });
+
+    const { result } = renderHook(() => usePlayerRatings('game-1', ['pg-1'], 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.setRating('pg-1', 5);
+    });
+
+    const rlsError = { code: '42501', details: null, hint: null, message: 'permission denied' };
+    mockFromTables(mockSupabase, {
+      player_ratings: createQueryBuilder({ data: null, error: rlsError }),
+    });
+
+    await act(async () => {
+      await result.current.saveRatings(jest.fn());
+    });
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(rlsError);
+    expect(alertSpy).toHaveBeenCalledWith('Error', 'Failed to save ratings. Please try again.');
+  });
+
+  it('tells the user to check their connection, without reporting to Sentry, when the save never reaches the server', async () => {
+    const readBuilder = createQueryBuilder({ data: [], error: null });
+    mockFromTables(mockSupabase, { player_ratings: readBuilder });
+    const onSuccess = jest.fn();
+
+    const { result } = renderHook(() => usePlayerRatings('game-1', ['pg-1'], 'user-1'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.setRating('pg-1', 5);
+    });
+
+    mockFromTables(mockSupabase, {
+      player_ratings: createQueryBuilder({
+        data: null,
+        error: {
+          code: '',
+          details: 'TypeError: Network request failed',
+          hint: '',
+          message: 'TypeError: Network request failed',
+        },
+      }),
+    });
+
+    await act(async () => {
+      await result.current.saveRatings(onSuccess);
+    });
+
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Error',
+      "Couldn't connect. Check your connection and try again."
+    );
+    expect(result.current.isSaving).toBe(false);
   });
 });

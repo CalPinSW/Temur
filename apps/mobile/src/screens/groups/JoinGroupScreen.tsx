@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Sentry from '@sentry/react-native';
+import { isNetworkError, NETWORK_ERROR_MESSAGE } from '@temur/shared';
 import { useTheme } from '@/theme';
 import { ThemedButton, ThemedTextBox } from '@/components/themed';
 import { joinGroupViaLink } from '@/services/groupService';
@@ -10,17 +11,6 @@ interface JoinGroupScreenProps {
   token: string;
   onJoined: (groupId: string) => void;
   onGoBack: () => void;
-}
-
-// Distinguishes a transient network failure (the fetch itself never reached
-// the server) from the RPC's own rejection (e.g. an actually invalid or
-// expired token) — supabase-js reports both the same way, as an object with
-// {message, details, hint, code}, so this is the only signal available.
-// Worth telling apart: a network blip should invite a retry, not tell the
-// user their invite is dead.
-function isNetworkError(err: unknown): boolean {
-  const message = err instanceof Error ? err.message : String(err);
-  return message.includes('Network request failed');
 }
 
 export function JoinGroupScreen({ token, onJoined, onGoBack }: JoinGroupScreenProps) {
@@ -38,11 +28,11 @@ export function JoinGroupScreen({ token, onJoined, onGoBack }: JoinGroupScreenPr
       })
       .catch((err) => {
         console.error('Join group via link error:', err);
-        Sentry.captureException(err);
+        if (!isNetworkError(err)) Sentry.captureException(err);
         if (cancelled) return;
         setError(
           isNetworkError(err)
-            ? "Couldn't connect. Check your connection and try again."
+            ? NETWORK_ERROR_MESSAGE
             : (err instanceof Error ? err.message : null) ||
                 'This join link is invalid or has expired.'
         );
