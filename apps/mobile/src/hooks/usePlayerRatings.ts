@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { getMyRatings, submitRatings } from '@/services/gameRatingService';
 import * as Sentry from '@sentry/react-native';
+import { isNetworkError, NETWORK_ERROR_MESSAGE } from '@temur/shared';
 
 export function usePlayerRatings(gameId: string, playerGameIds: string[], userId?: string) {
   const [ratings, setRatings] = useState<Record<string, number | undefined>>({});
@@ -27,7 +28,7 @@ export function usePlayerRatings(gameId: string, playerGameIds: string[], userId
         if (!cancelled) setRatings(existing);
       } catch (error) {
         console.error('Error loading ratings:', error);
-        Sentry.captureException(error);
+        if (!isNetworkError(error)) Sentry.captureException(error);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -59,6 +60,10 @@ export function usePlayerRatings(gameId: string, playerGameIds: string[], userId
       onSuccess();
     } catch (error) {
       console.error('Error saving ratings:', error);
+      if (isNetworkError(error)) {
+        Alert.alert('Error', NETWORK_ERROR_MESSAGE);
+        return;
+      }
       Sentry.captureException(error);
       Alert.alert('Error', 'Failed to save ratings. Please try again.');
     } finally {

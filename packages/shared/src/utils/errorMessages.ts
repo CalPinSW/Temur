@@ -51,3 +51,23 @@ export const getAvatarUploadErrorMessage = (error: SupabaseErrorLike): string =>
   }
   return 'Failed to upload avatar. Please try again.';
 };
+
+const NETWORK_FAILURE_MESSAGES = ['Network request failed', 'Failed to fetch'];
+
+// supabase-js returns a transport failure (the request never reached the
+// server) in the same {message, details, hint, code} shape as a real
+// database/RPC rejection — usually as a plain object, not an Error — so the
+// message text is the only way to tell "no signal" apart from a genuine bug.
+export const isNetworkError = (error: unknown): boolean => {
+  const message =
+    typeof error === 'string'
+      ? error
+      : typeof error === 'object' &&
+          error !== null &&
+          typeof (error as { message?: unknown }).message === 'string'
+        ? (error as { message: string }).message
+        : '';
+  return NETWORK_FAILURE_MESSAGES.some((text) => message.includes(text));
+};
+
+export const NETWORK_ERROR_MESSAGE = "Couldn't connect. Check your connection and try again.";

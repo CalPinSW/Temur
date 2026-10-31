@@ -1,4 +1,8 @@
-import { getAuthErrorMessage, getAvatarUploadErrorMessage } from '../utils/errorMessages';
+import {
+  getAuthErrorMessage,
+  getAvatarUploadErrorMessage,
+  isNetworkError,
+} from '../utils/errorMessages';
 
 describe('getAuthErrorMessage', () => {
   it('maps a duplicate-signup error to a message pointing at sign in', () => {
@@ -54,5 +58,38 @@ describe('getAvatarUploadErrorMessage', () => {
   it('falls back to a generic message for an unrecognized storage error', () => {
     const message = getAvatarUploadErrorMessage({ message: 'network request failed' });
     expect(message).toBe('Failed to upload avatar. Please try again.');
+  });
+});
+
+describe('isNetworkError', () => {
+  it('detects a React Native fetch failure returned as a plain supabase-js error object', () => {
+    expect(
+      isNetworkError({
+        code: '',
+        details: 'TypeError: Network request failed\n    at anonymous',
+        hint: '',
+        message: 'TypeError: Network request failed',
+      })
+    ).toBe(true);
+  });
+
+  it('detects a fetch failure thrown as an Error or a string', () => {
+    expect(isNetworkError(new TypeError('Network request failed'))).toBe(true);
+    expect(isNetworkError(new TypeError('Failed to fetch'))).toBe(true);
+    expect(isNetworkError('TypeError: Network request failed')).toBe(true);
+  });
+
+  it('does not treat a server-side rejection as a network error', () => {
+    expect(
+      isNetworkError({
+        code: '42501',
+        details: null,
+        hint: null,
+        message: 'new row violates row-level security policy',
+      })
+    ).toBe(false);
+    expect(isNetworkError(new Error('boom'))).toBe(false);
+    expect(isNetworkError(null)).toBe(false);
+    expect(isNetworkError(undefined)).toBe(false);
   });
 });
